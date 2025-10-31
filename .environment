@@ -1,0 +1,14 @@
+const config = {
+  development: {
+    API_BASE_URL: 'http://202.88.254.125:8024/',
+    API_TIMEOUT: 10000,
+  },
+  production: {
+    API_BASE_URL: 'http://202.88.254.125:8024/',
+    API_TIMEOUT: 15000,
+  },
+};
+
+const environment ='production';
+
+export default config[environment];

@@ -4,6 +4,8 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Get started
 
+Node module use in this project v20.19.4
+
 1. Install dependencies
 
    ```bash
