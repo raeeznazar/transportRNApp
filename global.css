@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Note: These styles won't work in React Native as they use CSS syntax.
+   React Native uses StyleSheet objects with camelCase properties.
+   Keep these for reference but use StyleSheet in your JS files. */
+
+.container {
+    background-color: #ffffff;
+    /* Use actual color values, not theme variables */
+}
+
+.logo-login-screen {
+    width: 60%;
+    max-width: 160px;
+    height: 80px;
+    align-self: center;
+    margin-bottom: 20px;
+    /* Use actual pixel values */
+}
+
+.eye-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-12px);
+}
+
+.error-text {
+    color: #ff0000;
+    /* Use actual color values */
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.login-button {
+    background-color: #007bff;
+    /* Use actual color values */
+    color: #ffffff;
+}
