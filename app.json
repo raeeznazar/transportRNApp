@@ -3,7 +3,7 @@
     "name": "neoERA-app",
     "slug": "neoERA-app",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "neoeraapp",
     "userInterfaceStyle": "automatic",
@@ -39,7 +39,9 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-barcode-scanner"
     ],
     "experiments": {
       "typedRoutes": true,

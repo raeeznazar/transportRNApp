@@ -27,9 +27,9 @@ export const API_ENDPOINTS = {
 
   REFRESH_TOKEN: "/Auth/refresh",
 
-  // User endpoints
-  USER_PROFILE: "/user/profile",
-  USER_SETTINGS: "/user/settings",
+  // Inward endpoints
+  USER_INWARDS_DATA: "/Inward/Inward_GetDetails",
+  // USER_SETTINGS: "/user/settings",
   // Other endpoints
   DASHBOARD: "/dashboard",
 };

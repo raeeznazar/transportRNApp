@@ -18,7 +18,7 @@ function Tile({ title, routeName, onPress }) {
   return (
     <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} style={{ margin: 6 }} accessibilityRole="button">
       <Animated.View style={[styles.tile, { backgroundColor: theme.colors.buttonBackground, transform: [{ scale }] }]}>
-        <Text style={[styles.tileText, { color: theme.colors.textPrimary }]}>{title}</Text>
+        <Text style={[styles.tileText, { color: theme.colors.inputBackground }]}>{title}</Text>
       </Animated.View>
     </Pressable>
   );
@@ -39,7 +39,7 @@ export default function TilesScreen() {
 
   const handleTilePress = (tile) => {
     if (tile.route) {
-      navigation.navigate(tile.route);
+      // navigation.navigate(tile.route);
     } else {
       // simple feedback for tiles without a route
       navigation.navigate("Dashboard");
@@ -48,7 +48,7 @@ export default function TilesScreen() {
 
   return (
     <View
-      className="flex-1 p-4 bg-primaryBg"
+      className="flex-1 px-6 bg-primaryBg"
       style={{
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
@@ -56,7 +56,7 @@ export default function TilesScreen() {
         paddingRight: insets.right,
       }}
     >
-      <Text className="p-2" style={styles.title}>
+      <Text className="px-2 mt-4" style={styles.title}>
         Quick Tiles
       </Text>
 
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
   },
   tile: {
     width: (SCREEN_WIDTH - 48) / 3, // 3 tiles per row with margins

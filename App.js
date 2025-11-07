@@ -1,21 +1,32 @@
 import { NavigationContainer } from "@react-navigation/native";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { queryClient } from "./config/queryClient";
 import "./global.css";
 import RootNavigator from "./src/navigation/RootNavigator";
+import { initializeAuthStore } from "./stores/initializeStore";
+
 // Load global.css only when running on the web (react-native-web / Expo web).
 // Native bundlers (iOS/Android) don't support importing .css files, so require
 // it conditionally to avoid build errors.
 
 export default function App() {
+  useEffect(() => {
+    initializeAuthStore();
+  }, []);
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          {/* <RootNavigator initialRoute={isLoggedIn ? "Main" : "Login"} /> */}
-          <RootNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <RootNavigator />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }

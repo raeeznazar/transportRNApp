@@ -6,6 +6,7 @@ import { theme } from "../../constants/theme";
 import { SecureStoreService } from "../../services/keychainService";
 import DashboardHomeScreen from "../screens/DashboardHomeScreen";
 import InwadesScreen from "../screens/InwadesScreen";
+import OutWardScreen from "../screens/OutWardScreen";
 import RevenueScreen from "../screens/RevenueScreen";
 import SalesScreen from "../screens/SalesScreen";
 
@@ -35,6 +36,7 @@ export default function DrawerNavigator() {
     >
       <Drawer.Screen name="Dashboard" component={DashboardHomeScreen} />
       <Drawer.Screen name="Inwades" component={InwadesScreen} />
+      <Drawer.Screen name="Outward" component={OutWardScreen} />
       <Drawer.Screen name="Sales" component={SalesScreen} />
       <Drawer.Screen name="Revenue" component={RevenueScreen} />
     </Drawer.Navigator>
