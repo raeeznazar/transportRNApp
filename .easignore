@@ -1,0 +1,3 @@
+# Ignore android/ios folders if they exist locally
+android/
+ios/
