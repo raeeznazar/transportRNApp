@@ -7,12 +7,15 @@ const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
   const theme = useCurrentTheme();
-  
+
+  const active = theme?.colors?.headerText ?? "#000";
+  const inactive = theme?.colors?.headerText ? `${theme.colors.headerText}80` : "#00000080";
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: theme?.colors?.headerText,
-        tabBarInactiveTintColor: theme?.colors?.headerText + "80",
+        tabBarActiveTintColor: active,
+        tabBarInactiveTintColor: inactive,
         tabBarLabelStyle: { fontSize: 12 },
         headerStyle: { backgroundColor: theme?.colors?.headerBg },
         tabBarStyle: { backgroundColor: theme?.colors?.headerBg },

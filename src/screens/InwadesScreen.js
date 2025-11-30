@@ -27,6 +27,7 @@ export default function InwadesScreen() {
   const [showTo, setShowTo] = useState(false);
   const [showTipIndex, setShowTipIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showDialog, setShowDialog] = useState(false);
   const [location, setLocation] = useState(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -36,25 +37,47 @@ export default function InwadesScreen() {
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
   const { data, isLoading, isError, error, refetch } = useGetInward(branchCode, modifiedFromDate, modifiedToDate);
-
-  // console.log("branchCode, modifiedFromDate, modifiedToDate:", branchCode, modifiedFromDate, modifiedToDate);
-
+  // compute filteredData as a hook so hook order stays stable
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    if (!searchQuery.trim()) return data;
+    // Remove spaces from search query for comparison
+    const normalizedQuery = searchQuery.replace(/\s+/g, "").toLowerCase();
+    return data.filter((item) => {
+      // Remove spaces from truck number for comparison
+      const normalizedTruckNo = item.truckNo?.replace(/\s+/g, "").toLowerCase() || "";
+      return normalizedTruckNo.includes(normalizedQuery);
+    });
+  }, [data, searchQuery]);
+  // Keep hooks call order stable: show branch-loading or query-loading after hooks are defined
+  if (!branchCode) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: insets.bottom }}>
+        <ActivityIndicator size="large" color={theme.colors.alertColor} />
+        <Text className="mt-2 text-inputText">Loading branch data…</Text>
+      </View>
+    );
+  }
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: insets.bottom }}>
+        <ActivityIndicator size="large" color={theme.colors.alertColor} />
+        <Text className="mt-2 text-inputText">Loading data…</Text>
+      </View>
+    );
+  }
   console.log("Inwards Data:", data);
-
   const onChangeFrom = (event, selectedDate) => {
     setShowFrom(false);
     if (selectedDate) setFromDate(selectedDate);
   };
-
   const onChangeTo = (event, selectedDate) => {
     setShowTo(false);
     if (selectedDate) setToDate(selectedDate);
   };
-
   function formatDate(date) {
     return date.toISOString().slice(0, 10);
   }
-
   const handleViewDetails = (thcId) => {
     navigation.navigate("InwardesDetails", {
       inwardId: "25",
@@ -68,37 +91,19 @@ export default function InwadesScreen() {
     console.log("✅ Yes pressed — function called!");
     // Perform your parent logic here
   };
-  const filteredData = useMemo(() => {
-    if (!data) return [];
-    if (!searchQuery.trim()) return data;
-
-    // Remove spaces from search query for comparison
-    const normalizedQuery = searchQuery.replace(/\s+/g, "").toLowerCase();
-
-    return data.filter((item) => {
-      // Remove spaces from truck number for comparison
-      const normalizedTruckNo = item.truckNo?.replace(/\s+/g, "").toLowerCase() || "";
-      return normalizedTruckNo.includes(normalizedQuery);
-    });
-  }, [data, searchQuery]);
-
   const handleScanComplete = (data) => {
     console.log("QR Code Scanned:", data);
     // Process the scanned data here
     setShowScanner(false);
   };
-
   function InwardScanning() {
     navigation.navigate("InwardScanning");
   }
-
   async function handleReport(item) {
     setIsGettingLocation(true);
-
     try {
       // Request location permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
-
       if (status !== "granted") {
         Alert.alert(
           "Location Permission Required",
@@ -125,17 +130,13 @@ export default function InwadesScreen() {
         );
         return;
       }
-
       // Get current location
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
-
       const { latitude, longitude } = currentLocation.coords;
-
       console.log("📍 Location captured:", { latitude, longitude });
       setLocation({ latitude, longitude });
-
       // Show success message
       Alert.alert("Location Captured ✅", `Latitude: ${latitude.toFixed(6)}\nLongitude: ${longitude.toFixed(6)}`, [
         {
@@ -147,7 +148,6 @@ export default function InwadesScreen() {
             //   longitude,
             //   truckData: item,
             // });
-
             // Or send to API
             console.log("Sending report with location:", {
               latitude,
@@ -158,21 +158,17 @@ export default function InwadesScreen() {
       ]);
     } catch (error) {
       console.error("Error getting location:", error);
-
       let errorMessage = "Failed to get your location. Please try again.";
-
       if (error.code === "E_LOCATION_SERVICES_DISABLED") {
         errorMessage = "Location services are disabled. Please enable them in your device settings.";
       } else if (error.code === "E_LOCATION_TIMEOUT") {
         errorMessage = "Location request timed out. Please try again.";
       }
-
       Alert.alert("Location Error", errorMessage, [{ text: "OK" }]);
     } finally {
       setIsGettingLocation(false);
     }
   }
-
   function handleTruckArrival() {
     navigation.navigate("TruckArrivalSheetScreen", {
       inwardId: "25",
@@ -180,7 +176,6 @@ export default function InwadesScreen() {
       // toStation: "KTKRA",
     });
   }
-
   const renderCard = ({ item, index }) => (
     <View className="mx-3 mb-4 rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-white">
       <LinearGradient
@@ -191,101 +186,95 @@ export default function InwadesScreen() {
       >
         <View className="flex-row items-center justify-between px-4 h-full">
           <View className="flex-row items-center">
-            <Text className="text-white text-lg font-extrabold">🚚 {item.truckNo}</Text>
+            <Text className="text-white text-lg font-extrabold">🚚 {item.truckNo || "N/A"}</Text>
           </View>
           <View className="flex-row items-center px-3 py-2 rounded-lg ">
             <Text className="text-inputText font-semibold text-base ml-2">
-              Manifest : <Text className="text-[#e30613]">{item.manifestCount}</Text>
+              Manifest : <Text className="text-[#e30613]">{item?.manifestCount ?? "0"}</Text>
             </Text>
           </View>
-
           <Tooltip
             isVisible={showTipIndex === index}
-            content={<Text>Total Packages: {item.totalPackets}</Text>}
+            content={<Text>Total Packages: {item?.totalPackets ?? "0"}</Text>}
             placement="top"
             onClose={() => setShowTipIndex(null)}
           >
             <TouchableOpacity onPress={() => setShowTipIndex(index)}>
-              <Text className="font-semibold">📦 {item.totalPackets}</Text>
+              <Text className="font-semibold">📦 {item?.totalPackets ?? "0"}</Text>
             </TouchableOpacity>
           </Tooltip>
         </View>
       </LinearGradient>
-
       <View className="p-3">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center bg-inputBackground px-3 py-1.5 rounded-full">
             <Text className="ml-1.5 font-semibold text-inputText">From : </Text>
-            <Text className="ml-1.5 font-semibold text-inputText">{item.fromBranch || "N/A"}</Text>
+            <Text className="ml-1.5 font-semibold text-inputText">{item?.fromBranch ?? "N/A"}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#6B7280" />
           <View className="flex-row items-center bg-inputBackground px-3 py-1.5 rounded-full">
             <Text className="ml-1.5 font-semibold text-inputText">Next : </Text>
-            <Text className="ml-1.5 font-semibold text-inputText">{item.nextBranch || "N/A"}</Text>
+            <Text className="ml-1.5 font-semibold text-inputText">{item?.nextBranch ?? "N/A"}</Text>
           </View>
         </View>
-
         <View className="border-t border-dashed border-gray-200 my-3" />
         <View className="flex-row gap-3">
           <View className="flex-1">
             <View className="flex-row items-center justify-start">
               <Ionicons name="calendar-outline" size={12} color={theme.colors.inputText} />
               <Text className="ml-1.5 font-semibold text-inputText text-sm">THC Date </Text>
-              <Text className="text-textPrimary text-sm">{new Date(item.thcDate).toLocaleDateString()}</Text>
+              <Text className="text-textPrimary text-sm">{item?.thcDate ? new Date(item.thcDate).toLocaleDateString() : "N/A"}</Text>
             </View>
             <View className="flex-row items-center justify-start mt-1">
               <Ionicons name="time-outline" size={12} color={theme.colors.inputText} />
               <Text className="ml-1.5 font-semibold text-inputText text-sm">Exp Arrival </Text>
               <Text className="text-sm text-textPrimary">
-                {item.expectedArrival
+                {item?.expectedArrival
                   ? `${new Date(item.expectedArrival).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}, ${new Date(item.expectedArrival).toLocaleDateString()}`
                   : "N/A"}
               </Text>
             </View>
             <View className="flex-row items-center justify-start mt-1">
               <Text className="font-semibold text-sm ms-5">Godown Weight: </Text>
-              <Text className="text-textPrimary text-sm">{item.godownWeight || "N/A"}</Text>
+              <Text className="text-textPrimary text-sm">{item?.godownWeight ?? "N/A"}</Text>
             </View>
           </View>
-
           <View className="w-[1px] bg-inputBackground mx-3" />
-
           <View className="flex-1">
             <View className="flex-row items-center justify-start">
               <Text className="font-semibold text-sm">THC No : </Text>
-              <Text className="text-textPrimary text-sm">{item.thcNo || "N/A"}</Text>
+              <Text className="text-textPrimary text-sm">{item?.thcNo ?? "N/A"}</Text>
             </View>
             <View className="flex-row items-center justify-start mt-1">
               <Text className="font-semibold text-sm">DDST Amount: </Text>
-              <Text className="text-textPrimary text-sm">{item.ddstAmount || "N/A"}</Text>
+              <Text className="text-textPrimary text-sm">{item?.ddstAmount ?? "N/A"}</Text>
             </View>
             <View className="flex-row items-center justify-start mt-1">
               <Text className="font-semibold text-sm">Total Weight: </Text>
-              <Text className="text-textPrimary text-sm">{item.totalWeight || "N/A"}</Text>
+              <Text className="text-textPrimary text-sm">{item?.totalWeight ?? "N/A"}</Text>
             </View>
           </View>
         </View>
         <View className="mt-2 flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <Ionicons name="person-circle-outline" size={18} color="theme.colors.inputText" />
+            <Ionicons name="person-circle-outline" size={18} color={theme.colors.inputText} />
             <Text className="ml-1.5 text-inputText">
-              <Text className="font-semibold">{item.driverName}</Text>
+              <Text className="font-semibold">{item?.driverName ?? "N/A"}</Text>
             </Text>
           </View>
           <View className="flex-row items-center">
-            <Ionicons name="call-outline" size={18} color="theme.colors.inputText" />
+            <Ionicons name="call-outline" size={18} color={theme.colors.inputText} />
             <Text className="ml-1.5 text-inputText">
               <Text className="font-semibold">{item.driverPhone || "N/A"}</Text>
             </Text>
           </View>
         </View>
-
         <View className="mt-4 flex-row gap-3">
           <Button
             variant="primary"
             size="md"
             onPress={() => {
-              handleReport();
+              handleReport(item);
             }}
             className="flex-1"
           >
@@ -315,8 +304,8 @@ export default function InwadesScreen() {
       </View>
     </View>
   );
-
   return (
+    // <View></View>
     <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">
@@ -352,9 +341,7 @@ export default function InwadesScreen() {
           <Text className="text-textSecondary text-sm">From : </Text>
           <Text className="text-textPrimary font-medium">{fromDate.toLocaleDateString("en-GB")}</Text>
         </TouchableOpacity>
-
         <Ionicons name="arrow-forward" size={16} color={theme.colors.inputText} />
-
         <TouchableOpacity
           onPress={() => setShowTo(true)}
           className="flex-1 flex-row items-center justify-start bg-white border border-gray-200 rounded-lg px-3 py-2.5"
@@ -363,30 +350,22 @@ export default function InwadesScreen() {
           <Text className="text-textPrimary font-medium">{toDate.toLocaleDateString("en-GB")}</Text>
         </TouchableOpacity>
       </View>
-
       {showFrom && <DateTimePicker value={fromDate} mode="date" display="calendar" onChange={onChangeFrom} maximumDate={toDate} />}
       {showTo && (
         <DateTimePicker value={toDate} mode="date" display="calendar" onChange={onChangeTo} minimumDate={fromDate} maximumDate={new Date()} />
       )}
       <View className="flex-1 mt-3">
-        {isLoading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color={theme.colors.alertColor} />
-            <Text className="mt-2 text-inputText">Loading inwards...</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={filteredData}
-            keyExtractor={(item, idx) => item.truckNo + idx}
-            renderItem={renderCard}
-            contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
-            ListEmptyComponent={
-              <View className="flex-1 justify-center items-center mt-10">
-                <Text className="text-inputText text-base">{searchQuery ? "No trucks found matching your search" : "No data found"}</Text>
-              </View>
-            }
-          />
-        )}
+        <FlatList
+          data={filteredData}
+          keyExtractor={(item, idx) => `${item?.truckNo ?? ""}${idx}`}
+          renderItem={renderCard}
+          contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
+          ListEmptyComponent={
+            <View className="flex-1 justify-center items-center mt-10">
+              <Text className="text-inputText text-base">{searchQuery ? "No trucks found matching your search" : "No data found"}</Text>
+            </View>
+          }
+        />
       </View>
       <Modal visible={showScanner} animationType="slide">
         <QRScanner onScanComplete={handleScanComplete} onClose={() => setShowScanner(false)} />

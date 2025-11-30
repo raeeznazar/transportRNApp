@@ -37,7 +37,13 @@ export default function ReactNativeTable({ columns, data }) {
       <View style={[styles.row, index % 2 === 1 && styles.rowAlt]}>
         {rowData.map((cell, cellIndex) => (
           <View key={cellIndex} style={[styles.cell, { width: widthArr[cellIndex] }]}>
-            <Text style={styles.text}>{cell}</Text>
+            {typeof cell === "string" || typeof cell === "number" ? (
+              <Text style={styles.text}>{cell}</Text>
+            ) : (
+              // If a render callback returned a React node (element), render it directly
+              // This avoids wrapping non-text nodes inside <Text> which causes runtime errors
+              cell
+            )}
           </View>
         ))}
       </View>

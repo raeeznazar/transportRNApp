@@ -12,7 +12,7 @@ const config = {
 // Select environment automatically in development, otherwise production
 const environment = __DEV__ ? "development" : "production";
 
-console.log("Environment selected:", environment);
-console.log("Config being exported:", config[environment]);
+// console.log("Environment selected:", environment);
+// console.log("Config being exported:", config[environment]);
 
 export default config[environment];

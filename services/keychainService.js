@@ -5,6 +5,26 @@ const REFRESH_KEY = "app_refresh_token_v1";
 const USER_KEY = "app_user_v1";
 const SESSION_KEY = "app_session_data_v1";
 
+// Small helpers to avoid throwing on JSON parse/stringify issues
+function safeJsonParse(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    console.error("safeJsonParse failed:", err, "value:", value);
+    return null;
+  }
+}
+
+function safeJsonStringify(value) {
+  try {
+    return JSON.stringify(value);
+  } catch (err) {
+    console.error("safeJsonStringify failed:", err, "value:", value);
+    return null;
+  }
+}
+
 export const SecureStoreService = {
   async saveCredentials({ token, refreshToken, user, sessionData = null }) {
     try {
@@ -27,20 +47,33 @@ export const SecureStoreService = {
       }
 
       if (user) {
-        savePromises.push(
-          SecureStore.setItemAsync(USER_KEY, JSON.stringify(user), {
-            keychainAccessible: SecureStore.WHEN_UNLOCKED,
-          })
-        );
+        const userStr = safeJsonStringify(user);
+        if (userStr !== null) {
+          savePromises.push(
+            SecureStore.setItemAsync(USER_KEY, userStr, {
+              keychainAccessible: SecureStore.WHEN_UNLOCKED,
+            })
+          );
+        } else {
+          console.warn("Skipping saving user: cannot stringify user object");
+        }
       }
 
       if (sessionData) {
-        savePromises.push(
-          SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(sessionData), {
-            keychainAccessible: SecureStore.WHEN_UNLOCKED,
-          })
-        );
+        const sessionStr = safeJsonStringify(sessionData);
+        if (sessionStr !== null) {
+          savePromises.push(
+            SecureStore.setItemAsync(SESSION_KEY, sessionStr, {
+              keychainAccessible: SecureStore.WHEN_UNLOCKED,
+            })
+          );
+        } else {
+          console.warn("Skipping saving sessionData: cannot stringify sessionData");
+        }
       }
+
+      // If there is nothing to save, resolve immediately
+      if (savePromises.length === 0) return true;
 
       await Promise.all(savePromises);
       return true;
@@ -71,7 +104,7 @@ export const SecureStoreService = {
   async getUser() {
     try {
       const userJson = await SecureStore.getItemAsync(USER_KEY);
-      return userJson ? JSON.parse(userJson) : null;
+      return safeJsonParse(userJson);
     } catch (error) {
       console.error("Error getting user:", error);
       return null;
@@ -81,7 +114,7 @@ export const SecureStoreService = {
   async getSessionData() {
     try {
       const sessionData = await SecureStore.getItemAsync(SESSION_KEY);
-      return sessionData ? JSON.parse(sessionData) : null;
+      return safeJsonParse(sessionData);
     } catch (error) {
       console.error("Error getting session data:", error);
       return null;
@@ -90,18 +123,23 @@ export const SecureStoreService = {
 
   async getCredentials() {
     try {
-      const [token, refreshToken, userJson, sessionData] = await Promise.all([
+      const [token, refreshToken, userJson, sessionDataJson] = await Promise.all([
         SecureStore.getItemAsync(ACCESS_KEY),
         SecureStore.getItemAsync(REFRESH_KEY),
         SecureStore.getItemAsync(USER_KEY),
         SecureStore.getItemAsync(SESSION_KEY),
       ]);
 
+      // Parse user/session safely so a malformed value doesn't make the whole
+      // function throw — return parsed values independently.
+      const user = safeJsonParse(userJson);
+      const sessionData = safeJsonParse(sessionDataJson);
+
       return {
-        token,
-        refreshToken,
-        user: userJson ? JSON.parse(userJson) : null,
-        sessionData: sessionData ? JSON.parse(sessionData) : null,
+        token: token || null,
+        refreshToken: refreshToken || null,
+        user,
+        sessionData,
       };
     } catch (error) {
       console.error("Error getting credentials:", error);
