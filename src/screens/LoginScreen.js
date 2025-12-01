@@ -4,11 +4,13 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useCurrentTheme } from "../../stores/themeStore";
+import { useDesignSystem } from "../../constants/designSytem";
 import { AuthService } from "../../services/authService";
+import { useCurrentTheme } from "../../stores/themeStore";
 
 export default function LoginScreen({ navigation }) {
   const theme = useCurrentTheme();
+  const { tw } = useDesignSystem();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -50,30 +52,33 @@ export default function LoginScreen({ navigation }) {
       showsVerticalScrollIndicator={false}
     >
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1 items-center justify-center px-6 py-6" style={{ backgroundColor: theme.colors.appBg }}>
-        <View className="w-full max-w-md">
+      <View style={tw("flex-1 items-center justify-center px-6 py-6 bg-app")}>
+        <View style={tw("w-full")}>
           {/* Logo/Header Section */}
-          <View className="flex-col items-center w-full pb-8 pt-6">
+          <View style={tw("flex-col items-center w-full pb-8 pt-6")}>
             <View
-              className="items-center justify-center h-20 w-20 rounded-full mb-4"
-              style={{ backgroundColor: `${theme.colors.buttonPrimaryBg}33` }}
+              style={tw("items-center justify-center rounded-xl mb-4", {
+                width: 80,
+                height: 80,
+                backgroundColor: `${theme.colors.buttonPrimaryBg}33`,
+              })}
             >
               <MaterialIcons name="local-shipping" size={48} color={theme.colors.buttonPrimaryBg} />
             </View>
-            <Text className="text-[32px] font-bold leading-tight text-center tracking-tight" style={{ color: theme.colors.headingText }}>Welcome Back</Text>
-            <Text className="text-base font-normal leading-normal text-center pt-1" style={{ color: theme.colors.bodyText }}>Sign in to continue your deliveries</Text>
+            <Text style={tw("font-bold text-center", { fontSize: 32, color: theme.colors.headingText })}>Welcome Back</Text>
+            <Text style={tw("text-base font-normal text-center pt-1", { color: theme.colors.bodyText })}>Sign in to continue your deliveries</Text>
           </View>
 
           {/* Error Message */}
           {error ? <Text style={[styles.errorText, { color: theme.colors.danger }]}>{error}</Text> : null}
 
           {/* Form Section */}
-          <View className="w-full space-y-4">
+          <View style={tw("w-full")}>
             {/* Email/Username Field */}
-            <View className="flex-col w-full mb-4">
-              <Text className="text-base font-medium leading-normal pb-2" style={{ color: theme.colors.bodyText }}>Username</Text>
-              <View className="relative flex w-full">
-                <View className="absolute left-4 top-1/2 z-10" style={{ transform: [{ translateY: -12 }] }}>
+            <View style={tw("flex-col w-full mb-4")}>
+              <Text style={tw("pb-2", { fontSize: 16, fontWeight: "600", color: theme.colors.bodyText })}>Username</Text>
+              <View style={tw("relative w-full")}>
+                <View style={tw("absolute", { left: 16, top: "50%", zIndex: 10, transform: [{ translateY: -12 }] })}>
                   <MaterialIcons name="mail" size={24} color={theme.colors.inputPlaceholder} />
                 </View>
                 <TextInput
@@ -82,25 +87,25 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={setUsername}
                   autoCapitalize="none"
                   editable={!loading}
-                  className="w-full rounded-xl border h-14 text-base font-normal leading-normal"
-                  style={{
+                  style={tw("w-full rounded-xl border text-base font-normal", {
+                    height: 56,
                     paddingLeft: 48,
                     paddingRight: 16,
                     paddingVertical: 15,
                     borderColor: theme.colors.inputBorder,
                     backgroundColor: theme.colors.inputBg,
                     color: theme.colors.inputText,
-                  }}
+                  })}
                   placeholderTextColor={theme.colors.inputPlaceholder}
                 />
               </View>
             </View>
 
             {/* Password Field */}
-            <View className="flex-col w-full mb-4">
-              <Text className="text-base font-medium leading-normal pb-2" style={{ color: theme.colors.bodyText }}>Password</Text>
-              <View className="relative flex w-full">
-                <View className="absolute left-4 top-1/2 z-10" style={{ transform: [{ translateY: -12 }] }}>
+            <View style={tw("flex-col w-full mb-4")}>
+              <Text style={tw("pb-2", { fontSize: 16, fontWeight: "600", color: theme.colors.bodyText })}>Password</Text>
+              <View style={tw("relative w-full")}>
+                <View style={tw("absolute", { left: 16, top: "50%", zIndex: 10, transform: [{ translateY: -12 }] })}>
                   <MaterialIcons name="lock" size={24} color={theme.colors.inputPlaceholder} />
                 </View>
                 <TextInput
@@ -109,19 +114,19 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   editable={!loading}
-                  className="w-full rounded-xl border h-14 text-base font-normal leading-normal"
-                  style={{
+                  style={tw("w-full rounded-xl border text-base font-normal", {
+                    height: 56,
                     paddingLeft: 48,
                     paddingRight: 48,
                     paddingVertical: 15,
                     borderColor: theme.colors.inputBorder,
                     backgroundColor: theme.colors.inputBg,
                     color: theme.colors.inputText,
-                  }}
+                  })}
                   placeholderTextColor={theme.colors.inputPlaceholder}
                 />
                 <TouchableOpacity
-                  className="absolute right-0 top-0 h-full px-4 items-center justify-center"
+                  style={tw("absolute h-full px-4 items-center justify-center", { right: 0, top: 0 })}
                   onPress={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
@@ -136,17 +141,20 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           {/* Action Section */}
-          <View className="w-full pt-8 pb-4">
+          <View style={tw("w-full pt-8 pb-4")}>
             <TouchableOpacity
-              className="w-full rounded-xl h-14 px-5 items-center justify-center"
-              style={{ backgroundColor: theme.colors.buttonPrimaryBg, opacity: loading ? 0.7 : 1 }}
+              style={tw("w-full rounded-xl px-5 items-center justify-center", {
+                height: 56,
+                backgroundColor: theme.colors.buttonPrimaryBg,
+                opacity: loading ? 0.7 : 1,
+              })}
               onPress={onLogin}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color={theme.colors.buttonPrimaryText} />
               ) : (
-                <Text className="text-base font-bold leading-normal text-white tracking-wide">Login</Text>
+                <Text style={tw("text-base font-bold text-buttonPrimaryText")}>Login</Text>
               )}
             </TouchableOpacity>
           </View>
