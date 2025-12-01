@@ -1,5 +1,6 @@
 module.exports = {
   expo: {
+    owner: "thisismeraeez",
     name: "neoERA-app",
     slug: "neoERA-app",
     version: "1.0.0",
@@ -44,7 +45,7 @@ module.exports = {
     ],
     extra: {
       eas: {
-        projectId: "5db54ad0-7085-40fd-991e-951fb6328045",
+        projectId: "d411443f-d72f-41be-a085-696c3fca0981",
       },
     },
   },

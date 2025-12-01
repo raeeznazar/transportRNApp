@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "thisismeraeez",
     "name": "neoERA-app",
     "slug": "neoERA-app",
     "version": "1.0.0",
@@ -11,6 +12,9 @@
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
+    },
+    "web": {
+      "bundler": "metro"
     },
     "ios": {
       "supportsTablet": true,
@@ -46,10 +50,6 @@
         }
       ]
     ],
-    "extra": {
-      "eas": {
-        "projectId": "6ece02e9-61bc-4c44-aa29-92510d18346a"
-      }
-    }
+    "extra": {}
   }
 }
