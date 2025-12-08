@@ -5,6 +5,7 @@ import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { queryClient } from "./config/queryClient";
+import "./global.css";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { initializeAuthStore } from "./stores/initializeStore";
 import { useThemeStore } from "./stores/themeStore";

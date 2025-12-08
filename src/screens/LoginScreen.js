@@ -4,8 +4,8 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useCurrentTheme } from "../../stores/themeStore";
 import { AuthService } from "../../services/authService";
+import { useCurrentTheme } from "../../stores/themeStore";
 
 export default function LoginScreen({ navigation }) {
   const theme = useCurrentTheme();
@@ -60,8 +60,12 @@ export default function LoginScreen({ navigation }) {
             >
               <MaterialIcons name="local-shipping" size={48} color={theme.colors.buttonPrimaryBg} />
             </View>
-            <Text className="text-[32px] font-bold leading-tight text-center tracking-tight" style={{ color: theme.colors.headingText }}>Welcome Back</Text>
-            <Text className="text-base font-normal leading-normal text-center pt-1" style={{ color: theme.colors.bodyText }}>Sign in to continue your deliveries</Text>
+            <Text className="text-[32px] font-bold leading-tight text-center tracking-tight" style={{ color: theme.colors.headingText }}>
+              Welcome Back
+            </Text>
+            <Text className="text-base font-normal leading-normal text-center pt-1" style={{ color: theme.colors.bodyText }}>
+              Sign in to continue your deliveries
+            </Text>
           </View>
 
           {/* Error Message */}
@@ -71,7 +75,9 @@ export default function LoginScreen({ navigation }) {
           <View className="w-full space-y-4">
             {/* Email/Username Field */}
             <View className="flex-col w-full mb-4">
-              <Text className="text-base font-medium leading-normal pb-2" style={{ color: theme.colors.bodyText }}>Username</Text>
+              <Text className="text-base font-medium leading-normal pb-2" style={{ color: theme.colors.bodyText }}>
+                Username
+              </Text>
               <View className="relative flex w-full">
                 <View className="absolute left-4 top-1/2 z-10" style={{ transform: [{ translateY: -12 }] }}>
                   <MaterialIcons name="mail" size={24} color={theme.colors.inputPlaceholder} />
@@ -82,7 +88,7 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={setUsername}
                   autoCapitalize="none"
                   editable={!loading}
-                  className="w-full rounded-xl border h-14 text-base font-normal leading-normal"
+                  className="w-full rounded-xl border h-18 text-base font-normal leading-normal"
                   style={{
                     paddingLeft: 48,
                     paddingRight: 16,
@@ -98,7 +104,9 @@ export default function LoginScreen({ navigation }) {
 
             {/* Password Field */}
             <View className="flex-col w-full mb-4">
-              <Text className="text-base font-medium leading-normal pb-2" style={{ color: theme.colors.bodyText }}>Password</Text>
+              <Text className="text-base font-medium leading-normal pb-2" style={{ color: theme.colors.bodyText }}>
+                Password
+              </Text>
               <View className="relative flex w-full">
                 <View className="absolute left-4 top-1/2 z-10" style={{ transform: [{ translateY: -12 }] }}>
                   <MaterialIcons name="lock" size={24} color={theme.colors.inputPlaceholder} />
@@ -109,7 +117,7 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   editable={!loading}
-                  className="w-full rounded-xl border h-14 text-base font-normal leading-normal"
+                  className="w-full rounded-xl border h-18 text-base font-normal leading-normal"
                   style={{
                     paddingLeft: 48,
                     paddingRight: 48,
