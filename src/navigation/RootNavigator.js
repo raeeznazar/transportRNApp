@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { ProtectedScreen } from "../../components/ProtectedScreen";
 import { useCurrentTheme } from "../../stores/themeStore";
 import InwardesDetailsScreen from "../screens/InwardesDetails";
 import InwardScanning from "../screens/InwardScanning";
@@ -8,7 +9,45 @@ import SetupScreen from "../screens/SetupScreen";
 import SplashScreen from "../screens/Spash";
 import TruckArrivalSheetScreen from "../screens/TruckArivalSheetScreen";
 import TabNavigator from "./TabNavigator";
+
 const Stack = createNativeStackNavigator();
+
+// Wrap screens with auth requirements
+const ProtectedSetupScreen = (props) => (
+  <ProtectedScreen requireUser={true}>
+    <SetupScreen {...props} />
+  </ProtectedScreen>
+);
+
+const ProtectedTabNavigator = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <TabNavigator {...props} />
+  </ProtectedScreen>
+);
+
+const ProtectedInwardesDetailsScreen = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <InwardesDetailsScreen {...props} />
+  </ProtectedScreen>
+);
+
+const ProtectedManifestDetailScreen = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <ManifestDetailScreen {...props} />
+  </ProtectedScreen>
+);
+
+const ProtectedInwardScanning = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <InwardScanning {...props} />
+  </ProtectedScreen>
+);
+
+const ProtectedTruckArrivalSheetScreen = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <TruckArrivalSheetScreen {...props} />
+  </ProtectedScreen>
+);
 
 export default function RootNavigator() {
   const theme = useCurrentTheme();
@@ -17,12 +56,16 @@ export default function RootNavigator() {
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Setup" component={SetupScreen} />
-      {/* Drawer contains Dashboard Tabs + other pages */}
-      <Stack.Screen name="Main" component={TabNavigator} />
+
+      {/* Setup requires user only */}
+      <Stack.Screen name="Setup" component={ProtectedSetupScreen} />
+
+      {/* Main and all detail screens require user + session */}
+      <Stack.Screen name="Main" component={ProtectedTabNavigator} />
+
       <Stack.Screen
         name="InwardesDetails"
-        component={InwardesDetailsScreen}
+        component={ProtectedInwardesDetailsScreen}
         options={{
           headerShown: true,
           title: "Inward Details",
@@ -35,7 +78,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen
         name="ManifestDetails"
-        component={ManifestDetailScreen}
+        component={ProtectedManifestDetailScreen}
         options={{
           headerShown: true,
           title: "Manifest Details",
@@ -48,7 +91,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen
         name="InwardScanning"
-        component={InwardScanning}
+        component={ProtectedInwardScanning}
         options={{
           headerShown: true,
           title: "Inward Scanning",
@@ -61,7 +104,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen
         name="TruckArrivalSheetScreen"
-        component={TruckArrivalSheetScreen}
+        component={ProtectedTruckArrivalSheetScreen}
         options={{
           headerShown: true,
           title: "Truck Arrival Sheet",

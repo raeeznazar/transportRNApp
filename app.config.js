@@ -60,6 +60,9 @@ module.exports = {
           locationWhenInUsePermission: "Allow $(PRODUCT_NAME) to use your location for delivery tracking",
         },
       ],
+      "expo-font",
+      "expo-secure-store",
+      "expo-web-browser",
     ],
   },
 };
