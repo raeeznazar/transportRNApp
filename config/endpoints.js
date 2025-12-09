@@ -31,6 +31,9 @@ export const API_ENDPOINTS = {
   USER_INWARDS_DATA: "/Inward/Inward_GetDetails",
   USER_MANIFEST_ID_LIST: "/Inward/FetchManifestList",
   MANIFEST_TABLE_DATA: "/Inward/FetchManifestDetails",
+  INWARDS_REPORT: "/Inward/TruckReport",
+  TRUCK_ARRIVAL_SHEET: "/Inward/GetVehiclePayOrderDetails",
+  TRUCK_ARRIVAL_SHEET_TABLE: "/Inward/GetTruckArrivalDetails",
 
   // Other endpoints
   DASHBOARD: "/dashboard",

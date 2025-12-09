@@ -9,6 +9,8 @@ import "./global.css";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { initializeAuthStore } from "./stores/initializeStore";
 import { useThemeStore } from "./stores/themeStore";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "./config/toastConfig";
 
 export default function App() {
   const { loadTheme } = useThemeStore();
@@ -26,6 +28,7 @@ export default function App() {
           </NavigationContainer>
         </SafeAreaProvider>
       </GestureHandlerRootView>
+      <Toast config={toastConfig} />
     </QueryClientProvider>
   );
 }

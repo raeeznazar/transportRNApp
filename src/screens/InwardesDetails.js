@@ -14,9 +14,7 @@ export default function InwardesDetailsScreen({ route }) {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
   const { inwardId, thcId, toStation } = route.params;
-  console.log("InwardesDetailsScreen params:", { inwardId, thcId, toStation });
   const { data, isLoading, isError, error, refetch } = useGetManifestIdList(thcId, toStation);
-  console.log("Manifest ID List Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
   const navigation = useNavigation();
 
   const handleCardPress = (manID) => {

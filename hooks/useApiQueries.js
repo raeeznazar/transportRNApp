@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "../config/endpoints";
 import apiClient from "../services/apiService";
 // Query Keys - centralized for cache management
@@ -7,6 +7,9 @@ export const queryKeys = {
   users: ["users"],
   manifests: ["manifests"],
   manifestsTable: ["manifestsTable"],
+  inwardsReport: ["inwardsReport"],
+  truckArrivalSheetHeader: ["truckArrivalSheetHeader"],
+  truckArrivalSheetTable: ["truckArrivalSheetTable"],
   // Add more query keys based on your screensApiService
 };
 
@@ -15,7 +18,6 @@ export const useGetInward = (branchCode, fromDate, toDate) => {
   return useQuery({
     queryKey: [...queryKeys.inward, branchCode, fromDate, toDate],
     queryFn: async () => {
-      // console.log("getInwardsData called with:", { branchCode, fromDate, toDate });
       try {
         const response = await apiClient.get(API_ENDPOINTS.USER_INWARDS_DATA, {
           params: {
@@ -24,7 +26,6 @@ export const useGetInward = (branchCode, fromDate, toDate) => {
             toDate,
           },
         });
-        // console.log("getInwardsData RESPONSE Data:", response);
         return response.data.dataValue;
       } catch (error) {
         console.error("getInwardsData ERROR Details:", {
@@ -48,11 +49,9 @@ export const useGetInward = (branchCode, fromDate, toDate) => {
 
 // Fetch user manifest ID list data
 export const useGetManifestIdList = (thcId, toStation) => {
-  // console.log("useGetManifestIdList called with:", { thcId, toStation });
   return useQuery({
     queryKey: [...queryKeys.manifests, thcId, toStation],
     queryFn: async () => {
-      // console.log("getManifestIdList called with:", { thcId, toStation });
       try {
         const response = await apiClient.get(API_ENDPOINTS.USER_MANIFEST_ID_LIST, {
           params: {
@@ -60,8 +59,6 @@ export const useGetManifestIdList = (thcId, toStation) => {
             toStation,
           },
         });
-
-        // console.log("getManifestIdList RESPONSE Data:", response.data);
         return response.data.dataValue;
       } catch (error) {
         console.error("getManifestIdList ERROR Details:", {
@@ -85,11 +82,9 @@ export const useGetManifestIdList = (thcId, toStation) => {
 
 // Fetch user manifest table data
 export const useGetManifestTable = (manID) => {
-  // console.log("useGetManifestTable called with:", { manID, type: typeof manID, isEnabled: !!manID });
   return useQuery({
     queryKey: [...queryKeys.manifestsTable, manID],
     queryFn: async () => {
-      // console.log("getManifestTable called with:", { manID });
       try {
         const response = await apiClient.get(API_ENDPOINTS.MANIFEST_TABLE_DATA, {
           params: {
@@ -115,6 +110,105 @@ export const useGetManifestTable = (manID) => {
       }
     },
     enabled: !!manID,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
+  });
+};
+
+// Submit inwards report (POST request) - Use Mutation
+export const useSubmitInwardsReport = () => {
+  return useMutation({
+    mutationFn: async (payload) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.INWARDS_REPORT, payload);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          // API returned a failure status
+          throw new Error(response.data?.status?.message || "Failed to submit inwards report");
+        }
+      } catch (error) {
+        console.error("submitInwardsReport ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Handle API error response
+        if (error.response?.data?.status?.message) {
+          throw new Error(error.response.data.status.message);
+        }
+
+        throw new Error(error.message || "Failed to submit inwards report");
+      }
+    },
+  });
+};
+
+// Fetch user truck arrival sheet header data
+export const useGetTruckArrivalSheetHeader = (thcId) => {
+  return useQuery({
+    queryKey: [...queryKeys.truckArrivalSheetHeader, thcId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARRIVAL_SHEET, {
+          thcId: thcId,
+        });
+        return response.data.dataValue[0];
+      } catch (error) {
+        console.error("getTruckArrivalSheetHeader ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.message || "Failed to get Truck Arrival Sheet Header");
+      }
+    },
+    enabled: !!thcId,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
+  });
+};
+
+// Fetch user truck arrival sheet table data
+export const useGetTruckArrivalSheetTable = (thcId) => {
+  return useQuery({
+    queryKey: [...queryKeys.truckArrivalSheetTable, thcId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARRIVAL_SHEET_TABLE, {
+          thcId: thcId,
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTruckArrivalSheetTable ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.message || "Failed to get Truck Arrival Sheet Table");
+      }
+    },
+    enabled: !!thcId,
     staleTime: 3 * 60 * 1000, // 3 minutes
     retry: 1,
   });

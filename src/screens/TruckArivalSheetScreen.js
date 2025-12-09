@@ -1,22 +1,33 @@
 import { Ionicons } from "@expo/vector-icons";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useRoute } from "@react-navigation/native";
+import { FlatList, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetTruckArrivalSheetHeader, useGetTruckArrivalSheetTable } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
 
 export default function TruckArrivalSheetScreen() {
   const insets = useSafeAreaInsets();
   const theme = useCurrentTheme();
+  const route = useRoute();
+  const { thcId } = route.params; // Get thcId from navigation params
 
-  // Sample data - replace with your actual data
-  const tableData = [
-    { id: 1, docketNumber: "DKT001", delivered: true, toStation: "Station A", packet: 25, weight: 150 },
-    { id: 2, docketNumber: "DKT002", delivered: false, toStation: "Station B", packet: 30, weight: 200 },
-    { id: 3, docketNumber: "DKT003", delivered: true, toStation: "Station C", packet: 15, weight: 120 },
-    { id: 4, docketNumber: "DKT004", delivered: true, toStation: "Station D", packet: 40, weight: 280 },
-    { id: 5, docketNumber: "DKT005", delivered: false, toStation: "Station E", packet: 20, weight: 180 },
-    { id: 6, docketNumber: "DKT006", delivered: true, toStation: "Station F", packet: 35, weight: 220 },
-    { id: 7, docketNumber: "DKT007", delivered: false, toStation: "Station G", packet: 18, weight: 140 },
-  ];
+  // Fetch truck arrival sheet data
+  const { data: arrivalSheetHeaderData, isLoading, isError, error, refetch } = useGetTruckArrivalSheetHeader(thcId);
+  const { data: arrivalSheetTableData } = useGetTruckArrivalSheetTable(thcId);
+
+  const transformData = (data) => {
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+    return data.map((item, index) => ({
+      id: index + 1,
+      docketNumber: item.docketNo,
+      delivered: item.doorDelivery,
+      toStation: item.toStationID,
+      packet: item.packet,
+      weight: item.weight,
+    }));
+  };
 
   const renderTableRow = ({ item, index }) => (
     <View
@@ -47,6 +58,8 @@ export default function TruckArrivalSheetScreen() {
     </View>
   );
 
+  const tableData = transformData(arrivalSheetTableData);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header Section */}
@@ -54,55 +67,80 @@ export default function TruckArrivalSheetScreen() {
         <View className="flex-row flex-wrap gap-2">
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
             <Text className="text-white/70 text-xs mr-1">TAS No:</Text>
-            <Text className="text-white text-xs font-semibold">TAS-2024-001</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.tasNo}</Text>
           </View>
 
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
             <Text className="text-white/70 text-xs mr-1">TAS Date:</Text>
-            <Text className="text-white text-xs font-semibold">27/11/2025</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.tasDate}</Text>
           </View>
 
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
-            <Text className="text-white/70 text-xs mr-1">THC:</Text>
-            <Text className="text-white text-xs font-semibold">THC-456</Text>
+            <Text className="text-white/70 text-xs mr-1">Total Docket Packets:</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.totalDocketPackets}</Text>
+          </View>
+          <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
+            <Text className="text-white/70 text-xs mr-1">Total Packets:</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.totalPacket}</Text>
+          </View>
+          <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
+            <Text className="text-white/70 text-xs mr-1">Total Weight:</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.totalWeight}</Text>
           </View>
 
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
             <Text className="text-white/70 text-xs mr-1">Truck:</Text>
-            <Text className="text-white text-xs font-semibold">TRK-789</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.truckNo}</Text>
           </View>
 
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
             <Text className="text-white/70 text-xs mr-1">Driver:</Text>
-            <Text className="text-white text-xs font-semibold">John Doe</Text>
+            <Text className="text-white text-xs font-semibold">{arrivalSheetHeaderData?.driversName}</Text>
           </View>
         </View>
       </View>
 
       {/* Table Section */}
-      <View style={[styles.tableContainer, { backgroundColor: theme.colors.card }]} className="flex-1 mx-3 rounded-lg overflow-hidden">
-        {/* Table Header */}
-        <View style={[styles.tableHeader, { backgroundColor: theme.colors.primary }]} className="flex-row">
-          <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
-            Docket No
-          </Text>
-          <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
-            Door
-          </Text>
-          <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
-            To Station
-          </Text>
-          <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
-            Packet
-          </Text>
-          <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
-            Weight
-          </Text>
-        </View>
+      <View style={styles.tableWrapper}>
+        <View style={[styles.tableContainer, { backgroundColor: theme.colors.card }]} className="mx-3 rounded-lg overflow-hidden">
+          {/* Table Header */}
+          <View style={[styles.tableHeader, { backgroundColor: theme.colors.primary }]} className="flex-row">
+            <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
+              Docket No
+            </Text>
+            <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
+              Door
+            </Text>
+            <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
+              To Station
+            </Text>
+            <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
+              Packet
+            </Text>
+            <Text style={styles.tableHeaderText} className="flex-1 px-2 py-2.5 text-center text-white font-semibold text-xs">
+              Weight
+            </Text>
+          </View>
 
-        {/* Table Body */}
-        <FlatList data={tableData} renderItem={renderTableRow} keyExtractor={(item) => item.id.toString()} showsVerticalScrollIndicator={false} />
+          {/* Table Body */}
+          <FlatList
+            data={tableData}
+            renderItem={renderTableRow}
+            keyExtractor={(item) => item.id.toString()}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
       </View>
+
+      {/* Button Section */}
+      {/* <View style={[styles.buttonContainer, { paddingBottom: insets.bottom }]}>
+        <TouchableOpacity 
+          style={[styles.button, { backgroundColor: theme.colors.primary }]}
+          onPress={() => console.log('Button pressed')}
+        >
+          <Text style={styles.buttonText}>Submit</Text>
+        </TouchableOpacity>
+      </View> */}
     </View>
   );
 }
@@ -118,13 +156,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  tableWrapper: {
+    flex: 1,
+    marginBottom: 80, // Space for button
+  },
   tableContainer: {
-    // Remove or comment out these shadow properties
-    // shadowColor: "#000",
-    // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.05,
-    // shadowRadius: 2,
-    // elevation: 1,
+    flex: 1,
   },
   tableHeader: {},
   tableHeaderText: {
@@ -136,5 +173,31 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     fontSize: 12,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  button: {
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

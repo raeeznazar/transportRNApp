@@ -4,13 +4,13 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Tooltip from "react-native-walkthrough-tooltip";
-
-import { useGetInward } from "../../hooks/useApiQueries";
+import { useGetInward, useSubmitInwardsReport } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
+import { showErrorToast, showSuccessToast } from "../../utility functions/toastHelper";
 import { Button } from "../components/Button";
 import QRScanner from "../components/QRScanner";
 
@@ -29,14 +29,26 @@ export default function InwadesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [location, setLocation] = useState(null);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [loadingItemId, setLoadingItemId] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
+
+  // New states for remarks modal
+  const [showRemarksModal, setShowRemarksModal] = useState(false);
+  const [remarks, setRemarks] = useState("");
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentReportItem, setCurrentReportItem] = useState(null);
+
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
   const branchName = sessionData?.branchName;
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
   const { data, isLoading, isError, error, refetch } = useGetInward(branchCode, modifiedFromDate, modifiedToDate);
+  console.log(data);
+  // Add the mutation hook
+  const submitReportMutation = useSubmitInwardsReport();
+
   // compute filteredData as a hook so hook order stays stable
   const filteredData = useMemo(() => {
     if (!data) return [];
@@ -66,7 +78,6 @@ export default function InwadesScreen() {
       </View>
     );
   }
-  console.log("Inwards Data:", data);
   const onChangeFrom = (event, selectedDate) => {
     setShowFrom(false);
     if (selectedDate) setFromDate(selectedDate);
@@ -83,36 +94,88 @@ export default function InwadesScreen() {
       inwardId: "25",
       thcId: thcId,
       toStation: branchCode,
-      // toStation: "KTKRA",
     });
   };
   const handleYes = () => {
     setShowDialog(false);
-    console.log("✅ Yes pressed — function called!");
     // Perform your parent logic here
   };
   const handleScanComplete = (data) => {
-    console.log("QR Code Scanned:", data);
     // Process the scanned data here
     setShowScanner(false);
   };
   function InwardScanning() {
     navigation.navigate("InwardScanning");
   }
+
+  // Handle cancel in remarks modal
+  const handleCancelRemarks = () => {
+    setShowRemarksModal(false);
+    setRemarks("");
+    setLocation(null);
+    setCurrentReportItem(null);
+    setLoadingItemId(null);
+    setIsCapturingLocation(false);
+  };
+
+  // Handle submit report
+  const handleSubmitReport = async () => {
+    if (!currentReportItem || !location) return;
+    const payload = {
+      tR_THCID: currentReportItem.thcId,
+      tR_Tuck: currentReportItem.truckNo,
+      tR_ReportFrom: "branch",
+      tR_ReportUserType: "user",
+      tR_Remarks: remarks.trim(),
+      tR_BranchCode: branchCode,
+      tR_ReportedByID: sessionData?.userId,
+      entryDate: new Date().toISOString(),
+      tR_Date: new Date().toISOString(),
+      geoLocation: null,
+      latitude: location?.latitude,
+      longitude: location?.longitude,
+    };
+    submitReportMutation.mutate(payload, {
+      onSuccess: (data) => {
+        // Close modal and reset
+        setShowRemarksModal(false);
+        setRemarks("");
+        setLocation(null);
+        setCurrentReportItem(null);
+        setLoadingItemId(null);
+
+        // Use the API's success message
+        const successMessage = data?.status?.message || "Report submitted successfully!";
+        showSuccessToast(successMessage, "Success");
+
+        // Refetch data to update the list
+        refetch();
+      },
+      onError: (error) => {
+        showErrorToast(error.message || "Failed to submit report. Please try again.", "Error");
+      },
+    });
+  };
+
   async function handleReport(item) {
-    setIsGettingLocation(true);
+    setLoadingItemId(item.thcId);
+    setCurrentReportItem(item);
+    setIsCapturingLocation(true);
+    setShowRemarksModal(true);
+
     try {
       // Request location permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
+        setShowRemarksModal(false);
+        setLoadingItemId(null);
         Alert.alert(
           "Location Permission Required",
-          "Please enable location services to submit a report. This helps verify your location.",
+          "Please enable location services to submit a report.",
           [
             {
               text: "Cancel",
               style: "cancel",
-              onPress: () => setIsGettingLocation(false),
             },
             {
               text: "Open Settings",
@@ -122,7 +185,6 @@ export default function InwadesScreen() {
                 } else {
                   Linking.openSettings();
                 }
-                setIsGettingLocation(false);
               },
             },
           ],
@@ -130,50 +192,33 @@ export default function InwadesScreen() {
         );
         return;
       }
+
       // Get current location
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
+
       const { latitude, longitude } = currentLocation.coords;
-      console.log("📍 Location captured:", { latitude, longitude });
       setLocation({ latitude, longitude });
-      // Show success message
-      Alert.alert("Location Captured ✅", `Latitude: ${latitude.toFixed(6)}\nLongitude: ${longitude.toFixed(6)}`, [
-        {
-          text: "OK",
-          onPress: () => {
-            // Navigate to report screen or send data
-            // navigation.navigate('ReportScreen', {
-            //   latitude,
-            //   longitude,
-            //   truckData: item,
-            // });
-            // Or send to API
-            console.log("Sending report with location:", {
-              latitude,
-              longitude,
-            });
-          },
-        },
-      ]);
+      setIsCapturingLocation(false);
     } catch (error) {
-      console.error("Error getting location:", error);
+      setIsCapturingLocation(false);
+      setShowRemarksModal(false);
+      setLoadingItemId(null);
+
       let errorMessage = "Failed to get your location. Please try again.";
       if (error.code === "E_LOCATION_SERVICES_DISABLED") {
         errorMessage = "Location services are disabled. Please enable them in your device settings.";
       } else if (error.code === "E_LOCATION_TIMEOUT") {
         errorMessage = "Location request timed out. Please try again.";
       }
+
       Alert.alert("Location Error", errorMessage, [{ text: "OK" }]);
-    } finally {
-      setIsGettingLocation(false);
     }
   }
-  function handleTruckArrival() {
+  function handleTruckArrival(thcId) {
     navigation.navigate("TruckArrivalSheetScreen", {
-      inwardId: "25",
-      toStation: branchCode,
-      // toStation: "KTKRA",
+      thcId: thcId,
     });
   }
   const renderCard = ({ item, index }) => (
@@ -276,16 +321,25 @@ export default function InwadesScreen() {
             onPress={() => {
               handleReport(item);
             }}
+            disabled={!!loadingItemId}
             className="flex-1"
           >
-            Report
+            {loadingItemId === item.thcId ? (
+              <View className="flex-row items-center justify-center">
+                <ActivityIndicator size="small" color="#fff" />
+                <Text className="ml-2 text-white font-semibold">Getting location...</Text>
+              </View>
+            ) : (
+              "Report"
+            )}
           </Button>
           <Button
             variant="primary"
             size="md"
             onPress={() => {
-              handleTruckArrival();
+              handleTruckArrival(item?.thcId);
             }}
+            disabled={!!loadingItemId}
             className="flex-1"
           >
             Arrival
@@ -296,6 +350,7 @@ export default function InwadesScreen() {
             onPress={() => {
               handleViewDetails(item.thcId);
             }}
+            disabled={!!loadingItemId}
             className="flex-1"
           >
             Manifest
@@ -305,7 +360,6 @@ export default function InwadesScreen() {
     </View>
   );
   return (
-    // <View></View>
     <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">
@@ -369,6 +423,86 @@ export default function InwadesScreen() {
       </View>
       <Modal visible={showScanner} animationType="slide">
         <QRScanner onScanComplete={handleScanComplete} onClose={() => setShowScanner(false)} />
+      </Modal>
+
+      {/* Remarks Modal */}
+      <Modal transparent visible={showRemarksModal} animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            {/* Header */}
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-xl font-bold text-textPrimary">Submit Report</Text>
+              {isCapturingLocation && (
+                <View className="flex-row items-center">
+                  <ActivityIndicator size="small" color={theme.colors.alertColor} />
+                  <Text className="ml-2 text-sm text-textSecondary">Capturing location...</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Truck Info */}
+            {currentReportItem && (
+              <View className="bg-gray-50 rounded-lg p-3 mb-4">
+                <Text className="text-sm text-textSecondary">Truck Number</Text>
+                <Text className="text-base font-semibold text-textPrimary mt-1">{currentReportItem.truckNo}</Text>
+              </View>
+            )}
+
+            {/* Remarks Input */}
+            <View className="mb-4">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-sm font-semibold text-textPrimary">Remarks (Optional)</Text>
+                <Text className="text-xs text-textSecondary">{remarks.length}/50</Text>
+              </View>
+              <TextInput
+                className="border border-gray-300 rounded-lg px-4 py-3 text-base text-textPrimary"
+                placeholder="Enter any remarks..."
+                value={remarks}
+                onChangeText={(text) => {
+                  if (text.length <= 50) {
+                    setRemarks(text);
+                  }
+                }}
+                maxLength={50}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                editable={!isCapturingLocation && !isSubmitting}
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+
+            {/* Buttons */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCancelRemarks}
+                disabled={isSubmitting}
+                className="flex-1 bg-gray-100 rounded-lg py-3 items-center active:opacity-70"
+                style={{ opacity: isSubmitting ? 0.5 : 1 }}
+              >
+                <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSubmitReport}
+                disabled={isCapturingLocation || !location || isSubmitting}
+                className="flex-1 rounded-lg py-3 items-center active:opacity-70"
+                style={{
+                  backgroundColor: isCapturingLocation || !location || isSubmitting ? "#D1D5DB" : theme.colors.buttonPrimaryBg,
+                  opacity: isCapturingLocation || !location || isSubmitting ? 0.6 : 1,
+                }}
+              >
+                {isSubmitting ? (
+                  <View className="flex-row items-center">
+                    <ActivityIndicator size="small" color="#fff" />
+                    <Text className="ml-2 text-white font-semibold text-base">Submitting...</Text>
+                  </View>
+                ) : (
+                  <Text className="text-white font-semibold text-base">Submit Report</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
