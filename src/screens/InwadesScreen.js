@@ -321,7 +321,7 @@ export default function InwadesScreen() {
             onPress={() => {
               handleReport(item);
             }}
-            disabled={!!loadingItemId}
+            disabled={!!loadingItemId || item.isReportedByBranch}
             className="flex-1"
           >
             {loadingItemId === item.thcId ? (
