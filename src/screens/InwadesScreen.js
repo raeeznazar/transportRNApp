@@ -10,7 +10,7 @@ import Tooltip from "react-native-walkthrough-tooltip";
 import { useGetInward, useSubmitInwardsReport } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
-import { showErrorToast, showSuccessToast } from "../../utility functions/toastHelper";
+import { showErrorToast, showSuccessToast } from "../../utilityfunctions/toastHelper";
 import { Button } from "../components/Button";
 import QRScanner from "../components/QRScanner";
 
@@ -45,7 +45,6 @@ export default function InwadesScreen() {
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
   const { data, isLoading, isError, error, refetch } = useGetInward(branchCode, modifiedFromDate, modifiedToDate);
-  console.log(data);
   // Add the mutation hook
   const submitReportMutation = useSubmitInwardsReport();
 
@@ -216,9 +215,10 @@ export default function InwadesScreen() {
       Alert.alert("Location Error", errorMessage, [{ text: "OK" }]);
     }
   }
-  function handleTruckArrival(thcId) {
+  function handleTruckArrival(thcId, thcNo) {
     navigation.navigate("TruckArrivalSheetScreen", {
       thcId: thcId,
+      thcNo: thcNo,
     });
   }
   const renderCard = ({ item, index }) => (
@@ -337,7 +337,7 @@ export default function InwadesScreen() {
             variant="primary"
             size="md"
             onPress={() => {
-              handleTruckArrival(item?.thcId);
+              handleTruckArrival(item?.thcId, item?.thcNo);
             }}
             disabled={!!loadingItemId}
             className="flex-1"

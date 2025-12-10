@@ -91,8 +91,6 @@ export const useGetManifestTable = (manID) => {
             manId: manID,
           },
         });
-
-        // console.log("getManifestTable RESPONSE Data:", response.data);
         return response.data.dataValue;
       } catch (error) {
         console.error("getManifestTable ERROR Details:", {
@@ -211,5 +209,41 @@ export const useGetTruckArrivalSheetTable = (thcId) => {
     enabled: !!thcId,
     staleTime: 3 * 60 * 1000, // 3 minutes
     retry: 1,
+  });
+};
+
+// Submit truck arrival sheet (POST request) - Use Mutation
+export const useSubmitTruckArrivalSheet = () => {
+  return useMutation({
+    mutationFn: async (payload) => {
+      console.log("submitTruckArrivalSheet PAYLOAD Data:", payload);
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARRIVAL_SUBMIT, payload);
+
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) { 
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit truck arrival sheet");
+        }
+      } catch (error) {
+        console.error("submitTruckArrivalSheet ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        // Handle API error response
+        if (error.response?.data?.status?.message) {
+          throw new Error(error.response.data.status.message);
+        }
+        throw new Error(error.message || "Failed to submit truck arrival sheet");
+      }
+    },
   });
 };
