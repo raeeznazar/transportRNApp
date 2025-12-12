@@ -1,0 +1,193 @@
+import { Ionicons } from "@expo/vector-icons";
+import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCurrentTheme } from "../../stores/themeStore";
+
+export default function CustomDrawerContent(props) {
+  const { navigation, state } = props;
+  const theme = useCurrentTheme();
+
+  // Track which menus are expanded
+  const [expandedMenus, setExpandedMenus] = useState({});
+
+  const toggleMenu = (menuName) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuName]: !prev[menuName],
+    }));
+  };
+
+  // Define your drawer structure
+  const drawerItems = [
+    {
+      name: "Dashboard",
+      label: "Dashboard",
+      icon: "grid-outline",
+      route: "Dashboard",
+    },
+    {
+      name: "Inwards",
+      label: "Inwards",
+      icon: "enter-outline",
+      submenus: [
+        {
+          name: "InwardsList",
+          label: "Inwards List",
+          route: "Inwards",
+          params: { screen: "InwardsList" },
+        },
+        {
+          name: "InwardScanning",
+          label: "Inward Scanning",
+          route: "Inwards",
+          params: { screen: "InwardScanningScreen" },
+        },
+      ],
+    },
+    {
+      name: "Outward",
+      label: "Outward",
+      icon: "exit-outline",
+      route: "Outward",
+    },
+    {
+      name: "Sales",
+      label: "Sales",
+      icon: "cash-outline",
+      route: "Sales",
+    },
+    {
+      name: "Revenue",
+      label: "Revenue",
+      icon: "trending-up-outline",
+      route: "Revenue",
+    },
+    {
+      name: "Settings",
+      label: "Settings",
+      icon: "settings-outline",
+      route: "Settings",
+    },
+  ];
+
+  const isActiveRoute = (routeName) => {
+    const currentRoute = state.routes[state.index];
+    return currentRoute.name === routeName;
+  };
+
+  const isActiveSubmenu = (parentRoute, submenuName) => {
+    const currentRoute = state.routes[state.index];
+    if (currentRoute.name === parentRoute && currentRoute.state) {
+      const nestedRoute = currentRoute.state.routes[currentRoute.state.index];
+      return nestedRoute.name === submenuName;
+    }
+    return false;
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    menuHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingLeft: 14,
+      paddingRight: 8,
+    },
+    menuHeaderActive: {
+      backgroundColor: theme.colors.primary + "20",
+    },
+    menuHeaderText: {
+      marginLeft: 32,
+      fontSize: 15,
+      fontWeight: "600",
+      color: theme.colors.headingText,
+      flex: 1,
+    },
+    chevron: {
+      marginRight: 8,
+    },
+    submenuContainer: {
+      paddingVertical: 0,
+      paddingBottom: 4,
+    },
+    submenuItem: {
+      marginLeft: 16,
+      paddingVertical: 2,
+      marginVertical: -2,
+    },
+    regularItem: {
+      marginVertical: 0,
+    },
+  });
+
+  return (
+    <DrawerContentScrollView {...props} style={styles.container}>
+      {drawerItems.map((item) => {
+        if (item.submenus) {
+          // Menu with submenus (expandable)
+          const isExpanded = expandedMenus[item.name];
+          const isActive = isActiveRoute(item.route);
+
+          return (
+            <View key={item.name}>
+              <TouchableOpacity style={[styles.menuHeader, isActive && styles.menuHeaderActive]} onPress={() => toggleMenu(item.name)}>
+                <Ionicons name={item.icon} size={24} color={isActive ? theme?.colors?.primary : theme?.colors?.headingText} />
+                <Text style={styles.menuHeaderText}>{item.label}</Text>
+                <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={theme?.colors?.headingText} style={styles.chevron} />
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={styles.submenuContainer}>
+                  {item.submenus.map((submenu) => (
+                    <DrawerItem
+                      key={submenu.name}
+                      label={submenu.label}
+                      onPress={() => navigation.navigate(submenu.route, submenu.params)}
+                      style={styles.submenuItem}
+                      labelStyle={{
+                        color: theme?.colors?.headingText,
+                        fontSize: 14,
+                        marginLeft: 0,
+                      }}
+                      icon={({ size, color }) => (
+                        <Ionicons
+                          name="remove-outline"
+                          size={16}
+                          color={isActiveSubmenu(item.route, submenu.name) ? theme?.colors?.primary : color}
+                        />
+                      )}
+                      focused={isActiveSubmenu(item.route, submenu.name)}
+                      activeTintColor={theme?.colors?.primary}
+                      inactiveTintColor={theme?.colors?.headingText}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        }
+
+        // Regular menu item (no submenus)
+        return (
+          <DrawerItem
+            key={item.name}
+            label={item.label}
+            onPress={() => navigation.navigate(item.route)}
+            icon={({ size, color }) => <Ionicons name={item.icon} size={size} color={color} />}
+            focused={isActiveRoute(item.name)}
+            activeTintColor={theme?.colors?.primary}
+            inactiveTintColor={theme?.colors?.headingText}
+            style={styles.regularItem}
+            labelStyle={{
+              fontSize: 15,
+              fontWeight: "600",
+            }}
+          />
+        );
+      })}
+    </DrawerContentScrollView>
+  );
+}

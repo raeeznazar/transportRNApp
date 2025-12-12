@@ -7,11 +7,12 @@ import { SecureStoreService } from "../../services/keychainService";
 import { useAuthStore, useSectionData } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import DashboardHomeScreen from "../screens/DashboardHomeScreen";
-import InwadesScreen from "../screens/InwadesScreen";
 import OutWardScreen from "../screens/OutWardScreen";
 import RevenueScreen from "../screens/RevenueScreen";
 import SalesScreen from "../screens/SalesScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import CustomDrawerContent from "./CustomDrawerContent";
+import InwardsNavigator from "./InwardsNavigator";
 
 export default function DrawerNavigator() {
   const Drawer = createDrawerNavigator();
@@ -46,6 +47,7 @@ export default function DrawerNavigator() {
   return (
     <Drawer.Navigator
       initialRouteName="Dashboard"
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerTintColor: theme?.colors?.headerText,
         headerStyle: { backgroundColor: theme?.colors?.headerBg },
@@ -60,42 +62,42 @@ export default function DrawerNavigator() {
         name="Dashboard"
         component={DashboardHomeScreen}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
+          drawerItemStyle: { display: "none" },
         }}
       />
       <Drawer.Screen
-        name="Inwades"
-        component={InwadesScreen}
+        name="Inwards"
+        component={InwardsNavigator}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="enter-outline" size={size} color={color} />,
+          drawerItemStyle: { display: "none" },
         }}
       />
       <Drawer.Screen
         name="Outward"
         component={OutWardScreen}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="exit-outline" size={size} color={color} />,
+          drawerItemStyle: { display: "none" },
         }}
       />
       <Drawer.Screen
         name="Sales"
         component={SalesScreen}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} />,
+          drawerItemStyle: { display: "none" },
         }}
       />
       <Drawer.Screen
         name="Revenue"
         component={RevenueScreen}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="trending-up-outline" size={size} color={color} />,
+          drawerItemStyle: { display: "none" },
         }}
       />
       <Drawer.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
+          drawerItemStyle: { display: "none" },
         }}
       />
     </Drawer.Navigator>
