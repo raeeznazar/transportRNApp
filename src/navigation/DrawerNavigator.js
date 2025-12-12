@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import { useNavigation } from "@react-navigation/native";
+import { getFocusedRouteNameFromRoute, useNavigation } from "@react-navigation/native";
 import { useEffect } from "react";
 import { TouchableOpacity } from "react-native";
 import { SecureStoreService } from "../../services/keychainService";
@@ -44,6 +44,25 @@ export default function DrawerNavigator() {
     }
   };
 
+  const getHeaderTitle = (route) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "InwardsList";
+
+    switch (routeName) {
+      case "InwardsList":
+        return "Inwards List";
+      case "InwardScanningScreen":
+        return "Inward Scanning";
+      case "InwardesDetails":
+        return "Inward Details";
+      case "ManifestDetails":
+        return "Manifest Details";
+      case "TruckArrivalSheetScreen":
+        return "Truck Arrival Sheet";
+      default:
+        return "Inwards";
+    }
+  };
+
   return (
     <Drawer.Navigator
       initialRouteName="Dashboard"
@@ -68,9 +87,10 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="Inwards"
         component={InwardsNavigator}
-        options={{
+        options={({ route }) => ({
+          title: getHeaderTitle(route),
           drawerItemStyle: { display: "none" },
-        }}
+        })}
       />
       <Drawer.Screen
         name="Outward"

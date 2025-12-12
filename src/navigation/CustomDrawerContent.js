@@ -32,8 +32,8 @@ export default function CustomDrawerContent(props) {
       icon: "enter-outline",
       submenus: [
         {
-          name: "InwardsList",
-          label: "Inwards List",
+          name: "Incoming",
+          label: "Incoming",
           route: "Inwards",
           params: { screen: "InwardsList" },
         },
