@@ -108,6 +108,7 @@ export default function CustomDrawerContent(props) {
     menuHeaderText: {
       marginLeft: 32,
       fontSize: 15,
+      marginLeft: 12,
       fontWeight: "600",
       color: theme.colors.headingText,
       flex: 1,
@@ -120,7 +121,7 @@ export default function CustomDrawerContent(props) {
       paddingBottom: 4,
     },
     submenuItem: {
-      marginLeft: 16,
+      marginLeft: 10,
       paddingVertical: 2,
       marginVertical: -2,
     },
