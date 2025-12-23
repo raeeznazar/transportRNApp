@@ -6,6 +6,7 @@ import InwardesDetailsScreen from "../screens/InwardesDetails";
 import InwardScanning from "../screens/InwardScanning";
 import ManifestDetailScreen from "../screens/ManifestDetail";
 import TruckArrivalSheetScreen from "../screens/TruckArivalSheetScreen";
+import TruckUnloadingScreen from "../screens/TruckUnloadingScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,13 +34,19 @@ const ProtectedTruckArrivalSheetScreen = (props) => (
   </ProtectedScreen>
 );
 
+const ProtectedUnloadingScreen = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <TruckUnloadingScreen {...props} />
+  </ProtectedScreen>
+);
+
 export default function InwardsNavigator() {
   const theme = useCurrentTheme();
 
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
         headerTintColor: theme?.colors?.headerText,
         headerStyle: {
           backgroundColor: theme?.colors?.headerBg,
@@ -83,6 +90,14 @@ export default function InwardsNavigator() {
         component={ProtectedTruckArrivalSheetScreen}
         options={{
           title: "Truck Arrival Sheet",
+          headerBackTitle: "Back",
+        }}
+      />
+      <Stack.Screen
+        name="TruckUnloadingScreen"
+        component={ProtectedUnloadingScreen}
+        options={{
+          title: "Truck Unloading Screen",
           headerBackTitle: "Back",
         }}
       />

@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { FlatList, StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetTruckArrivalSheetHeader, useGetTruckArrivalSheetTable, useSubmitTruckArrivalSheet } from "../../hooks/useApiQueries";
-import { useCurrentTheme } from "../../stores/themeStore";
 import { useAuthStore } from "../../stores/authStore";
+import { useCurrentTheme } from "../../stores/themeStore";
 import { showErrorToast, showSuccessToast } from "../../utilityfunctions/toastHelper";
-import { useState } from "react";
 
 export default function TruckArrivalSheetScreen() {
   const insets = useSafeAreaInsets();
@@ -85,7 +85,7 @@ export default function TruckArrivalSheetScreen() {
       EntryUser: sessionData?.userId || "",
       THCID: thcId || "",
       THCNO: thcNo || "",
-      EntryDate: new Date().toISOString().split("T")[0]  
+      EntryDate: new Date().toISOString().split("T")[0],
     };
     // ✅ Use the mutation hook instance
     submitTruckArrivalMutation.mutate(payload, {
@@ -119,6 +119,15 @@ export default function TruckArrivalSheetScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header Section */}
       <View style={[styles.headerSection, { backgroundColor: theme.colors.primary }]} className="w-full px-4 py-4 mb-4">
+        <View className="flex-row">
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 16, marginBottom: 10 }}>
+            <View className="flex-row items-center">
+              <Ionicons name="arrow-back" size={24} color="#ffffffff" />
+              <Text style={{ marginLeft: 4, color: "#ffffffff" }}>Back</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         <View className="flex-row flex-wrap gap-2">
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
             <Text className="text-white/70 text-xs mr-1">TAS No:</Text>
@@ -183,30 +192,30 @@ export default function TruckArrivalSheetScreen() {
       </View>
 
       {/* Button Section */}
-       {arrivalSheetTableData && arrivalSheetTableData.length > 0 && (
-      <View style={[styles.buttonContainer, { paddingBottom: insets.bottom }]}>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            {
-              backgroundColor: isSubmitting ? theme.colors.disabled : theme.colors.primary,
-              opacity: isSubmitting ? 0.6 : 1,
-            },
-          ]}
-          onPress={handletruckArrivalSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <View className="flex-row items-center">
-              <ActivityIndicator size="small" color="#fff" />
-              <Text style={[styles.buttonText, { marginLeft: 8 }]}>Submitting...</Text>
-            </View>
-          ) : (
-            <Text style={styles.buttonText}>Submit</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    )}
+      {arrivalSheetTableData && arrivalSheetTableData.length > 0 && (
+        <View style={[styles.buttonContainer, { paddingBottom: insets.bottom }]}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              {
+                backgroundColor: isSubmitting ? theme.colors.disabled : theme.colors.primary,
+                opacity: isSubmitting ? 0.6 : 1,
+              },
+            ]}
+            onPress={handletruckArrivalSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <View className="flex-row items-center">
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={[styles.buttonText, { marginLeft: 8 }]}>Submitting...</Text>
+              </View>
+            ) : (
+              <Text style={styles.buttonText}>Submit</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }

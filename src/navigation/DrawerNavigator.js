@@ -58,6 +58,8 @@ export default function DrawerNavigator() {
         return "Manifest Details";
       case "TruckArrivalSheetScreen":
         return "Truck Arrival Sheet";
+      case "TruckUnloadingScreen":
+        return "Truck Unloading";
       default:
         return "Inwards";
     }

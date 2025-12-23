@@ -47,7 +47,7 @@ export default function CustomDrawerContent(props) {
           name: "Unloading",
           label: "Unloading",
           route: "Inwards",
-          //   params: { },
+          params: { screen: "TruckUnloadingScreen" },
         },
       ],
     },
