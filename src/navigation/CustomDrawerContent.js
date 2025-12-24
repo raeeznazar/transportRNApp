@@ -30,6 +30,7 @@ export default function CustomDrawerContent(props) {
       name: "Inwards",
       label: "Inwards",
       icon: "enter-outline",
+      route: "Inwards",
       submenus: [
         {
           name: "Incoming",
@@ -82,11 +83,11 @@ export default function CustomDrawerContent(props) {
     return currentRoute.name === routeName;
   };
 
-  const isActiveSubmenu = (parentRoute, submenuName) => {
+  const isActiveSubmenu = (parentRoute, submenuScreen) => {
     const currentRoute = state.routes[state.index];
     if (currentRoute.name === parentRoute && currentRoute.state) {
       const nestedRoute = currentRoute.state.routes[currentRoute.state.index];
-      return nestedRoute.name === submenuName;
+      return nestedRoute.name === submenuScreen;
     }
     return false;
   };
@@ -137,6 +138,7 @@ export default function CustomDrawerContent(props) {
           // Menu with submenus (expandable)
           const isExpanded = expandedMenus[item.name];
           const isActive = isActiveRoute(item.route);
+          const parentRoute = item.route;
 
           return (
             <View key={item.name}>
@@ -148,29 +150,28 @@ export default function CustomDrawerContent(props) {
 
               {isExpanded && (
                 <View style={styles.submenuContainer}>
-                  {item.submenus.map((submenu) => (
-                    <DrawerItem
-                      key={submenu.name}
-                      label={submenu.label}
-                      onPress={() => navigation.navigate(submenu.route, submenu.params)}
-                      style={styles.submenuItem}
-                      labelStyle={{
-                        color: theme?.colors?.headingText,
-                        fontSize: 14,
-                        marginLeft: 0,
-                      }}
-                      icon={({ size, color }) => (
-                        <Ionicons
-                          name="remove-outline"
-                          size={16}
-                          color={isActiveSubmenu(item.route, submenu.name) ? theme?.colors?.primary : color}
-                        />
-                      )}
-                      focused={isActiveSubmenu(item.route, submenu.name)}
-                      activeTintColor={theme?.colors?.primary}
-                      inactiveTintColor={theme?.colors?.headingText}
-                    />
-                  ))}
+                  {item.submenus.map((submenu) => {
+                    const isSubmenuActive = isActiveSubmenu(parentRoute, submenu.params?.screen);
+                    return (
+                      <DrawerItem
+                        key={submenu.name}
+                        label={submenu.label}
+                        onPress={() => navigation.navigate(submenu.route, submenu.params)}
+                        style={styles.submenuItem}
+                        labelStyle={{
+                          color: theme?.colors?.headingText,
+                          fontSize: 14,
+                          marginLeft: 0,
+                        }}
+                        icon={({ size, color }) => (
+                          <Ionicons name="remove-outline" size={16} color={isSubmenuActive ? theme?.colors?.primary : color} />
+                        )}
+                        focused={isSubmenuActive}
+                        activeTintColor={theme?.colors?.primary}
+                        inactiveTintColor={theme?.colors?.headingText}
+                      />
+                    );
+                  })}
                 </View>
               )}
             </View>
