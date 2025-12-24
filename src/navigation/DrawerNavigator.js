@@ -53,10 +53,10 @@ export default function DrawerNavigator() {
       case "InwardScanningScreen":
         return "Inward Scanning";
       case "InwardesDetails":
-        return "Inward Details";
+        return "Manifest List";
       case "ManifestDetails":
         return "Manifest Details";
-      case "TruckArrivalSheetScreen":
+      case "TruckArivalAfterReportScreen":
         return "Truck Arrival Sheet";
       case "TruckUnloadingScreen":
         return "Truck Unloading";

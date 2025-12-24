@@ -93,6 +93,7 @@ export default function InwadesScreen() {
       inwardId: "25",
       thcId: thcId,
       toStation: branchCode,
+      reportedType: "beforeReport",
     });
   };
   const handleYes = () => {

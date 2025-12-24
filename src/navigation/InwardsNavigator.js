@@ -5,6 +5,7 @@ import InwadesScreen from "../screens/InwadesScreen";
 import InwardesDetailsScreen from "../screens/InwardesDetails";
 import InwardScanning from "../screens/InwardScanning";
 import ManifestDetailScreen from "../screens/ManifestDetail";
+import TruckArivalScreeAfterReport from "../screens/TruckArivalScreeAfterReport";
 import TruckArrivalSheetScreen from "../screens/TruckArivalSheetScreen";
 import TruckUnloadingScreen from "../screens/TruckUnloadingScreen";
 
@@ -37,6 +38,12 @@ const ProtectedTruckArrivalSheetScreen = (props) => (
 const ProtectedUnloadingScreen = (props) => (
   <ProtectedScreen requireUser={true} requireSession={true}>
     <TruckUnloadingScreen {...props} />
+  </ProtectedScreen>
+);
+
+const ProtectedTruckArivalAfterReportScreen = (props) => (
+  <ProtectedScreen requireUser={true} requireSession={true}>
+    <TruckArivalScreeAfterReport {...props} />
   </ProtectedScreen>
 );
 
@@ -98,6 +105,14 @@ export default function InwardsNavigator() {
         component={ProtectedUnloadingScreen}
         options={{
           title: "Truck Unloading Screen",
+          headerBackTitle: "Back",
+        }}
+      />
+      <Stack.Screen
+        name="TruckArivalAfterReportScreen"
+        component={ProtectedTruckArivalAfterReportScreen}
+        options={{
+          title: "Truck Arrival Sheet",
           headerBackTitle: "Back",
         }}
       />

@@ -41,7 +41,7 @@ export default function CustomDrawerContent(props) {
           name: "Truck Arrival Sheet",
           label: "Truck Arrival Sheet",
           route: "Inwards",
-          //   params: { },
+          params: { screen: "TruckArivalAfterReportScreen" },
         },
         {
           name: "Unloading",

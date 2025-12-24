@@ -10,6 +10,7 @@ export const queryKeys = {
   inwardsReport: ["inwardsReport"],
   truckArrivalSheetHeader: ["truckArrivalSheetHeader"],
   truckArrivalSheetTable: ["truckArrivalSheetTable"],
+  truckArivalListAfterReport: ["truckArivalListAfterReport"],
   // Add more query keys based on your screensApiService
 };
 
@@ -221,7 +222,7 @@ export const useSubmitTruckArrivalSheet = () => {
         const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARRIVAL_SUBMIT, payload);
 
         // Check if the API returned success
-        if (response.data?.status?.isSuccess) { 
+        if (response.data?.status?.isSuccess) {
           return response.data;
         } else {
           throw new Error(response.data?.status?.message || "Failed to submit truck arrival sheet");
@@ -245,5 +246,38 @@ export const useSubmitTruckArrivalSheet = () => {
         throw new Error(error.message || "Failed to submit truck arrival sheet");
       }
     },
+  });
+};
+
+// Fetch truck arrival list data after report in truck arival sub menu
+export const useGetTruckArrivalListAfterReport = (branchCode, FromDate, ToDate) => {
+  return useQuery({
+    queryKey: [...queryKeys.truckArivalListAfterReport, branchCode],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARIVAL_LIST, {
+          branchCode: branchCode,
+          FromDate: FromDate,
+          ToDate: ToDate,
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTruckArrivalListAfterReport ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.message || "Failed to get Truck Arrival List After Report");
+      }
+    },
+    enabled: !!branchCode && !!FromDate && !!ToDate,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
   });
 };

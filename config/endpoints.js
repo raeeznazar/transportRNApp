@@ -34,8 +34,8 @@ export const API_ENDPOINTS = {
   INWARDS_REPORT: "/Inward/TruckReport",
   TRUCK_ARRIVAL_SHEET: "/Inward/GetVehiclePayOrderDetails",
   TRUCK_ARRIVAL_SHEET_TABLE: "/Inward/GetTruckArrivalDetails",
-  TRUCK_ARRIVAL_SUBMIT:"/Inward/InsertTruckArrivalSheet"
-
+  TRUCK_ARRIVAL_SUBMIT: "/Inward/InsertTruckArrivalSheet",
+  TRUCK_ARIVAL_LIST: "/Inward/FetchTruckArrivalList",
 };
 
 // Example usage:
