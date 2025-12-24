@@ -134,11 +134,6 @@ export default function InwardesDetailsScreen({ route }) {
           keyExtractor={(item, idx) => item.manID?.toString() || idx.toString()}
           renderItem={renderCard}
           contentContainerStyle={{ paddingTop: 5, paddingBottom: 16 }}
-          ListHeaderComponent={
-            <Text className="text-2xl font-bold mb-4 mx-4" style={{ color: theme.colors.headingText }}>
-              Manifest List
-            </Text>
-          }
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-10">
               <Text className="text-base" style={{ color: theme.colors.bodyText }}>

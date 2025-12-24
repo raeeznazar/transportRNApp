@@ -73,7 +73,7 @@ export default function InwardsNavigator() {
         name="InwardesDetails"
         component={ProtectedInwardesDetailsScreen}
         options={{
-          title: "Inward Details",
+          title: "Manifest List",
           headerBackTitle: "Back",
         }}
       />

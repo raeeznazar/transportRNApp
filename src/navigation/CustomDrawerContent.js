@@ -122,8 +122,8 @@ export default function CustomDrawerContent(props) {
     },
     submenuItem: {
       marginLeft: 10,
-      paddingVertical: 2,
-      marginVertical: -2,
+      paddingVertical: -5,
+      marginVertical: -5,
     },
     regularItem: {
       marginVertical: 0,

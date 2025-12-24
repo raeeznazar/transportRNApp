@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { useEffect } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetManifestTable } from "../../hooks/useApiQueries";
@@ -35,6 +37,19 @@ export default function ManifestDetailScreen({ route }) {
 
   const { data, isLoading, isError, error, refetch } = useGetManifestTable(manifestId);
   console.log("Manifest Detail Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
+
+  // Allow landscape rotation for this screen
+  useEffect(() => {
+    async function changeScreenOrientation() {
+      await ScreenOrientation.unlockAsync();
+    }
+    changeScreenOrientation();
+
+    // Lock back to portrait when leaving the screen
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    };
+  }, []);
   // Loading state
   if (isLoading) {
     return (
@@ -91,9 +106,9 @@ export default function ManifestDetailScreen({ route }) {
           </View>
         </TouchableOpacity>
       </View>
-      <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 16, color: theme.colors.headingText, paddingHorizontal: 16, paddingTop: 4 }}>
+      {/* <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 16, color: theme.colors.headingText, paddingHorizontal: 16, paddingTop: 4 }}>
         Manifest Details
-      </Text>
+      </Text> */}
       <ReactNativeTable columns={COLUMNS} data={data} />
     </View>
   );
