@@ -80,7 +80,8 @@ export default function CustomDrawerContent(props) {
 
   const isActiveRoute = (routeName) => {
     const currentRoute = state.routes[state.index];
-    return currentRoute.name === routeName;
+    // Only highlight if it's the exact route without nested navigation
+    return currentRoute.name === routeName && !currentRoute.state;
   };
 
   const isActiveSubmenu = (parentRoute, submenuScreen) => {
