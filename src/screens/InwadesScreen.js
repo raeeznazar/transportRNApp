@@ -340,7 +340,7 @@ export default function InwadesScreen() {
             onPress={() => {
               handleTruckArrival(item?.thcId, item?.thcNo);
             }}
-            disabled={!!loadingItemId}
+            disabled={!!loadingItemId || (!item.isReportedByBranch && !item.isReportedByDriver)}
             className="flex-1"
           >
             Arrival

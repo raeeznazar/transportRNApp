@@ -160,7 +160,15 @@ export default function TruckArivalScreeAfterReport() {
 
         <View className="mt-4 flex-row gap-3">
           <Button variant="primary" size="md" onPress={() => handleManifestPress(item.thcNo, item.thcId)} className="flex-1">
-            Manifest
+            <Text className="text-white font-semibold">Manifest</Text>
+          </Button>
+          <Button variant="primary" size="md" onPress={() => handleManifestPress(item.thcNo, item.thcId)} className="flex-1">
+            <View className="flex-row items-center justify-center">
+              <Ionicons name="qr-code-outline" size={18} color={theme.colors.buttonPrimaryText} />
+              <Text className="ml-2 text-white font-semibold" style={{ color: theme.colors.buttonPrimaryText }}>
+                Scan
+              </Text>
+            </View>
           </Button>
         </View>
       </View>
