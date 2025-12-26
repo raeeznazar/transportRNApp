@@ -119,15 +119,6 @@ export default function TruckArrivalSheetScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header Section */}
       <View style={[styles.headerSection, { backgroundColor: theme.colors.primary }]} className="w-full px-4 py-4 mb-4">
-        <View className="flex-row">
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 16, marginBottom: 10 }}>
-            <View className="flex-row items-center">
-              <Ionicons name="arrow-back" size={24} color="#ffffffff" />
-              <Text style={{ marginLeft: 4, color: "#ffffffff" }}>Back</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
         <View className="flex-row flex-wrap gap-2">
           <View className="flex-row items-center bg-white/15 rounded px-2 py-1.5">
             <Text className="text-white/70 text-xs mr-1">TAS No:</Text>

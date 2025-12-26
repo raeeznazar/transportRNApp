@@ -50,19 +50,29 @@ export default function DrawerNavigator() {
     switch (routeName) {
       case "InwardsList":
         return "Inwards List";
-      case "InwardScanningScreen":
-        return "Inward Scanning";
       case "InwardesDetails":
         return "Manifest List";
       case "ManifestDetails":
         return "Manifest Details";
       case "TruckArivalAfterReportScreen":
         return "Truck Arrival Sheet";
+      case "TruckArrivalSheetScreen":
+        return "Arrival Sheet";
       case "TruckUnloadingScreen":
         return "Truck Unloading";
       default:
         return "Inwards";
     }
+  };
+
+  const shouldHideDrawerHeader = (route) => {
+    const routeName = getFocusedRouteNameFromRoute(route);
+
+    // List of main/root screens that should show the drawer header
+    const mainScreens = ["InwardsList", "TruckArivalAfterReportScreen", "TruckUnloadingScreen"];
+    // If routeName is not in mainScreens and exists, hide drawer header
+    // This allows nested/detail screens to show their own headers with back buttons
+    return routeName && !mainScreens.includes(routeName);
   };
 
   return (
@@ -92,6 +102,7 @@ export default function DrawerNavigator() {
         options={({ route }) => ({
           title: getHeaderTitle(route),
           drawerItemStyle: { display: "none" },
+          headerShown: !shouldHideDrawerHeader(route),
         })}
       />
       <Drawer.Screen

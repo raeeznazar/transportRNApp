@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -100,29 +99,7 @@ export default function InwardesDetailsScreen({ route }) {
   );
 
   return (
-    <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, backgroundColor: theme.colors.appBg }}>
-      <View className="flex-row">
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <View
-            className="flex-row items-center"
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: 8,
-              marginTop: 10,
-              paddingVertical: 8,
-              paddingHorizontal: 8,
-              backgroundColor: "#F5F5F5",
-              borderRadius: 8,
-              alignSelf: "flex-start",
-            }}
-          >
-            <Ionicons name="arrow-back" size={24} color="#050404ff" />
-            <Text style={{ marginLeft: 4, color: "#060606ff" }}>Back</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
+    <View style={{ flex: 1, paddingTop: 20, paddingBottom: insets.bottom, backgroundColor: theme.colors.appBg }}>
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={theme.colors.primary} />

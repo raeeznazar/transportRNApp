@@ -53,7 +53,6 @@ export default function InwardsNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: false,
         headerTintColor: theme?.colors?.headerText,
         headerStyle: {
           backgroundColor: theme?.colors?.headerBg,
@@ -69,51 +68,43 @@ export default function InwardsNavigator() {
         }}
       />
       <Stack.Screen
-        name="InwardScanningScreen"
-        component={ProtectedInwardScanning}
-        options={{
-          headerShown: false,
-          title: "Inward Scanning",
-        }}
-      />
-      <Stack.Screen
         name="InwardesDetails"
         component={ProtectedInwardesDetailsScreen}
         options={{
+          headerShown: true,
           title: "Manifest List",
-          headerBackTitle: "Back",
         }}
       />
       <Stack.Screen
         name="ManifestDetails"
         component={ProtectedManifestDetailScreen}
         options={{
+          headerShown: true,
           title: "Manifest Details",
-          headerBackTitle: "Back",
         }}
       />
       <Stack.Screen
         name="TruckArrivalSheetScreen"
         component={ProtectedTruckArrivalSheetScreen}
         options={{
-          title: "Truck Arrival Sheet",
-          headerBackTitle: "Back",
+          headerShown: true,
+          title: "Arrival Sheet",
         }}
       />
       <Stack.Screen
         name="TruckUnloadingScreen"
         component={ProtectedUnloadingScreen}
         options={{
+          headerShown: false,
           title: "Truck Unloading Screen",
-          headerBackTitle: "Back",
         }}
       />
       <Stack.Screen
         name="TruckArivalAfterReportScreen"
         component={ProtectedTruckArivalAfterReportScreen}
         options={{
+          headerShown: false,
           title: "Truck Arrival Sheet",
-          headerBackTitle: "Back",
         }}
       />
     </Stack.Navigator>
