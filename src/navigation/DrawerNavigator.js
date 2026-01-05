@@ -60,6 +60,14 @@ export default function DrawerNavigator() {
         return "Arrival Sheet";
       case "TruckUnloadingScreen":
         return "Truck Unloading";
+      case "DocketScanningScreen":
+        return "Docket Scanning";
+      case "DocketMissingPacketsAdd":
+        return "Docket Missing Packets Add";
+      case "DocketScanSummaryScreen":
+        return "Docket Scan Summary";
+      case "DocketPedningScreen":
+        return "Docket Pending Packets";
       default:
         return "Inwards";
     }

@@ -1,0 +1,266 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCurrentTheme } from "../../stores/themeStore";
+import { Button } from "../components/Button";
+
+export default function DocketScanSummaryScreen() {
+  const theme = useCurrentTheme();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
+  // Sample data
+  const summaryData = {
+    truckNo: "MH-12-AB-1234",
+    totalDockets: 85,
+    totalWeight: 860,
+    gdnWt: 500,
+    ddstWt: 360,
+    packets: 50,
+    scanned: 45,
+    short: 5,
+    excess: 3,
+  };
+
+  const dockets = [
+    { id: 1, number: "7894561218", packets: 50, scanned: 45, short: 5, status: "shortage" },
+    { id: 2, number: "7894561219", packets: 50, scanned: 50, short: 0, status: "completed" },
+    { id: 3, number: "7894561220", packets: 50, scanned: 50, short: 0, status: "completed" },
+    { id: 4, number: "7894561221", packets: 50, scanned: 50, short: 0, status: "completed" },
+  ];
+
+  const DocketCard = ({ docket }) => {
+    const isShortage = docket.status === "shortage";
+    const borderColor = isShortage ? "#f97316" : theme.colors.success;
+
+    return (
+      <View
+        className="rounded-xl p-4 shadow-sm border border-l-[6px]"
+        style={{
+          backgroundColor: theme.colors.cardBg,
+          borderColor: "#e2e8f0" + "40",
+          borderLeftColor: borderColor,
+        }}
+      >
+        <View className="flex-row justify-between items-start mb-3">
+          <View>
+            <Text className="text-xs mb-0.5" style={{ color: theme.colors.secondaryText }}>
+              Docket No
+            </Text>
+            <Text className="text-base font-bold" style={{ color: theme.colors.text }}>
+              {docket.number}
+            </Text>
+          </View>
+          <View
+            className="px-2 py-1 rounded"
+            style={{
+              backgroundColor: isShortage ? "#fed7aa" : theme.colors.success + "20",
+            }}
+          >
+            <Text
+              className="text-[10px] font-bold uppercase tracking-wide"
+              style={{
+                color: isShortage ? "#c2410c" : theme.colors.success,
+              }}
+            >
+              {isShortage ? "Shortage" : "Completed"}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          className="flex-row p-2 rounded-lg"
+          style={{
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          <View className="flex-1 items-center border-r" style={{ borderRightColor: "#e2e8f0" + "40" }}>
+            <Text className="text-[10px] uppercase" style={{ color: theme.colors.secondaryText }}>
+              Packets
+            </Text>
+            <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+              {docket.packets}
+            </Text>
+          </View>
+          <View className="flex-1 items-center border-r" style={{ borderRightColor: "#e2e8f0" + "40" }}>
+            <Text className="text-[10px] uppercase" style={{ color: theme.colors.secondaryText }}>
+              Scanned
+            </Text>
+            <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+              {docket.scanned}
+            </Text>
+          </View>
+          <TouchableOpacity
+            className="flex-1 items-center"
+            disabled={docket.short === 0}
+            onPress={() => {
+              if (docket.short > 0) {
+                navigation.navigate("DocketPedningScreen", { docket });
+              }
+            }}
+            activeOpacity={docket.short > 0 ? 0.7 : 1}
+          >
+            <Text className="text-[10px] uppercase" style={{ color: theme.colors.secondaryText }}>
+              Short
+            </Text>
+            <Text
+              className="text-sm font-bold"
+              style={{
+                color: docket.short > 0 ? "#f97316" : theme.colors.secondaryText,
+                textDecorationLine: docket.short > 0 ? "underline" : "none",
+              }}
+            >
+              {docket.short}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+      {/* Header */}
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+        <View className="px-4 pt-4 gap-6">
+          {/* Summary Card */}
+          <View
+            className="rounded-2xl p-5 shadow-sm border relative overflow-hidden"
+            style={{
+              backgroundColor: theme.colors.cardBg,
+              borderColor: "#e2e8f0" + "40",
+            }}
+          >
+            <View className="mb-5 flex-row items-center justify-between pb-4 border-b" style={{ borderBottomColor: "#e2e8f0" + "30" }}>
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="car" size={20} color={theme.colors.primary} />
+                <Text className="text-sm font-semibold uppercase tracking-wide" style={{ color: theme.colors.secondaryText }}>
+                  Truck No
+                </Text>
+              </View>
+              <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
+                {summaryData.truckNo}
+              </Text>
+            </View>
+
+            <View className="flex-row flex-wrap">
+              <View className="w-1/2 mb-5">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Total Dockets
+                </Text>
+                <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
+                  {summaryData.totalDockets}
+                </Text>
+              </View>
+              <View className="w-1/2 mb-5">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Total Weight
+                </Text>
+                <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
+                  {summaryData.totalWeight}{" "}
+                  <Text className="text-xs font-normal" style={{ color: theme.colors.secondaryText }}>
+                    kg
+                  </Text>
+                </Text>
+              </View>
+              <View className="w-1/2 mb-5">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Gdn Wt
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
+                  {summaryData.gdnWt}
+                </Text>
+              </View>
+              <View className="w-1/2 mb-5">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  DDST Wt
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
+                  {summaryData.ddstWt}
+                </Text>
+              </View>
+              <View className="w-1/2 mb-5">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Packets
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
+                  {summaryData.packets}
+                </Text>
+              </View>
+              <View className="w-1/2 mb-5">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Scanned
+                </Text>
+                <View className="flex-row items-center gap-1">
+                  <Text className="text-base font-semibold" style={{ color: theme.colors.success }}>
+                    {summaryData.scanned}
+                  </Text>
+                  <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+                </View>
+              </View>
+              <View className="w-1/2">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Short
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: "#ef4444" }}>
+                  {summaryData.short}
+                </Text>
+              </View>
+              <View className="w-1/2">
+                <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Excess
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: "#f97316" }}>
+                  {summaryData.excess}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Docket Details Header */}
+          <View className="flex-row items-center justify-between px-1">
+            <Text className="text-sm font-bold uppercase tracking-wider" style={{ color: theme.colors.secondaryText }}>
+              Docket Details
+            </Text>
+            <View className="px-2 py-1 rounded-full" style={{ backgroundColor: "#e2e8f0" + "40" }}>
+              <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
+                {dockets.length} items
+              </Text>
+            </View>
+          </View>
+
+          {/* Docket Cards */}
+          <View className="gap-3">
+            {dockets.map((docket) => (
+              <DocketCard key={docket.id} docket={docket} />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Footer Buttons */}
+      <View
+        className="absolute bottom-0 w-full px-4 py-4 border-t"
+        style={{
+          backgroundColor: theme.colors.cardBg,
+          borderTopColor: "#e2e8f0" + "40",
+          paddingBottom: insets.bottom,
+        }}
+      >
+        <View className="flex-row gap-4">
+          <View className="flex-1">
+            <Button variant="secondary" size="lg" onPress={() => {}}>
+              Finish
+            </Button>
+          </View>
+          <View className="flex-1">
+            <Button variant="primary" size="lg" onPress={() => navigation.navigate("DocketAddExtra")}>
+              Add Extra
+            </Button>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}

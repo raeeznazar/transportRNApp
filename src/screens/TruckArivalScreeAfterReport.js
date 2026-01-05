@@ -66,6 +66,10 @@ export default function TruckArivalScreeAfterReport() {
     });
   };
 
+  const handleScannerPress = () => {
+    navigation.navigate("DocketScanningScreen");
+  };
+
   if (!branchCode) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: insets.bottom }}>
@@ -162,7 +166,7 @@ export default function TruckArivalScreeAfterReport() {
           <Button variant="primary" size="md" onPress={() => handleManifestPress(item.thcNo, item.thcId)} className="flex-1">
             <Text className="text-white font-semibold">Manifest</Text>
           </Button>
-          <Button variant="primary" size="md" onPress={() => handleManifestPress(item.thcNo, item.thcId)} className="flex-1">
+          <Button variant="primary" size="md" onPress={() => handleScannerPress()} className="flex-1">
             <View className="flex-row items-center justify-center">
               <Ionicons name="qr-code-outline" size={18} color={theme.colors.buttonPrimaryText} />
               <Text className="ml-2 text-white font-semibold" style={{ color: theme.colors.buttonPrimaryText }}>
