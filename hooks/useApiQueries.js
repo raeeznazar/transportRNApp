@@ -11,6 +11,7 @@ export const queryKeys = {
   truckArrivalSheetHeader: ["truckArrivalSheetHeader"],
   truckArrivalSheetTable: ["truckArrivalSheetTable"],
   truckArivalListAfterReport: ["truckArivalListAfterReport"],
+  docketScanList: ["docketScanList"],
   // Add more query keys based on your screensApiService
 };
 
@@ -217,7 +218,6 @@ export const useGetTruckArrivalSheetTable = (thcId) => {
 export const useSubmitTruckArrivalSheet = () => {
   return useMutation({
     mutationFn: async (payload) => {
-      console.log("submitTruckArrivalSheet PAYLOAD Data:", payload);
       try {
         const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARRIVAL_SUBMIT, payload);
 
@@ -250,15 +250,16 @@ export const useSubmitTruckArrivalSheet = () => {
 };
 
 // Fetch truck arrival list data after report in truck arival sub menu
-export const useGetTruckArrivalListAfterReport = (branchCode, FromDate, ToDate) => {
+export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate) => {
+  console.log("useGetTruckArrivalListAfterReport Params:", { branchCode, fromDate, toDate });
   return useQuery({
-    queryKey: [...queryKeys.truckArivalListAfterReport, branchCode],
+    queryKey: [...queryKeys.truckArivalListAfterReport, branchCode, fromDate, toDate],
     queryFn: async () => {
       try {
         const response = await apiClient.post(API_ENDPOINTS.TRUCK_ARIVAL_LIST, {
           branchCode: branchCode,
-          FromDate: FromDate,
-          ToDate: ToDate,
+          fromDate: fromDate,
+          toDate: toDate,
         });
         return response.data.dataValue;
       } catch (error) {
@@ -276,7 +277,40 @@ export const useGetTruckArrivalListAfterReport = (branchCode, FromDate, ToDate) 
         throw new Error(error.response?.data?.message || "Failed to get Truck Arrival List After Report");
       }
     },
-    enabled: !!branchCode && !!FromDate && !!ToDate,
+    enabled: !!branchCode && !!fromDate && !!toDate,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
+  });
+};
+
+//Fetch Docket Scan List Screen
+
+export const useGetDocketScanList = (branchCode, thcid) => {
+  return useQuery({
+    queryKey: [...queryKeys.docketScanList, branchCode, thcid],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.DOCKET_SCAN_LIST, {
+          branchCode: branchCode,
+          thcid: thcid,
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTruckArrivalListAfterReport ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.message || "Failed to get Truck Arrival List After Report");
+      }
+    },
+    enabled: !!branchCode && !!thcid,
     staleTime: 3 * 60 * 1000, // 3 minutes
     retry: 1,
   });

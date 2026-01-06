@@ -72,21 +72,41 @@ export default function TruckArrivalSheetScreen() {
 
   const handletruckArrivalSubmit = async () => {
     setIsSubmitting(true);
+
+    // Transform arrivalSheetTableData into truckDetails format
+    const truckDetails =
+      arrivalSheetTableData?.map((item, index) => ({
+        slNo: index + 1,
+        docketid: item.docketID || 0,
+        docketno: item.docketNo || 0,
+        consignorName: item.consignorName || "",
+        consigneeName: item.consigneeName || "",
+        totalPackets: item.packet || 0,
+        content: item.content || "",
+        paymentMode: item.paymentMode || "",
+        manID: item.manID || 0,
+        manNo: item.manNo || 0,
+      })) || [];
+
     const payload = {
-      MANID: arrivalSheetTableData[0]?.manID || "",
-      MANNO: arrivalSheetTableData[0]?.manNo || "",
-      VEHICLE: arrivalSheetHeaderData?.truckNo || "",
-      DRIVER: arrivalSheetHeaderData?.driversName || "",
-      TOTPACKETS: arrivalSheetHeaderData?.totalPacket || 0,
-      TOTWEIGHT: arrivalSheetHeaderData?.totalWeight || 0,
-      TOTDOCKETS: arrivalSheetHeaderData?.totalDocketPackets || 0,
-      BRANCHCODE: sessionData?.branchCode || "",
-      FINCODE: sessionData?.finCode || "",
-      EntryUser: sessionData?.userId || "",
-      THCID: thcId || "",
-      THCNO: thcNo || "",
-      EntryDate: new Date().toISOString().split("T")[0],
+      manid: arrivalSheetTableData?.[0]?.manID || 0,
+      manno: arrivalSheetTableData?.[0]?.manNo || 0,
+      vehicle: arrivalSheetHeaderData?.truckNo || "",
+      driver: arrivalSheetHeaderData?.driversName || "",
+      totpackets: arrivalSheetHeaderData?.totalPacket || 0,
+      totweight: arrivalSheetHeaderData?.totalWeight || 0,
+      totdockets: arrivalSheetHeaderData?.totalDocketPackets || 0,
+      branchcode: sessionData?.branchCode || "",
+      fincode: sessionData?.finCode || "",
+      thcid: thcId || 0,
+      thcno: thcNo || 0,
+      entryUser: sessionData?.userId || "",
+      holdTruck: false, // Set based on your requirement
+      tasDate: arrivalSheetHeaderData?.tasDate || new Date().toISOString(),
+      tasTime: new Date().toISOString(),
+      truckDetails: truckDetails,
     };
+
     // ✅ Use the mutation hook instance
     submitTruckArrivalMutation.mutate(payload, {
       onSuccess: (data) => {

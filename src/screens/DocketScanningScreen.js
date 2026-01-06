@@ -3,13 +3,19 @@ import { useNavigation } from "@react-navigation/native";
 import { useEffect, useRef, useState } from "react";
 import { Animated, ImageBackground, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetDocketScanList } from "../../hooks/useApiQueries";
+import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
-
-export default function DocketScanningScreen() {
+export default function DocketScanningScreen({ route }) {
+  const { sessionData } = useAuthStore();
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [flashEnabled, setFlashEnabled] = useState(false);
+  const { thcid } = route.params;
+  // Fetch docket scan list
+  const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
+  console.log("Docket Scan List Data:", docketScanData, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
 
   // Animated scanner line
   const scanAnimation = useRef(new Animated.Value(0)).current;
@@ -60,11 +66,16 @@ export default function DocketScanningScreen() {
   });
 
   // Sample data
-  const dockets = [
-    { id: 1, number: "DKT-8823", total: 50, scanned: 12, short: 38, completed: false },
-    { id: 2, number: "DKT-8824", total: 20, scanned: 0, short: 20, completed: false },
-    { id: 3, number: "DKT-8819", total: 15, scanned: 15, short: 0, completed: true },
-  ];
+  // Transform API data to match component structure
+  const dockets =
+    docketScanData?.map((item) => ({
+      id: item.docketid,
+      number: item.docketno,
+      total: item.totalPackets,
+      scanned: item.scanned,
+      short: item.totalPackets - item.scanned,
+      completed: item.scanned === item.totalPackets,
+    })) || [];
 
   const DocketCard = ({ docket }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -219,6 +230,26 @@ export default function DocketScanningScreen() {
       </Animated.View>
     );
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.colors.background }}>
+        <Text style={{ color: theme.colors.text }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: theme.colors.background }}>
+        <Text className="text-center" style={{ color: theme.colors.error }}>
+          {error?.message || "Failed to load docket scan list"}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>

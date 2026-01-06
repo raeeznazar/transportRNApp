@@ -36,6 +36,9 @@ export const API_ENDPOINTS = {
   TRUCK_ARRIVAL_SHEET_TABLE: "/Inward/GetTruckArrivalDetails",
   TRUCK_ARRIVAL_SUBMIT: "/Inward/InsertTruckArrivalSheet",
   TRUCK_ARIVAL_LIST: "/Inward/FetchTruckArrivalList",
+
+  //SCAN LIST ENDPOINTS
+  DOCKET_SCAN_LIST: "/Inward/FetchTruckArrivalDetails_ScanningList",
 };
 
 // Example usage:

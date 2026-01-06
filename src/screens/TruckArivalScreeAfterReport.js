@@ -31,6 +31,7 @@ export default function TruckArivalScreeAfterReport() {
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
   const { data, isLoading, isError, error, refetch } = useGetTruckArrivalListAfterReport(branchCode, modifiedFromDate, modifiedToDate);
+  console.log("Truck Arrival List After Report Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
 
   // Filter data based on search query
   const filteredData = useMemo(() => {
@@ -58,16 +59,17 @@ export default function TruckArivalScreeAfterReport() {
     if (selectedDate) setToDate(selectedDate);
   };
 
-  const handleManifestPress = (thcNo, thcId) => {
+  const handleManifestPress = (thcNo, thcid) => {
     navigation.navigate("InwardesDetails", {
-      thcId: "108109",
+      thcid: thcid,
+      thcNo: thcNo,
       toStation: branchCode,
       reportedType: "afterReport",
     });
   };
 
-  const handleScannerPress = () => {
-    navigation.navigate("DocketScanningScreen");
+  const handleScannerPress = (thcid) => {
+    navigation.navigate("DocketScanningScreen", { thcid });
   };
 
   if (!branchCode) {
@@ -163,10 +165,10 @@ export default function TruckArivalScreeAfterReport() {
         </View>
 
         <View className="mt-4 flex-row gap-3">
-          <Button variant="primary" size="md" onPress={() => handleManifestPress(item.thcNo, item.thcId)} className="flex-1">
+          <Button variant="primary" size="md" onPress={() => handleManifestPress(item.thcNo, item.thcid)} className="flex-1">
             <Text className="text-white font-semibold">Manifest</Text>
           </Button>
-          <Button variant="primary" size="md" onPress={() => handleScannerPress()} className="flex-1">
+          <Button variant="primary" size="md" onPress={() => handleScannerPress(item.thcid)} className="flex-1">
             <View className="flex-row items-center justify-center">
               <Ionicons name="qr-code-outline" size={18} color={theme.colors.buttonPrimaryText} />
               <Text className="ml-2 text-white font-semibold" style={{ color: theme.colors.buttonPrimaryText }}>

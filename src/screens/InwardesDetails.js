@@ -13,9 +13,9 @@ function formatDate(dateString) {
 export default function InwardesDetailsScreen({ route }) {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
-  const { inwardId, thcId, toStation } = route.params;
+  const { inwardId, thcid, toStation } = route.params;
   console.log("Inward Details Screen Params:", route.params);
-  const { data, isLoading, isError, error, refetch } = useGetManifestIdList(thcId, toStation);
+  const { data, isLoading, isError, error, refetch } = useGetManifestIdList(thcid, toStation);
   console.log("Inward Details Manifest ID List Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
   const navigation = useNavigation();
 
