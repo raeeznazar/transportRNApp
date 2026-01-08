@@ -344,7 +344,7 @@ export default function DocketScanningScreen({ route }) {
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
       {/* Camera View with Background */}
-      <View className="relative h-[35vh]" style={{ backgroundColor: "#000", zIndex: 1 }}>
+      <View className="relative h-[28vh]" style={{ backgroundColor: "#000", zIndex: 1 }}>
         {/* Camera/Background Layer */}
         {hasCameraPermission === true ? (
           <CameraView
@@ -365,10 +365,8 @@ export default function DocketScanningScreen({ route }) {
         )}
 
         {/* Header */}
-        <View className="absolute top-0 left-0 w-full z-20 flex-row items-center justify-between px-6 py-4" style={{ paddingTop: insets.top + 16 }}>
+        <View className="absolute top-0 left-0 w-full z-20 flex-row items-center justify-between px-6 py-4" style={{ paddingTop: insets.top }}>
           <View className="w-10" />
-
-          <Text className="text-white text-base font-semibold tracking-wide opacity-90">Scan Docket</Text>
 
           <TouchableOpacity
             activeOpacity={0.8}

@@ -7,7 +7,7 @@ import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
 
 // Move BarcodeInput outside the main component
-const BarcodeInput = React.memo(({ barcode, index, isActive, onChangeText, onRemove, onFocus, theme }) => (
+const BarcodeInput = React.memo(({ barcodeObj, index, isActive, onChangeText, onRemove, onFocus, theme }) => (
   <View
     className="flex-row rounded-lg shadow-sm overflow-hidden"
     style={{
@@ -33,7 +33,7 @@ const BarcodeInput = React.memo(({ barcode, index, isActive, onChangeText, onRem
       placeholder="Enter barcode number"
       placeholderTextColor={theme.colors.secondaryText}
       inputMode="numeric"
-      value={barcode}
+      value={barcodeObj.barcode}
       onChangeText={(value) => onChangeText(index, value)}
       onFocus={() => onFocus(index)}
       editable={true}
@@ -61,11 +61,11 @@ export default function DocketAddExtra() {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [barcodes, setBarcodes] = useState(["88392019283", "1029384756", ""]);
-  const [focusedIndex, setFocusedIndex] = useState(2);
+  const [barcodes, setBarcodes] = useState([{ barcode: "", remarks: "Extra Added" }]);
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   const addBarcode = useCallback(() => {
-    setBarcodes((prev) => [...prev, ""]);
+    setBarcodes((prev) => [...prev, { barcode: "", remarks: "Extra Added" }]);
     setTimeout(() => setFocusedIndex(barcodes.length), 0);
   }, [barcodes.length]);
 
@@ -76,7 +76,7 @@ export default function DocketAddExtra() {
   const updateBarcode = useCallback((index, value) => {
     setBarcodes((prev) => {
       const newBarcodes = [...prev];
-      newBarcodes[index] = value;
+      newBarcodes[index] = { ...newBarcodes[index], barcode: value };
       return newBarcodes;
     });
   }, []);
@@ -84,6 +84,9 @@ export default function DocketAddExtra() {
   const handleFocus = useCallback((index) => {
     setFocusedIndex(index);
   }, []);
+  const submitBarcodes = useCallback(() => {
+    console.log("Submitted Barcodes:", barcodes);
+  }, [barcodes]);
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
@@ -103,10 +106,10 @@ export default function DocketAddExtra() {
 
         {/* Input List */}
         <View className="flex gap-4 px-5 pb-40">
-          {barcodes.map((barcode, index) => (
+          {barcodes.map((barcodeObj, index) => (
             <BarcodeInput
               key={`barcode-${index}`}
-              barcode={barcode}
+              barcodeObj={barcodeObj}
               index={index}
               isActive={index === focusedIndex}
               onChangeText={updateBarcode}
@@ -150,7 +153,7 @@ export default function DocketAddExtra() {
             {barcodes.length} Entries
           </Text>
         </View>
-        <Button variant="primary" size="lg" onPress={() => {}}>
+        <Button variant="primary" size="lg" onPress={submitBarcodes}>
           Submit Entries
         </Button>
       </View>
