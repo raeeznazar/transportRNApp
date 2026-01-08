@@ -2,24 +2,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetShortagePacketList } from "../../hooks/useApiQueries";
+import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
-
 export default function DockectShowPendingPackets() {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
   const route = useRoute();
-  const { docket } = route.params || {};
+  const { sessionData } = useAuthStore();
+  const { docketID, thcid } = route.params || {};
+
+  const { data: shortageData, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketID);
 
   // Sample short packets data
-  const shortPackets = [
-    { id: 1, packetNo: "PKT-88392-X", location: "Aisle 4B" },
-    { id: 2, packetNo: "PKT-88393-Y", location: "Aisle 4B" },
-    { id: 3, packetNo: "PKT-88401-A", location: "Zone C" },
-    { id: 4, packetNo: "PKT-88405-B", location: "Zone C" },
-    { id: 5, packetNo: "PKT-99201-Z", location: "Receiving Dock" },
-  ];
+  const shortPackets = shortageData || [];
 
   const PacketCard = ({ packet }) => (
     <TouchableOpacity

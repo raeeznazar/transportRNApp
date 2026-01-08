@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useCurrentTheme } from "../../stores/themeStore";
 
@@ -10,10 +10,17 @@ export default function FullWidthSelectInput({
   className, // if you use a Tailwind/className setup this will apply
   style,
   placeholderText,
+  autoOpen = false,
   ...rest
 }) {
   const theme = useCurrentTheme();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (autoOpen && items && items.length > 0) {
+      setOpen(true);
+    }
+  }, [autoOpen, items]);
 
   return (
     <View className={className} style={[styles.wrapper, style]}>

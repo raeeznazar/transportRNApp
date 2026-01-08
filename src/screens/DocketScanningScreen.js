@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useEffect, useRef, useState } from "react";
-import { Animated, ImageBackground, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, ImageBackground, ScrollView, Text, TouchableOpacity, Vibration, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetDocketScanList } from "../../hooks/useApiQueries";
+import Toast from "react-native-toast-message";
+import { useGetDocketScanList, useSubmitMissingBatchPackets } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 export default function DocketScanningScreen({ route }) {
@@ -12,10 +14,13 @@ export default function DocketScanningScreen({ route }) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [flashEnabled, setFlashEnabled] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanningEnabled, setScanningEnabled] = useState(true);
   const { thcid } = route.params;
   // Fetch docket scan list
   const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
-  console.log("Docket Scan List Data:", docketScanData, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
+  const submitMissingBatchPackets = useSubmitMissingBatchPackets();
 
   // Animated scanner line
   const scanAnimation = useRef(new Animated.Value(0)).current;
@@ -65,6 +70,91 @@ export default function DocketScanningScreen({ route }) {
     outputRange: [0, 0.5, 0.5, 0, 0],
   });
 
+  // Sync permission state and request on first mount if undefined
+  useEffect(() => {
+    if (!permission) {
+      // permission has not been checked yet
+      return;
+    }
+    setHasCameraPermission(permission.granted);
+  }, [permission, requestPermission]);
+
+  const [scannedDockets, setScannedDockets] = useState(new Set());
+
+  // Scan handler — only accepts Code128 barcodes with 13 digits
+  const handleBarCodeScanned = useCallback(
+    ({ type, data }) => {
+      if (!scanningEnabled) return;
+
+      // Only accept Code128 barcodes
+      if (type !== "code128") {
+        return;
+      }
+
+      // Normalize the scanned data
+      const scannedValue = String(data).trim();
+
+      // Validate: must be exactly 13 digits (numeric only)
+      const isValidFormat = /^\d{13}$/.test(scannedValue);
+      if (!isValidFormat) {
+        return;
+      }
+
+      // Check if already scanned
+      if (scannedDockets.has(scannedValue)) {
+        return;
+      }
+      try {
+        Vibration.vibrate([0, 100, 50, 100]);
+
+        // Mark as scanned
+        setScannedDockets((prev) => new Set(prev).add(scannedValue));
+
+        // Send to API with minimal payload
+        submitMissingBatchPackets.mutate(
+          {
+            thcid: thcid,
+            branchCode: sessionData?.branchCode,
+            barcode: scannedValue,
+          },
+          {
+            onSuccess: (response) => {
+              Toast.show({
+                type: "success",
+                text1: "Scan Successful",
+                text2: "Scan data sent successfully",
+                position: "top",
+                visibilityTime: 3000,
+              });
+            },
+            onError: (error) => {
+              Toast.show({
+                type: "error",
+                text1: "Scan Failed",
+                text2: error.message || "Failed to send scan data",
+                position: "top",
+                visibilityTime: 3000,
+              });
+
+              // Remove from scanned set if API fails
+              setScannedDockets((prev) => {
+                const updated = new Set(prev);
+                updated.delete(scannedValue);
+                return updated;
+              });
+            },
+          }
+        );
+      } catch (e) {
+        console.warn("Scan handling error:", e);
+      } finally {
+        setScanningEnabled(false);
+        setTimeout(() => setScanningEnabled(true), 2000);
+      }
+    },
+    [scanningEnabled, scannedDockets, thcid, sessionData?.branchCode, submitMissingBatchPackets]
+  );
+
   // Sample data
   // Transform API data to match component structure
   const dockets =
@@ -99,7 +189,7 @@ export default function DocketScanningScreen({ route }) {
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <TouchableOpacity activeOpacity={0.9} onPressIn={handlePressIn} onPressOut={handlePressOut}>
           <View
-            className="mb-4 rounded-2xl p-5" // Changed from p-6 to p-5
+            className="mb-4 rounded-2xl p-5"
             style={{
               backgroundColor: theme.colors.cardBg,
               borderWidth: 1,
@@ -149,7 +239,7 @@ export default function DocketScanningScreen({ route }) {
 
             {/* Stats Grid */}
             <View
-              className="flex-row pt-4" // Changed from pt-5 to pt-4
+              className="flex-row pt-4"
               style={{
                 borderTopWidth: 1,
                 borderTopColor: theme.colors.border + "30",
@@ -208,7 +298,7 @@ export default function DocketScanningScreen({ route }) {
                   disabled={docket.short === 0}
                   onPress={() => {
                     if (docket.short > 0) {
-                      navigation.navigate("DocketMissingPacketsAdd", { docket });
+                      navigation.navigate("DocketMissingPacketsAdd", { docketID: docket.id, thcid: thcid });
                     }
                   }}
                   activeOpacity={docket.short > 0 ? 0.7 : 1}
@@ -255,13 +345,24 @@ export default function DocketScanningScreen({ route }) {
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
       {/* Camera View with Background */}
       <View className="relative h-[35vh]" style={{ backgroundColor: "#000", zIndex: 1 }}>
-        {/* Background Image */}
-        <ImageBackground
-          source={{ uri: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800" }}
-          className="absolute inset-0"
-          style={{ opacity: 0.8 }}
-          resizeMode="cover"
-        />
+        {/* Camera/Background Layer */}
+        {hasCameraPermission === true ? (
+          <CameraView
+            facing="back"
+            barcodeScannerSettings={{
+              barcodeTypes: ["code128"], // Only scan Code128
+            }}
+            onBarcodeScanned={scanningEnabled ? handleBarCodeScanned : undefined}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+        ) : (
+          <ImageBackground
+            source={{ uri: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800" }}
+            className="absolute inset-0"
+            style={{ opacity: 0.8 }}
+            resizeMode="cover"
+          />
+        )}
 
         {/* Header */}
         <View className="absolute top-0 left-0 w-full z-20 flex-row items-center justify-between px-6 py-4" style={{ paddingTop: insets.top + 16 }}>

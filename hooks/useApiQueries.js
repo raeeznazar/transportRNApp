@@ -12,6 +12,7 @@ export const queryKeys = {
   truckArrivalSheetTable: ["truckArrivalSheetTable"],
   truckArivalListAfterReport: ["truckArivalListAfterReport"],
   docketScanList: ["docketScanList"],
+  shortagePacketList: ["shortagePacketList"],
   // Add more query keys based on your screensApiService
 };
 
@@ -315,3 +316,99 @@ export const useGetDocketScanList = (branchCode, thcid) => {
     retry: 1,
   });
 };
+
+// Submit Docket Scanning data Serial number
+export const useInsertScanningData = () => {
+  return useMutation({
+    mutationFn: async (scanData) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.INSERT_SCANNING_DATA, {
+          thcid: scanData.thcid,
+          branchCode: scanData.branchCode,
+          barcode: scanData.barcode,
+        });
+        console.log("✅ Insert Scanning Data Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        // console.error("insertScanningData ERROR Details:", {
+        //   status: error.response?.status,
+        //   statusText: error.response?.statusText,
+        //   data: error.response?.data,
+        //   message: error.message,
+        //   config: {
+        //     url: error.config?.url,
+        //     method: error.config?.method,
+        //     baseURL: error.config?.baseURL,
+        //   },
+        // });
+        // Re-throw with the correct error message path
+        throw new Error(error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to insert scanning data");
+      }
+    },
+  });
+};
+
+export const useGetShortagePacketList = (thcid, branchCode, docketID) => {
+  console.log("useGetShortagePacketList Params:", { thcid, branchCode, docketID });
+  return useQuery({
+    queryKey: [...queryKeys.shortagePacketList, thcid, branchCode, docketID],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.GET_SHORTAGE_PACKETS, {
+          thcid: thcid,
+          branchCode: branchCode,
+          docketID: docketID,
+          remarks: null,
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTruckArrivalListAfterReport ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.message || "Failed to get Truck Arrival List After Report");
+      }
+    },
+    enabled: !!thcid && !!branchCode && !!docketID,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
+  });
+};
+
+// Submit Missing Packets with Reasons
+export const useSubmitMissingBatchPackets = () => {
+  return useMutation({
+    mutationFn: async (payload) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.ENTER_BATCH_SHORTAGE_PACKETS, payload);
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("submitMissingPackets ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit missing packets"
+        );
+      }
+    },
+  });
+};
+
+// Alias for convenience
+export const useSubmitMissingPackets = useSubmitMissingBatchPackets;
