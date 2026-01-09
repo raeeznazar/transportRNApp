@@ -158,15 +158,16 @@ export default function DocketScanningScreen({ route }) {
 
   // Sample data
   // Transform API data to match component structure
-  const dockets =
-    docketScanData?.map((item) => ({
+  const dockets = (docketScanData || [])
+    .filter((item) => item.scanned !== item.totalPackets) // hide completed
+    .map((item) => ({
       id: item.docketid,
       number: item.docketno,
       total: item.totalPackets,
       scanned: item.scanned,
       short: item.totalPackets - item.scanned,
       completed: item.scanned === item.totalPackets,
-    })) || [];
+    }));
 
   const DocketCard = ({ docket }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;

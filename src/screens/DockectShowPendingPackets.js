@@ -1,22 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetShortagePacketList } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
-export default function DockectShowPendingPackets() {
+export default function DockectShowPendingPackets({ route }) {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  const route = useRoute();
   const { sessionData } = useAuthStore();
-  const { docketID, thcid } = route.params || {};
+  const { docketId, thcid } = route.params || {};
 
-  const { data: shortageData, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketID);
-
+  const { data: shortageData, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketId);
   // Sample short packets data
   const shortPackets = shortageData || [];
 
@@ -39,7 +37,7 @@ export default function DockectShowPendingPackets() {
       </View>
       <View className="flex-1">
         <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-          {packet.packetNo}
+          {packet?.barcode}
         </Text>
         <View className="flex-row items-center gap-2 mt-0.5">
           <View
@@ -54,9 +52,6 @@ export default function DockectShowPendingPackets() {
               Short
             </Text>
           </View>
-          <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
-            • {packet.location}
-          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -89,8 +84,8 @@ export default function DockectShowPendingPackets() {
 
         {/* Packet List */}
         <View className="gap-3">
-          {shortPackets.map((packet) => (
-            <PacketCard key={packet.id} packet={packet} />
+          {shortPackets?.map((packet) => (
+            <PacketCard key={packet?.id} packet={packet} />
           ))}
         </View>
       </ScrollView>
@@ -104,7 +99,13 @@ export default function DockectShowPendingPackets() {
           paddingBottom: insets.bottom,
         }}
       >
-        <Button variant="primary" size="lg" onPress={() => {}}>
+        <Button
+          variant="primary"
+          size="lg"
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
           Confirm Short List
         </Button>
       </View>

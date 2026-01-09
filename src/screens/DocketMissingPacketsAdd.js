@@ -415,18 +415,18 @@ export default function DocketMissingPacketsAdd() {
                   <View
                     className="w-5 h-5 rounded-full items-center justify-center"
                     style={{
-                      backgroundColor: item.status === "SUCCESS" ? theme.colors.success : theme.colors.danger,
+                      backgroundColor: item?.status === "SUCCESS" ? theme.colors.success : theme.colors.danger,
                     }}
                   >
-                    <Ionicons name={item.status === "SUCCESS" ? "checkmark" : "close"} size={14} color="#fff" />
+                    <Ionicons name={item?.status === "SUCCESS" ? "checkmark" : "close"} size={14} color="#fff" />
                   </View>
 
                   {/* Barcode and Message */}
                   <Text className="flex-1 font-mono text-sm" style={{ color: theme.colors.text }}>
-                    <Text className="font-semibold">{item.barcode}</Text>
+                    <Text className="font-semibold">{item?.barcode}</Text>
                     <Text style={{ color: theme.colors.secondaryText }}>
                       {" "}
-                      - {item.status} - {item.message}
+                      - {item?.status} - {item?.message}
                     </Text>
                   </Text>
                 </View>

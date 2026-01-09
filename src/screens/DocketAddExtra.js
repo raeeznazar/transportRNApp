@@ -91,13 +91,28 @@ export default function DocketAddExtra({ route }) {
     setFocusedIndex(index);
   }, []);
   const submitBarcodes = useCallback(() => {
-    console.log("Submitted Barcodes:", barcodes);
+    // Validate that at least one barcode is entered
+    const hasValidBarcode = barcodes.some((packet) => packet.barcode.trim() !== "");
+
+    if (!hasValidBarcode) {
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Please enter at least one serial number",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    // Filter out empty barcodes before submitting
+    const validBarcodes = barcodes.filter((packet) => packet.barcode.trim() !== "");
 
     // Build the payload in the format your API expects
     const payload = {
       thcid: thcid,
       branchCode: sessionData?.branchCode,
-      barcodeData: barcodes.map((packet) => ({
+      barcodeData: validBarcodes.map((packet) => ({
         barcode: packet.barcode,
         remarks: packet.remarks,
       })),
@@ -109,7 +124,7 @@ export default function DocketAddExtra({ route }) {
         Toast.show({
           type: "success",
           text1: "Submission Successful",
-          text2: response.status.message || "Missing packets submitted successfully",
+          text2: response?.status?.message || "Missing packets submitted successfully",
           position: "top",
           visibilityTime: 3000,
         });
@@ -189,7 +204,7 @@ export default function DocketAddExtra({ route }) {
             Total Items
           </Text>
           <Text className="text-sm font-medium" style={{ color: theme.colors.secondaryText }}>
-            {barcodes.length} Entries
+            {barcodes?.length} Entries
           </Text>
         </View>
         <Button variant="primary" size="lg" onPress={submitBarcodes}>

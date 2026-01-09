@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetBarcodeSubmitSummaryHeader } from "../../hooks/useApiQueries";
+import { useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -14,30 +14,24 @@ export default function DocketScanSummaryScreen({ route }) {
   const { thcid } = route.params;
   const { sessionData } = useAuthStore();
   const { data: summaryHeaderData, isLoading, isError, error } = useGetBarcodeSubmitSummaryHeader(thcid, sessionData?.branchCode);
-  console.log("Summary Header Data:", summaryHeaderData);
-
-  // Sample data
-  const summaryData = {
-    truckNo: "MH-12-AB-1234",
-    totalDockets: 85,
-    totalWeight: 860,
-    gdnWt: 500,
-    ddstWt: 360,
-    packets: 50,
-    scanned: 45,
-    short: 5,
-    excess: 3,
-  };
-
-  const dockets = [
-    { id: 1, number: "7894561218", packets: 50, scanned: 45, short: 5, status: "shortage" },
-    { id: 2, number: "7894561219", packets: 50, scanned: 50, short: 0, status: "completed" },
-    { id: 3, number: "7894561220", packets: 50, scanned: 50, short: 0, status: "completed" },
-    { id: 4, number: "7894561221", packets: 50, scanned: 50, short: 0, status: "completed" },
-  ];
+  const {
+    data: docketScanData,
+    isLoading: isDocketLoading,
+    isError: isDocketError,
+    error: docketError,
+  } = useGetDocketScanList(sessionData?.branchCode, thcid);
+  const dockets =
+    docketScanData?.map((item) => ({
+      id: item?.docketid,
+      number: item?.docketno,
+      totalPackets: item?.totalPackets,
+      scanned: item?.scanned,
+      short: item?.totalPackets - item?.scanned,
+      status: item?.scanned === item?.totalPackets ? "completed" : "shortage",
+    })) || [];
 
   const DocketCard = ({ docket }) => {
-    const isShortage = docket.status === "shortage";
+    const isShortage = docket?.status === "shortage";
     const borderColor = isShortage ? "#f97316" : theme.colors.success;
 
     return (
@@ -55,7 +49,7 @@ export default function DocketScanSummaryScreen({ route }) {
               Docket No
             </Text>
             <Text className="text-base font-bold" style={{ color: theme.colors.text }}>
-              {docket.number}
+              {docket?.number}
             </Text>
           </View>
           <View
@@ -86,7 +80,7 @@ export default function DocketScanSummaryScreen({ route }) {
               Packets
             </Text>
             <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
-              {docket.packets}
+              {docket?.totalPackets}
             </Text>
           </View>
           <View className="flex-1 items-center border-r" style={{ borderRightColor: "#e2e8f0" + "40" }}>
@@ -94,18 +88,18 @@ export default function DocketScanSummaryScreen({ route }) {
               Scanned
             </Text>
             <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
-              {docket.scanned}
+              {docket?.scanned}
             </Text>
           </View>
           <TouchableOpacity
             className="flex-1 items-center"
-            disabled={docket.short === 0}
+            disabled={docket?.short === 0}
             onPress={() => {
-              if (docket.short > 0) {
-                navigation.navigate("DocketPedningScreen", { docket });
+              if (docket?.short > 0) {
+                navigation.navigate("DocketPedningScreen", { thcid: thcid, docketId: docket?.id });
               }
             }}
-            activeOpacity={docket.short > 0 ? 0.7 : 1}
+            activeOpacity={docket?.short > 0 ? 0.7 : 1}
           >
             <Text className="text-[10px] uppercase" style={{ color: theme.colors.secondaryText }}>
               Short
@@ -113,11 +107,11 @@ export default function DocketScanSummaryScreen({ route }) {
             <Text
               className="text-sm font-bold"
               style={{
-                color: docket.short > 0 ? "#f97316" : theme.colors.secondaryText,
-                textDecorationLine: docket.short > 0 ? "underline" : "none",
+                color: docket?.short > 0 ? "#f97316" : theme.colors.secondaryText,
+                textDecorationLine: docket?.short > 0 ? "underline" : "none",
               }}
             >
-              {docket.short}
+              {docket?.short}
             </Text>
           </TouchableOpacity>
         </View>
@@ -146,7 +140,7 @@ export default function DocketScanSummaryScreen({ route }) {
                 </Text>
               </View>
               <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                {summaryHeaderData.vehicleNo}
+                {summaryHeaderData?.vehicleNo}
               </Text>
             </View>
 
@@ -156,7 +150,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Total Dockets
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData.totalDockets}
+                  {summaryHeaderData?.totalDockets}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -164,7 +158,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Total Weight
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData.totalWeight}{" "}
+                  {summaryHeaderData?.totalWeight}{" "}
                   <Text className="text-xs font-normal" style={{ color: theme.colors.secondaryText }}>
                     kg
                   </Text>
@@ -175,7 +169,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Gdn Wt
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData.godnWt}
+                  {summaryHeaderData?.godnWt}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -183,7 +177,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   DDST Wt
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData.dstWt}
+                  {summaryHeaderData?.dstWt}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -191,7 +185,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Packets
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData.totalPackets}
+                  {summaryHeaderData?.totalPackets}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -200,7 +194,7 @@ export default function DocketScanSummaryScreen({ route }) {
                 </Text>
                 <View className="flex-row items-center gap-1">
                   <Text className="text-base font-semibold" style={{ color: theme.colors.success }}>
-                    {summaryHeaderData.scanned}
+                    {summaryHeaderData?.scanned}
                   </Text>
                   <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
                 </View>
@@ -210,7 +204,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Short
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: "#ef4444" }}>
-                  {summaryHeaderData.totalPackets - summaryHeaderData.scanned}
+                  {(summaryHeaderData?.totalPackets || 0) - (summaryHeaderData?.scanned || 0)}
                 </Text>
               </View>
               <View className="w-1/2">
@@ -218,7 +212,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Excess
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: "#f97316" }}>
-                  {summaryHeaderData.excessCount}
+                  {summaryHeaderData?.excessCount}
                 </Text>
               </View>
             </View>
@@ -231,15 +225,15 @@ export default function DocketScanSummaryScreen({ route }) {
             </Text>
             <View className="px-2 py-1 rounded-full" style={{ backgroundColor: "#e2e8f0" + "40" }}>
               <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
-                {dockets.length} items
+                {dockets?.length} items
               </Text>
             </View>
           </View>
 
           {/* Docket Cards */}
           <View className="gap-3">
-            {dockets.map((docket) => (
-              <DocketCard key={docket.id} docket={docket} />
+            {dockets?.map((docket) => (
+              <DocketCard key={docket?.id} docket={docket} />
             ))}
           </View>
         </View>
