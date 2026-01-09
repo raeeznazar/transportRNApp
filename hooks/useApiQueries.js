@@ -13,6 +13,7 @@ export const queryKeys = {
   truckArivalListAfterReport: ["truckArivalListAfterReport"],
   docketScanList: ["docketScanList"],
   shortagePacketList: ["shortagePacketList"],
+  barcodeSubmitSummaryHeader: ["barcodeSubmitSummaryHeader"],
   // Add more query keys based on your screensApiService
 };
 
@@ -373,7 +374,7 @@ export const useGetShortagePacketList = (thcid, branchCode, docketID) => {
             baseURL: error.config?.baseURL,
           },
         });
-        throw new Error(error.response?.data?.message || "Failed to get Truck Arrival List After Report");
+        throw new Error(error.response?.data?.status?.message || "Failed to get Truck Arrival List After Report");
       }
     },
     enabled: !!thcid && !!branchCode && !!docketID,
@@ -382,13 +383,13 @@ export const useGetShortagePacketList = (thcid, branchCode, docketID) => {
   });
 };
 
-// Submit Missing Packets with Reasons
-export const useSubmitMissingBatchPackets = () => {
+// Submit Missing Packets with Reasons batch [{barcode , remarks}]
+export const useSubmitMissingPackets = () => {
   return useMutation({
     mutationFn: async (payload) => {
       try {
         const response = await apiClient.post(API_ENDPOINTS.ENTER_BATCH_SHORTAGE_PACKETS, payload);
-        return response.data.dataValue;
+        return response.data;
       } catch (error) {
         console.error("submitMissingPackets ERROR Details:", {
           status: error.response?.status,
@@ -410,5 +411,34 @@ export const useSubmitMissingBatchPackets = () => {
   });
 };
 
-// Alias for convenience
-export const useSubmitMissingPackets = useSubmitMissingBatchPackets;
+// Fetch barcode submit summary header data
+export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode) => {
+  return useQuery({
+    queryKey: [...queryKeys.barcodeSubmitSummaryHeader, thcid, branchCode],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.SUMMARY_HEADER_DATA, {
+          thcid: thcid,
+          branchCode: branchCode,
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTruckArrivalListAfterReport ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.status?.message || "Failed to get Truck Arrival List After Report");
+      }
+    },
+    enabled: !!thcid && !!branchCode,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
+  });
+};

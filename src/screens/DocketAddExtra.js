@@ -3,6 +3,9 @@ import { useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
+import { useSubmitMissingPackets } from "../../hooks/useApiQueries";
+import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
 
@@ -57,12 +60,15 @@ const BarcodeInput = React.memo(({ barcodeObj, index, isActive, onChangeText, on
   </View>
 ));
 
-export default function DocketAddExtra() {
+export default function DocketAddExtra({ route }) {
+  const { thcid } = route.params;
+  const { sessionData } = useAuthStore();
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [barcodes, setBarcodes] = useState([{ barcode: "", remarks: "Extra Added" }]);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const submitMissingPackets = useSubmitMissingPackets();
 
   const addBarcode = useCallback(() => {
     setBarcodes((prev) => [...prev, { barcode: "", remarks: "Extra Added" }]);
@@ -86,6 +92,39 @@ export default function DocketAddExtra() {
   }, []);
   const submitBarcodes = useCallback(() => {
     console.log("Submitted Barcodes:", barcodes);
+
+    // Build the payload in the format your API expects
+    const payload = {
+      thcid: thcid,
+      branchCode: sessionData?.branchCode,
+      barcodeData: barcodes.map((packet) => ({
+        barcode: packet.barcode,
+        remarks: packet.remarks,
+      })),
+    };
+    // Call the mutation
+    submitMissingPackets.mutate(payload, {
+      onSuccess: (response) => {
+        // Show result modal with API response
+        Toast.show({
+          type: "success",
+          text1: "Submission Successful",
+          text2: response.status.message || "Missing packets submitted successfully",
+          position: "top",
+          visibilityTime: 3000,
+        });
+        navigation.goBack();
+      },
+      onError: (error) => {
+        Toast.show({
+          type: "error",
+          text1: "Submission Failed",
+          text2: error.message || "Failed to submit missing packets",
+          position: "top",
+          visibilityTime: 3000,
+        });
+      },
+    });
   }, [barcodes]);
 
   return (

@@ -254,7 +254,8 @@ export default function DocketMissingPacketsAdd() {
     submitMissingPackets.mutate(payload, {
       onSuccess: (response) => {
         // Show result modal with API response
-        setResultDetails(response);
+        console.log("Submission Successful:", response);
+        setResultDetails(response.dataValue);
       },
       onError: (error) => {
         Toast.show({
@@ -431,7 +432,6 @@ export default function DocketMissingPacketsAdd() {
                 </View>
               ))}
             </ScrollView>
-
             {/* Done Button */}
             <Button variant="primary" size="lg" onPress={closeResultModal} className="mt-4">
               Done

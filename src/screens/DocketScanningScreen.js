@@ -5,9 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, ImageBackground, ScrollView, Text, TouchableOpacity, Vibration, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetDocketScanList, useSubmitMissingBatchPackets } from "../../hooks/useApiQueries";
+import { useGetDocketScanList, useInsertScanningData } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
+
 export default function DocketScanningScreen({ route }) {
   const { sessionData } = useAuthStore();
   const theme = useCurrentTheme();
@@ -20,7 +21,7 @@ export default function DocketScanningScreen({ route }) {
   const { thcid } = route.params;
   // Fetch docket scan list
   const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
-  const submitMissingBatchPackets = useSubmitMissingBatchPackets();
+  const insertScanningData = useInsertScanningData();
 
   // Animated scanner line
   const scanAnimation = useRef(new Animated.Value(0)).current;
@@ -111,7 +112,7 @@ export default function DocketScanningScreen({ route }) {
         setScannedDockets((prev) => new Set(prev).add(scannedValue));
 
         // Send to API with minimal payload
-        submitMissingBatchPackets.mutate(
+        insertScanningData.mutate(
           {
             thcid: thcid,
             branchCode: sessionData?.branchCode,
@@ -152,7 +153,7 @@ export default function DocketScanningScreen({ route }) {
         setTimeout(() => setScanningEnabled(true), 2000);
       }
     },
-    [scanningEnabled, scannedDockets, thcid, sessionData?.branchCode, submitMissingBatchPackets]
+    [scanningEnabled, scannedDockets, thcid, sessionData?.branchCode, insertScanningData]
   );
 
   // Sample data
@@ -464,7 +465,7 @@ export default function DocketScanningScreen({ route }) {
                 elevation: 10,
               }}
               activeOpacity={0.95}
-              onPress={() => navigation.navigate("DocketScanSummaryScreen")}
+              onPress={() => navigation.navigate("DocketScanSummaryScreen", { thcid: thcid })}
             >
               <Ionicons name="checkmark-circle" size={22} color="#fff" />
               <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>

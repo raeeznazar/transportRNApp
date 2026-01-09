@@ -2,13 +2,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetBarcodeSubmitSummaryHeader } from "../../hooks/useApiQueries";
+import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
 
-export default function DocketScanSummaryScreen() {
+export default function DocketScanSummaryScreen({ route }) {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { thcid } = route.params;
+  const { sessionData } = useAuthStore();
+  const { data: summaryHeaderData, isLoading, isError, error } = useGetBarcodeSubmitSummaryHeader(thcid, sessionData?.branchCode);
+  console.log("Summary Header Data:", summaryHeaderData);
 
   // Sample data
   const summaryData = {
@@ -140,7 +146,7 @@ export default function DocketScanSummaryScreen() {
                 </Text>
               </View>
               <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                {summaryData.truckNo}
+                {summaryHeaderData.vehicleNo}
               </Text>
             </View>
 
@@ -150,7 +156,7 @@ export default function DocketScanSummaryScreen() {
                   Total Dockets
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                  {summaryData.totalDockets}
+                  {summaryHeaderData.totalDockets}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -158,7 +164,7 @@ export default function DocketScanSummaryScreen() {
                   Total Weight
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                  {summaryData.totalWeight}{" "}
+                  {summaryHeaderData.totalWeight}{" "}
                   <Text className="text-xs font-normal" style={{ color: theme.colors.secondaryText }}>
                     kg
                   </Text>
@@ -169,7 +175,7 @@ export default function DocketScanSummaryScreen() {
                   Gdn Wt
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryData.gdnWt}
+                  {summaryHeaderData.godnWt}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -177,7 +183,7 @@ export default function DocketScanSummaryScreen() {
                   DDST Wt
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryData.ddstWt}
+                  {summaryHeaderData.dstWt}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -185,7 +191,7 @@ export default function DocketScanSummaryScreen() {
                   Packets
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryData.packets}
+                  {summaryHeaderData.totalPackets}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -194,7 +200,7 @@ export default function DocketScanSummaryScreen() {
                 </Text>
                 <View className="flex-row items-center gap-1">
                   <Text className="text-base font-semibold" style={{ color: theme.colors.success }}>
-                    {summaryData.scanned}
+                    {summaryHeaderData.scanned}
                   </Text>
                   <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
                 </View>
@@ -204,7 +210,7 @@ export default function DocketScanSummaryScreen() {
                   Short
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: "#ef4444" }}>
-                  {summaryData.short}
+                  {summaryHeaderData.totalPackets - summaryHeaderData.scanned}
                 </Text>
               </View>
               <View className="w-1/2">
@@ -212,7 +218,7 @@ export default function DocketScanSummaryScreen() {
                   Excess
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: "#f97316" }}>
-                  {summaryData.excess}
+                  {summaryHeaderData.excessCount}
                 </Text>
               </View>
             </View>
@@ -255,7 +261,7 @@ export default function DocketScanSummaryScreen() {
             </Button>
           </View>
           <View className="flex-1">
-            <Button variant="primary" size="lg" onPress={() => navigation.navigate("DocketAddExtra")}>
+            <Button variant="primary" size="lg" onPress={() => navigation.navigate("DocketAddExtra", { thcid: thcid })}>
               Add Extra
             </Button>
           </View>
