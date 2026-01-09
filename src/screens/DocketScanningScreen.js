@@ -18,6 +18,7 @@ export default function DocketScanningScreen({ route }) {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanningEnabled, setScanningEnabled] = useState(true);
+  const [isDamage, setIsDamage] = useState(false);
   const { thcid } = route.params;
   // Fetch docket scan list
   const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
@@ -158,16 +159,15 @@ export default function DocketScanningScreen({ route }) {
 
   // Sample data
   // Transform API data to match component structure
-  const dockets = (docketScanData || [])
-    .filter((item) => item.scanned !== item.totalPackets) // hide completed
-    .map((item) => ({
+  const dockets =
+    docketScanData?.map((item) => ({
       id: item.docketid,
       number: item.docketno,
       total: item.totalPackets,
       scanned: item.scanned,
       short: item.totalPackets - item.scanned,
       completed: item.scanned === item.totalPackets,
-    }));
+    })) || [];
 
   const DocketCard = ({ docket }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -300,7 +300,7 @@ export default function DocketScanningScreen({ route }) {
                   disabled={docket.short === 0}
                   onPress={() => {
                     if (docket.short > 0) {
-                      navigation.navigate("DocketMissingPacketsAdd", { docketID: docket.id, thcid: thcid });
+                      navigation.navigate("DocketDamagePacketsAdd", { docketID: docket.id, thcid: thcid });
                     }
                   }}
                   activeOpacity={docket.short > 0 ? 0.7 : 1}
@@ -435,20 +435,88 @@ export default function DocketScanningScreen({ route }) {
           style={{
             borderBottomWidth: 1,
             borderBottomColor: "#CBD5E1" + "30",
+            backgroundColor: isDamage ? "#fef2f2" : "transparent",
           }}
         >
           <View>
             <Text className="text-2xl font-bold" style={{ color: theme.colors.text }}>
               Dockets
             </Text>
+            <Text className="text-xs font-semibold mt-0.5" style={{ color: theme.colors.secondaryText, opacity: 0.6 }}>
+              {dockets.length} Items
+            </Text>
           </View>
-          <Text className="text-xs font-semibold" style={{ color: theme.colors.secondaryText, opacity: 0.6 }}>
-            {dockets.length} Items
-          </Text>
+
+          {/* Toggle Switch */}
+          <View
+            className="flex-row rounded-full p-0.5"
+            style={{
+              backgroundColor: theme.colors.cardBg,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+              borderWidth: 1,
+              borderColor: "#e2e8f0",
+            }}
+          >
+            <TouchableOpacity
+              className="rounded-full px-4 py-2"
+              style={{
+                backgroundColor: !isDamage ? theme.colors.primary : "transparent",
+                shadowColor: !isDamage ? theme.colors.primary : "transparent",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.3,
+                shadowRadius: 2,
+                elevation: !isDamage ? 2 : 0,
+              }}
+              onPress={() => setIsDamage(false)}
+              activeOpacity={0.8}
+            >
+              <Text
+                className="text-xs font-bold"
+                style={{
+                  color: !isDamage ? "#fff" : theme.colors.secondaryText,
+                }}
+              >
+                Regular
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="rounded-full px-4 py-2"
+              style={{
+                backgroundColor: isDamage ? "#fee2e2" : "transparent",
+                shadowColor: isDamage ? "#ef4444" : "transparent",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.2,
+                shadowRadius: 2,
+                elevation: isDamage ? 2 : 0,
+              }}
+              onPress={() => setIsDamage(true)}
+              activeOpacity={0.8}
+            >
+              <Text
+                className="text-xs font-bold"
+                style={{
+                  color: isDamage ? "#dc2626" : theme.colors.secondaryText,
+                }}
+              >
+                Damage
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Dockets List */}
-        <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="flex-1 px-4 py-4"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+          style={{
+            backgroundColor: isDamage ? "#fef2f2" : "transparent",
+          }}
+        >
           {dockets.map((docket) => (
             <DocketCard key={docket.id} docket={docket} />
           ))}
