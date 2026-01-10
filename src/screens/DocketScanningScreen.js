@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, ImageBackground, ScrollView, Text, TouchableOpacity, Vibration, View } from "react-native";
+import { Animated, Image, ImageBackground, Modal, ScrollView, Text, TextInput, TouchableOpacity, Vibration, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useGetDocketScanList, useInsertScanningData } from "../../hooks/useApiQueries";
@@ -20,6 +21,14 @@ export default function DocketScanningScreen({ route }) {
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const [isDamage, setIsDamage] = useState(false);
   const { thcid } = route.params;
+
+  // Damage modal state
+  const [showDamageModal, setShowDamageModal] = useState(true);
+  const [damageReason, setDamageReason] = useState("");
+  const [damagePhotos, setDamagePhotos] = useState([]);
+  const [currentScannedBarcode, setCurrentScannedBarcode] = useState(null);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
   // Fetch docket scan list
   const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
   const insertScanningData = useInsertScanningData();
@@ -83,6 +92,114 @@ export default function DocketScanningScreen({ route }) {
 
   const [scannedDockets, setScannedDockets] = useState(new Set());
 
+  // Take photo using camera
+  const takePhoto = async () => {
+    if (damagePhotos.length >= 4) {
+      Toast.show({
+        type: "error",
+        text1: "Photo Limit Reached",
+        text2: "Maximum 4 photos allowed",
+        position: "top",
+        visibilityTime: 2000,
+      });
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setDamagePhotos([...damagePhotos, result.assets[0].uri]);
+      }
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Camera Error",
+        text2: "Failed to take photo",
+        position: "top",
+        visibilityTime: 2000,
+      });
+    }
+  };
+
+  // Delete photo
+  const deletePhoto = (index) => {
+    setDamagePhotos(damagePhotos.filter((_, i) => i !== index));
+    setSelectedPhoto(null);
+  };
+
+  // Handle damage modal save
+  const handleDamageSave = () => {
+    if (!damageReason.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Reason Required",
+        text2: "Please enter a reason for damage",
+        position: "top",
+        visibilityTime: 2000,
+      });
+      return;
+    }
+
+    if (damagePhotos.length === 0) {
+      Toast.show({
+        type: "error",
+        text1: "Photo Required",
+        text2: "Please take at least one photo",
+        position: "top",
+        visibilityTime: 2000,
+      });
+      return;
+    }
+
+    // Submit damage data to API
+    insertScanningData.mutate(
+      {
+        thcid: thcid,
+        branchCode: sessionData?.branchCode,
+        barcode: currentScannedBarcode,
+        isDamage: true,
+        reason: damageReason,
+        photos: damagePhotos,
+      },
+      {
+        onSuccess: () => {
+          Toast.show({
+            type: "success",
+            text1: "Damage Recorded",
+            text2: "Damage scan saved successfully",
+            position: "top",
+            visibilityTime: 3000,
+          });
+          closeDamageModal();
+        },
+        onError: (error) => {
+          Toast.show({
+            type: "error",
+            text1: "Save Failed",
+            text2: error.message || "Failed to save damage record",
+            position: "top",
+            visibilityTime: 3000,
+          });
+        },
+      }
+    );
+  };
+
+  // Close modal and reset
+  const closeDamageModal = () => {
+    setShowDamageModal(false);
+    setDamageReason("");
+    setDamagePhotos([]);
+    setCurrentScannedBarcode(null);
+    setSelectedPhoto(null);
+  };
+
   // Scan handler — only accepts Code128 barcodes with 13 digits
   const handleBarCodeScanned = useCallback(
     ({ type, data }) => {
@@ -112,41 +229,48 @@ export default function DocketScanningScreen({ route }) {
         // Mark as scanned
         setScannedDockets((prev) => new Set(prev).add(scannedValue));
 
-        // Send to API with minimal payload
-        insertScanningData.mutate(
-          {
-            thcid: thcid,
-            branchCode: sessionData?.branchCode,
-            barcode: scannedValue,
-          },
-          {
-            onSuccess: (response) => {
-              Toast.show({
-                type: "success",
-                text1: "Scan Successful",
-                text2: "Scan data sent successfully",
-                position: "top",
-                visibilityTime: 3000,
-              });
+        if (isDamage) {
+          // Show damage modal
+          setCurrentScannedBarcode(scannedValue);
+          setShowDamageModal(true);
+        } else {
+          // Regular scan - send to API
+          insertScanningData.mutate(
+            {
+              thcid: thcid,
+              branchCode: sessionData?.branchCode,
+              barcode: scannedValue,
+              isDamage: false,
             },
-            onError: (error) => {
-              Toast.show({
-                type: "error",
-                text1: "Scan Failed",
-                text2: error.message || "Failed to send scan data",
-                position: "top",
-                visibilityTime: 3000,
-              });
+            {
+              onSuccess: () => {
+                Toast.show({
+                  type: "success",
+                  text1: "Scan Successful",
+                  text2: "Scan data sent successfully",
+                  position: "top",
+                  visibilityTime: 3000,
+                });
+              },
+              onError: (error) => {
+                Toast.show({
+                  type: "error",
+                  text1: "Scan Failed",
+                  text2: error.message || "Failed to send scan data",
+                  position: "top",
+                  visibilityTime: 3000,
+                });
 
-              // Remove from scanned set if API fails
-              setScannedDockets((prev) => {
-                const updated = new Set(prev);
-                updated.delete(scannedValue);
-                return updated;
-              });
-            },
-          }
-        );
+                // Remove from scanned set if API fails
+                setScannedDockets((prev) => {
+                  const updated = new Set(prev);
+                  updated.delete(scannedValue);
+                  return updated;
+                });
+              },
+            }
+          );
+        }
       } catch (e) {
         console.warn("Scan handling error:", e);
       } finally {
@@ -154,7 +278,7 @@ export default function DocketScanningScreen({ route }) {
         setTimeout(() => setScanningEnabled(true), 2000);
       }
     },
-    [scanningEnabled, scannedDockets, thcid, sessionData?.branchCode, insertScanningData]
+    [scanningEnabled, scannedDockets, thcid, sessionData?.branchCode, insertScanningData, isDamage]
   );
 
   // Sample data
@@ -423,12 +547,7 @@ export default function DocketScanningScreen({ route }) {
       </View>
 
       {/* Content Section */}
-      <View
-        className="flex-1 rounded-t-[32px]"
-        style={{
-          backgroundColor: theme.colors.appBg,
-        }}
-      >
+      <View className="flex-1 rounded-t-[32px]" style={{ backgroundColor: theme.colors.appBg }}>
         {/* Header */}
         <View
           className="px-6 pt-3 pb-3 flex-row items-center justify-between"
@@ -542,6 +661,151 @@ export default function DocketScanningScreen({ route }) {
           </View>
         </ScrollView>
       </View>
+
+      {/* Damage Modal */}
+      <Modal visible={showDamageModal} transparent animationType="slide">
+        <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <View
+            className="rounded-t-3xl p-6"
+            style={{
+              backgroundColor: theme.colors.cardBg,
+              maxHeight: "90%",
+              paddingBottom: insets.bottom + 24,
+            }}
+          >
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-xl font-bold" style={{ color: theme.colors.text }}>
+                Damage Details
+              </Text>
+              <TouchableOpacity onPress={closeDamageModal}>
+                <Ionicons name="close-circle" size={28} color={theme.colors.secondaryText} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Barcode Info */}
+              <View
+                className="mb-4 p-3 rounded-lg"
+                style={{
+                  backgroundColor: theme.colors.primary + "10",
+                  borderWidth: 1,
+                  borderColor: theme.colors.primary + "30",
+                }}
+              >
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.secondaryText }}>
+                  Scanned Barcode
+                </Text>
+                <Text className="text-base font-bold" style={{ color: theme.colors.text }}>
+                  {currentScannedBarcode}
+                </Text>
+              </View>
+
+              {/* Reason Input */}
+              <View className="mb-4">
+                <Text className="text-sm font-semibold mb-2" style={{ color: theme.colors.text }}>
+                  Reason for Damage *
+                </Text>
+                <TextInput
+                  className="rounded-lg p-3 text-base"
+                  style={{
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                    minHeight: 80,
+                    textAlignVertical: "top",
+                  }}
+                  placeholder="Enter damage reason..."
+                  placeholderTextColor={theme.colors.secondaryText}
+                  value={damageReason}
+                  onChangeText={setDamageReason}
+                  multiline
+                />
+              </View>
+
+              {/* Photos Section */}
+              <View className="mb-4">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+                    Photos * ({damagePhotos.length}/4)
+                  </Text>
+                  <TouchableOpacity
+                    className="flex-row items-center gap-2 px-3 py-2 rounded-lg"
+                    style={{
+                      backgroundColor: theme.colors.primary,
+                      opacity: damagePhotos.length >= 4 ? 0.5 : 1,
+                    }}
+                    onPress={takePhoto}
+                    disabled={damagePhotos.length >= 4}
+                  >
+                    <Ionicons name="camera" size={18} color="#fff" />
+                    <Text className="text-xs font-bold text-white">Take Photo</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Photo Grid */}
+                <View className="flex-row flex-wrap gap-2">
+                  {damagePhotos.map((photo, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      className="relative rounded-lg overflow-hidden"
+                      style={{
+                        width: "48%",
+                        aspectRatio: 4 / 3,
+                        backgroundColor: theme.colors.background,
+                      }}
+                      onPress={() => setSelectedPhoto(photo)}
+                    >
+                      <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
+                      <TouchableOpacity
+                        className="absolute top-2 right-2 rounded-full p-1"
+                        style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                        onPress={() => deletePhoto(index)}
+                      >
+                        <Ionicons name="trash" size={16} color="#fff" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              <View className="flex-row gap-3 mt-4">
+                <TouchableOpacity
+                  className="flex-1 py-4 rounded-xl items-center justify-center"
+                  style={{
+                    backgroundColor: theme.colors.background,
+                    borderWidth: 1,
+                    borderColor: "#e2e8f0",
+                  }}
+                  onPress={closeDamageModal}
+                >
+                  <Text className="font-bold" style={{ color: theme.colors.secondaryText }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="flex-1 py-4 rounded-xl items-center justify-center"
+                  style={{ backgroundColor: theme.colors.primary }}
+                  onPress={handleDamageSave}
+                >
+                  <Text className="font-bold text-white">Save</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Photo Preview Modal */}
+      <Modal visible={selectedPhoto !== null} transparent animationType="fade">
+        <View className="flex-1 bg-black">
+          <TouchableOpacity className="absolute top-12 right-6 z-10" onPress={() => setSelectedPhoto(null)}>
+            <Ionicons name="close-circle" size={36} color="#fff" />
+          </TouchableOpacity>
+          {selectedPhoto && <Image source={{ uri: selectedPhoto }} className="w-full h-full" resizeMode="contain" />}
+        </View>
+      </Modal>
     </View>
   );
 }
