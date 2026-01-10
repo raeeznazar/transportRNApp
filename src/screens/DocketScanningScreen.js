@@ -3,7 +3,19 @@ import { useNavigation } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Image, ImageBackground, Modal, ScrollView, Text, TextInput, TouchableOpacity, Vibration, View } from "react-native";
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  ImageBackground,
+  Modal,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Vibration,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useGetDocketScanList, useInsertScanningData } from "../../hooks/useApiQueries";
@@ -28,6 +40,7 @@ export default function DocketScanningScreen({ route }) {
   const [damagePhotos, setDamagePhotos] = useState([]);
   const [currentScannedBarcode, setCurrentScannedBarcode] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [isSubmittingDamage, setIsSubmittingDamage] = useState(false);
 
   // Fetch docket scan list
   const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
@@ -133,8 +146,8 @@ export default function DocketScanningScreen({ route }) {
     setSelectedPhoto(null);
   };
 
-  // Handle damage modal save
-  const handleDamageSave = () => {
+  // Handle damage modal save with FormData for file uploads
+  const handleDamageSave = async () => {
     if (!damageReason.trim()) {
       Toast.show({
         type: "error",
@@ -157,18 +170,32 @@ export default function DocketScanningScreen({ route }) {
       return;
     }
 
-    // Submit damage data to API
-    insertScanningData.mutate(
-      {
-        thcid: thcid,
-        branchCode: sessionData?.branchCode,
-        barcode: currentScannedBarcode,
-        isDamage: true,
-        reason: damageReason,
-        photos: damagePhotos,
-      },
-      {
+    setIsSubmittingDamage(true);
+
+    try {
+      // Create FormData to send actual files
+      const formData = new FormData();
+      formData.append("thcid", thcid);
+      formData.append("branchCode", sessionData?.branchCode);
+      formData.append("barcode", currentScannedBarcode);
+      formData.append("isDamage", true);
+      formData.append("reason", damageReason.trim());
+
+      // Append each photo file (actual files, not just URIs)
+      damagePhotos.forEach((photoUri, index) => {
+        const fileName = `damage_photo_${Date.now()}_${index}.jpg`;
+
+        formData.append("photos", {
+          uri: photoUri,
+          type: "image/jpeg", // Camera always outputs JPEG
+          name: fileName,
+        });
+      });
+
+      // Submit damage data to API with FormData
+      insertScanningData.mutate(formData, {
         onSuccess: () => {
+          setIsSubmittingDamage(false);
           Toast.show({
             type: "success",
             text1: "Damage Recorded",
@@ -176,9 +203,10 @@ export default function DocketScanningScreen({ route }) {
             position: "top",
             visibilityTime: 3000,
           });
-          closeDamageModal();
+          closeDamageModal(false);
         },
         onError: (error) => {
+          setIsSubmittingDamage(false);
           Toast.show({
             type: "error",
             text1: "Save Failed",
@@ -187,17 +215,34 @@ export default function DocketScanningScreen({ route }) {
             visibilityTime: 3000,
           });
         },
-      }
-    );
+      });
+    } catch (error) {
+      setIsSubmittingDamage(false);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to prepare files for upload",
+        position: "top",
+        visibilityTime: 2000,
+      });
+    }
   };
 
   // Close modal and reset
-  const closeDamageModal = () => {
+  const closeDamageModal = (removeScanned = true) => {
+    if (removeScanned && currentScannedBarcode) {
+      setScannedDockets((prev) => {
+        const next = new Set(prev);
+        next.delete(currentScannedBarcode);
+        return next;
+      });
+    }
     setShowDamageModal(false);
     setDamageReason("");
     setDamagePhotos([]);
     setCurrentScannedBarcode(null);
     setSelectedPhoto(null);
+    setIsSubmittingDamage(false);
   };
 
   // Scan handler — only accepts Code128 barcodes with 13 digits
@@ -424,7 +469,7 @@ export default function DocketScanningScreen({ route }) {
                   disabled={docket.short === 0}
                   onPress={() => {
                     if (docket.short > 0) {
-                      navigation.navigate("DocketDamagePacketsAdd", { docketID: docket.id, thcid: thcid });
+                      navigation.navigate("DocketMissingPacketsAdd", { docketID: docket.id, thcid: thcid });
                     }
                   }}
                   activeOpacity={docket.short > 0 ? 0.7 : 1}
@@ -677,8 +722,8 @@ export default function DocketScanningScreen({ route }) {
               <Text className="text-xl font-bold" style={{ color: theme.colors.text }}>
                 Damage Details
               </Text>
-              <TouchableOpacity onPress={closeDamageModal}>
-                <Ionicons name="close-circle" size={28} color={theme.colors.secondaryText} />
+              <TouchableOpacity onPress={closeDamageModal} disabled={isSubmittingDamage}>
+                <Ionicons name="close-circle" size={28} color={isSubmittingDamage ? theme.colors.secondaryText + "60" : theme.colors.secondaryText} />
               </TouchableOpacity>
             </View>
 
@@ -720,6 +765,7 @@ export default function DocketScanningScreen({ route }) {
                   value={damageReason}
                   onChangeText={setDamageReason}
                   multiline
+                  editable={!isSubmittingDamage}
                 />
               </View>
 
@@ -733,10 +779,10 @@ export default function DocketScanningScreen({ route }) {
                     className="flex-row items-center gap-2 px-3 py-2 rounded-lg"
                     style={{
                       backgroundColor: theme.colors.primary,
-                      opacity: damagePhotos.length >= 4 ? 0.5 : 1,
+                      opacity: damagePhotos.length >= 4 || isSubmittingDamage ? 0.5 : 1,
                     }}
                     onPress={takePhoto}
-                    disabled={damagePhotos.length >= 4}
+                    disabled={damagePhotos.length >= 4 || isSubmittingDamage}
                   >
                     <Ionicons name="camera" size={18} color="#fff" />
                     <Text className="text-xs font-bold text-white">Take Photo</Text>
@@ -755,12 +801,14 @@ export default function DocketScanningScreen({ route }) {
                         backgroundColor: theme.colors.background,
                       }}
                       onPress={() => setSelectedPhoto(photo)}
+                      disabled={isSubmittingDamage}
                     >
                       <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
                       <TouchableOpacity
                         className="absolute top-2 right-2 rounded-full p-1"
                         style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
                         onPress={() => deletePhoto(index)}
+                        disabled={isSubmittingDamage}
                       >
                         <Ionicons name="trash" size={16} color="#fff" />
                       </TouchableOpacity>
@@ -777,19 +825,26 @@ export default function DocketScanningScreen({ route }) {
                     backgroundColor: theme.colors.background,
                     borderWidth: 1,
                     borderColor: "#e2e8f0",
+                    opacity: isSubmittingDamage ? 0.5 : 1,
                   }}
                   onPress={closeDamageModal}
+                  disabled={isSubmittingDamage}
                 >
                   <Text className="font-bold" style={{ color: theme.colors.secondaryText }}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  className="flex-1 py-4 rounded-xl items-center justify-center"
-                  style={{ backgroundColor: theme.colors.primary }}
+                  className="flex-1 py-4 rounded-xl items-center justify-center flex-row gap-2"
+                  style={{
+                    backgroundColor: theme.colors.primary,
+                    opacity: isSubmittingDamage ? 0.7 : 1,
+                  }}
                   onPress={handleDamageSave}
+                  disabled={isSubmittingDamage}
                 >
-                  <Text className="font-bold text-white">Save</Text>
+                  {isSubmittingDamage && <ActivityIndicator size="small" color="#fff" />}
+                  <Text className="font-bold text-white">{isSubmittingDamage ? "Saving..." : "Save"}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>

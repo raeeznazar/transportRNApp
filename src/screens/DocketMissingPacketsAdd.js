@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import React, { useCallback, useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -136,6 +136,7 @@ export default function DocketMissingPacketsAdd() {
 
   const { data: shortageData, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketID);
   const submitMissingPackets = useSubmitMissingPackets();
+  const { isLoading: isSubmitting } = submitMissingPackets;
 
   const [packetsWithReasons, setPacketsWithReasons] = useState([]);
   const [currentEditingPacket, setCurrentEditingPacket] = useState(null);
@@ -305,57 +306,83 @@ export default function DocketMissingPacketsAdd() {
         </View>
       </View>
 
-      {/* Main Content */}
-      <KeyboardAwareScrollView
-        className="flex-1 p-4"
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        extraScrollHeight={250}
-        enableAutomaticScroll={true}
-        showsVerticalScrollIndicator={false}
-        enableResetScrollToCoords={false}
-      >
-        <Text className="text-sm text-center px-2 mb-6" style={{ color: theme.colors.secondaryText }}>
-          Select the missing packets from the list below to mark them.
-        </Text>
-
-        {/* Table */}
-        <View className="rounded-xl overflow-hidden border  mb-6" style={{ borderColor: "#e2e8f0" }}>
-          {/* Table Header */}
-          <View className="flex-row" style={{ backgroundColor: theme.colors.primary }}>
-            <View className="w-16 py-3 items-center justify-center border-r" style={{ borderRightColor: "rgba(255,255,255,0.2)" }}>
-              <Text className="text-white text-xs font-semibold uppercase tracking-wider">Select</Text>
-            </View>
-            <View className="flex-1 py-3 px-4 justify-center">
-              <Text className="text-white text-xs font-semibold uppercase tracking-wider">Packet Serial No</Text>
-            </View>
-          </View>
-
-          {/* Table Rows */}
-          {packets.map((packet) => {
-            const hasReason = packetsWithReasons.some((p) => p.serialNumber === packet.barcode);
-            const isEditing = currentEditingPacket === packet.barcode;
-            const savedReason = packetsWithReasons.find((p) => p.serialNumber === packet.barcode)?.reason;
-
-            return (
-              <PacketRow
-                key={packet.barcode}
-                packet={packet}
-                hasReason={hasReason}
-                isEditing={isEditing}
-                currentReason={currentReason}
-                theme={theme}
-                onToggle={() => togglePacket(packet.barcode)}
-                onSaveReason={() => saveReason(packet.barcode)}
-                onCancelReason={handleCancelReason}
-                onChangeReason={setCurrentReason}
-                savedReason={savedReason}
-              />
-            );
-          })}
+      {/* Loading State */}
+      {isLoading && (
+        <View className="flex-1 justify-center items-center p-6">
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text className="text-base font-medium mt-4" style={{ color: theme.colors.text }}>
+            Loading packets...
+          </Text>
         </View>
-      </KeyboardAwareScrollView>
+      )}
 
+      {/* No Data State */}
+      {!isLoading && packets.length === 0 && (
+        <View className="flex-1 justify-center items-center p-6">
+          <View className="w-20 h-20 rounded-full items-center justify-center mb-4" style={{ backgroundColor: theme.colors.primary + "10" }}>
+            <Ionicons name="document-outline" size={40} color={theme.colors.primary} />
+          </View>
+          <Text className="text-lg font-bold mb-2" style={{ color: theme.colors.text }}>
+            No Packets Found
+          </Text>
+          <Text className="text-sm text-center" style={{ color: theme.colors.secondaryText }}>
+            There are no packets available for this docket.
+          </Text>
+        </View>
+      )}
+
+      {/* Main Content - Only show when data is loaded and available */}
+      {!isLoading && packets.length > 0 && (
+        <KeyboardAwareScrollView
+          className="flex-1 p-4"
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={250}
+          enableAutomaticScroll={true}
+          showsVerticalScrollIndicator={false}
+          enableResetScrollToCoords={false}
+        >
+          <Text className="text-sm text-center px-2 mb-6" style={{ color: theme.colors.secondaryText }}>
+            Select the missing packets from the list below to mark them.
+          </Text>
+
+          {/* Table */}
+          <View className="rounded-xl overflow-hidden border  mb-6" style={{ borderColor: "#e2e8f0" }}>
+            {/* Table Header */}
+            <View className="flex-row" style={{ backgroundColor: theme.colors.primary }}>
+              <View className="w-16 py-3 items-center justify-center border-r" style={{ borderRightColor: "rgba(255,255,255,0.2)" }}>
+                <Text className="text-white text-xs font-semibold uppercase tracking-wider">Select</Text>
+              </View>
+              <View className="flex-1 py-3 px-4 justify-center">
+                <Text className="text-white text-xs font-semibold uppercase tracking-wider">Packet Serial No</Text>
+              </View>
+            </View>
+
+            {/* Table Rows */}
+            {packets.map((packet) => {
+              const hasReason = packetsWithReasons.some((p) => p.serialNumber === packet.barcode);
+              const isEditing = currentEditingPacket === packet.barcode;
+              const savedReason = packetsWithReasons.find((p) => p.serialNumber === packet.barcode)?.reason;
+
+              return (
+                <PacketRow
+                  key={packet.barcode}
+                  packet={packet}
+                  hasReason={hasReason}
+                  isEditing={isEditing}
+                  currentReason={currentReason}
+                  theme={theme}
+                  onToggle={() => togglePacket(packet.barcode)}
+                  onSaveReason={() => saveReason(packet.barcode)}
+                  onCancelReason={handleCancelReason}
+                  onChangeReason={setCurrentReason}
+                  savedReason={savedReason}
+                />
+              );
+            })}
+          </View>
+        </KeyboardAwareScrollView>
+      )}
       {/* Bottom Button */}
       <View
         className="p-4 border-t"
@@ -366,7 +393,7 @@ export default function DocketMissingPacketsAdd() {
         }}
       >
         <Button variant="primary" size="lg" onPress={handleSubmit}>
-          Add Missing Packets ({packetsWithReasons.length})
+          {isSubmitting ? "Submitting..." : `Add Missing Packets (${packetsWithReasons.length})`}
         </Button>
       </View>
 
