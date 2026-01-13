@@ -47,10 +47,8 @@ export const API_ENDPOINTS = {
   GET_SHORTAGE_PACKETS: "/Inward/GetShortageScanningDetails",
   //Enter the shortage missing packets in batch [barcode, reason]
   ENTER_BATCH_SHORTAGE_PACKETS: "/Inward/InsertScanningDetailsBatch",
-
   //inwards dockets scanning summary header data
   SUMMARY_HEADER_DATA: "/Inward/GetScanningDetailsSummary",
-
   //inwards dockets scanning summary submit
   SUBMIT_DOCKET_SCAN_SUMMARY: "/Inward/InsertTruckUnloadingDetails",
 };

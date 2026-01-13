@@ -3,7 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetBarcodeSubmitSummaryHeader, useGetDocketScanList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
+import { useFinalSubmitData, useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -21,7 +21,7 @@ export default function DocketScanSummaryScreen({ route }) {
     isError: isDocketError,
     error: docketError,
   } = useGetDocketScanList(sessionData?.branchCode, thcid);
-  const submitDocketScanSummary = useSubmitMissingPackets();
+  const submitDocketScanSummary = useFinalSubmitData();
 
   const dockets =
     docketScanData?.map((item) => ({
@@ -144,7 +144,7 @@ export default function DocketScanSummaryScreen({ route }) {
         Toast.show({
           type: "success",
           text1: "Submission Successful",
-          text2: data?.status?.message || "Missing packets submitted successfully",
+          text2: data?.status?.message || "Packets submitted successfully",
           position: "top",
           visibilityTime: 3000,
         });

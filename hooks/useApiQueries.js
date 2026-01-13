@@ -18,7 +18,7 @@ export const queryKeys = {
 };
 
 // Fetch user inwards data
-export const useGetInward = (branchCode, fromDate, toDate) => {
+export const useGetInward = (branchCode, fromDate, toDate, options = {}) => {
   console.log("useGetInward Params:", { branchCode, fromDate, toDate });
   return useQuery({
     queryKey: [...queryKeys.inward, branchCode, fromDate, toDate],
@@ -48,7 +48,9 @@ export const useGetInward = (branchCode, fromDate, toDate) => {
       }
     },
     enabled: !!branchCode && !!fromDate && !!toDate,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache (gcTime replaces cacheTime in newer React Query)
+    ...options, // Spread any additional options passed from the component
   });
 };
 
@@ -253,7 +255,7 @@ export const useSubmitTruckArrivalSheet = () => {
 };
 
 // Fetch truck arrival list data after report in truck arival sub menu
-export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate) => {
+export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate, options = {}) => {
   console.log("useGetTruckArrivalListAfterReport Params:", { branchCode, fromDate, toDate });
   return useQuery({
     queryKey: [...queryKeys.truckArivalListAfterReport, branchCode, fromDate, toDate],
@@ -281,8 +283,9 @@ export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate) 
       }
     },
     enabled: !!branchCode && !!fromDate && !!toDate,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    retry: 1,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache (gcTime replaces cacheTime in newer React Query)
+    ...options,
   });
 };
 
@@ -487,18 +490,25 @@ export const useInsertDamageScanningData = () => {
   });
 };
 
-// Submit Docket Scan Summary final Data
-export const useFinalSubmitData = (playload) => {
-  return useQuery({
-    queryKey: [...queryKeys.barcodeSubmitSummaryHeader, playload],
-    queryFn: async () => {
+// Submit Final Docket Scan Summary (POST request) - Use Mutation
+export const useFinalSubmitData = () => {
+  return useMutation({
+    mutationFn: async (params) => {
       try {
-        const response = await apiClient.post(API_ENDPOINTS.SUBMIT_DOCKET_SCAN_SUMMARY, {
-          playload,
-        });
-        return response.data.dataValue;
+        console.log("Submitting Final Data with params:", params);
+
+        const response = await apiClient.post(API_ENDPOINTS.SUBMIT_DOCKET_SCAN_SUMMARY, params);
+
+        console.log("✅ Final Submit Data Response:", response.data);
+
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit final data");
+        }
       } catch (error) {
-        console.error("getTruckArrivalListAfterReport ERROR Details:", {
+        console.error("useFinalSubmitData ERROR Details:", {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
@@ -509,11 +519,10 @@ export const useFinalSubmitData = (playload) => {
             baseURL: error.config?.baseURL,
           },
         });
-        throw new Error(error.response?.data?.status?.message || "Failed to get Truck Arrival List After Report");
+
+        // Re-throw with the correct error message path
+        throw new Error(error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit final data");
       }
     },
-    enabled: !!playload,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    retry: 1,
   });
 };

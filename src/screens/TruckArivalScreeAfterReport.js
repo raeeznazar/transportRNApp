@@ -30,7 +30,14 @@ export default function TruckArivalScreeAfterReport() {
 
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
-  const { data, isLoading, isError, error, refetch } = useGetTruckArrivalListAfterReport(branchCode, modifiedFromDate, modifiedToDate);
+  const { data, isLoading, isError, error, refetch } = useGetTruckArrivalListAfterReport(branchCode, modifiedFromDate, modifiedToDate, {
+    staleTime: 0,
+    cacheTime: 0,
+    keepPreviousData: false,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
+  });
   // Filter data based on search query
   const filteredData = useMemo(() => {
     if (!data) return [];
