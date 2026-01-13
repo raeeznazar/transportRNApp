@@ -19,6 +19,7 @@ export const queryKeys = {
 
 // Fetch user inwards data
 export const useGetInward = (branchCode, fromDate, toDate) => {
+  console.log("useGetInward Params:", { branchCode, fromDate, toDate });
   return useQuery({
     queryKey: [...queryKeys.inward, branchCode, fromDate, toDate],
     queryFn: async () => {
@@ -438,6 +439,80 @@ export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode) => {
       }
     },
     enabled: !!thcid && !!branchCode,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
+  });
+};
+
+// Submit Damage Scanning data with photos (FormData)
+export const useInsertDamageScanningData = () => {
+  return useMutation({
+    mutationFn: async (formData) => {
+      try {
+        console.log("Submitting Damage Scanning Data with FormData:", formData);
+
+        const response = await apiClient.post(API_ENDPOINTS.INSERT_DAMAGE_BARCODE_PACKETS, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        console.log("✅ Insert Damage Scanning Data Response:", response.data);
+
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit damage scanning data");
+        }
+      } catch (error) {
+        console.error("insertDamageScanningData ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to insert damage scanning data"
+        );
+      }
+    },
+  });
+};
+
+// Submit Docket Scan Summary final Data
+export const useFinalSubmitData = (playload) => {
+  return useQuery({
+    queryKey: [...queryKeys.barcodeSubmitSummaryHeader, playload],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.SUBMIT_DOCKET_SCAN_SUMMARY, {
+          playload,
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTruckArrivalListAfterReport ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.status?.message || "Failed to get Truck Arrival List After Report");
+      }
+    },
+    enabled: !!playload,
     staleTime: 3 * 60 * 1000, // 3 minutes
     retry: 1,
   });

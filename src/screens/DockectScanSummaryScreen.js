@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
+import Toast from "react-native-toast-message";
+import { useGetBarcodeSubmitSummaryHeader, useGetDocketScanList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -20,6 +21,8 @@ export default function DocketScanSummaryScreen({ route }) {
     isError: isDocketError,
     error: docketError,
   } = useGetDocketScanList(sessionData?.branchCode, thcid);
+  const submitDocketScanSummary = useSubmitMissingPackets();
+
   const dockets =
     docketScanData?.map((item) => ({
       id: item?.docketid,
@@ -118,6 +121,47 @@ export default function DocketScanSummaryScreen({ route }) {
       </View>
     );
   };
+
+  function handleFinchish(thcid) {
+    const userId = sessionData?.userId || "";
+    const branchCode = sessionData?.branchCode || "";
+    const finCode = sessionData?.finCode || "";
+    const tusTime = new Date().toISOString().split("T")[0];
+
+    const params = {
+      thcid: thcid,
+      userId: userId,
+      branchCode: branchCode,
+      finCode: finCode,
+      tusTime: tusTime,
+    };
+
+    console.log("Finishing with params:", {
+      params,
+    });
+    submitDocketScanSummary.mutate(params, {
+      onSuccess: (data) => {
+        Toast.show({
+          type: "success",
+          text1: "Submission Successful",
+          text2: data?.status?.message || "Missing packets submitted successfully",
+          position: "top",
+          visibilityTime: 3000,
+        });
+        navigation.navigate("InwardHome");
+      },
+      onError: (error) => {
+        Toast.show({
+          type: "error",
+          text1: "Submission Failed",
+          text2: error.message || "Failed to submit missing packets",
+          position: "top",
+          visibilityTime: 3000,
+        });
+      },
+    });
+    // Implement the finish logic here, such as making an API call to complete the process.
+  }
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
@@ -250,7 +294,13 @@ export default function DocketScanSummaryScreen({ route }) {
       >
         <View className="flex-row gap-4">
           <View className="flex-1">
-            <Button variant="secondary" size="lg" onPress={() => {}}>
+            <Button
+              variant="secondary"
+              size="lg"
+              onPress={() => {
+                handleFinchish(thcid);
+              }}
+            >
               Finish
             </Button>
           </View>

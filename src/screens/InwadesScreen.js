@@ -4,7 +4,20 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Linking,
+  Modal,
+  Platform,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Tooltip from "react-native-walkthrough-tooltip";
 import { useGetInward, useSubmitInwardsReport } from "../../hooks/useApiQueries";
@@ -12,7 +25,6 @@ import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { showErrorToast, showSuccessToast } from "../../utilityfunctions/toastHelper";
 import { Button } from "../components/Button";
-import QRScanner from "../components/QRScanner";
 
 export default function InwadesScreen() {
   const theme = useCurrentTheme();
@@ -30,8 +42,7 @@ export default function InwadesScreen() {
   const [showDialog, setShowDialog] = useState(false);
   const [location, setLocation] = useState(null);
   const [loadingItemId, setLoadingItemId] = useState(null);
-  const [showScanner, setShowScanner] = useState(false);
-
+  const [refreshing, setRefreshing] = useState(false);
   // New states for remarks modal
   const [showRemarksModal, setShowRemarksModal] = useState(false);
   const [remarks, setRemarks] = useState("");
@@ -45,6 +56,7 @@ export default function InwadesScreen() {
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
   const { data, isLoading, isError, error, refetch } = useGetInward(branchCode, modifiedFromDate, modifiedToDate);
+  console.log("InwadesScreen Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
   // Add the mutation hook
   const submitReportMutation = useSubmitInwardsReport();
 
@@ -89,6 +101,7 @@ export default function InwadesScreen() {
     return date.toISOString().slice(0, 10);
   }
   const handleViewDetails = (thcId) => {
+    console.log("Navigating to InwardesDetails with thcId:", thcId);
     navigation.navigate("InwardesDetails", {
       inwardId: "25",
       thcId: thcId,
@@ -100,13 +113,6 @@ export default function InwadesScreen() {
     setShowDialog(false);
     // Perform your parent logic here
   };
-  const handleScanComplete = (data) => {
-    // Process the scanned data here
-    setShowScanner(false);
-  };
-  function InwardScanning() {
-    navigation.navigate("InwardScanning");
-  }
 
   // Handle cancel in remarks modal
   const handleCancelRemarks = () => {
@@ -155,6 +161,17 @@ export default function InwadesScreen() {
         showErrorToast(error.message || "Failed to submit report. Please try again.", "Error");
       },
     });
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   async function handleReport(item) {
@@ -415,6 +432,16 @@ export default function InwadesScreen() {
           keyExtractor={(item, idx) => `${item?.truckNo ?? ""}${idx}`}
           renderItem={renderCard}
           contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.buttonPrimaryBg]} // Android
+              tintColor={theme.colors.buttonPrimaryBg} // iOS
+              title="Pull to refresh" // iOS
+              titleColor={theme.colors.textSecondary} // iOS
+            />
+          }
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-10">
               <Text className="text-inputText text-base">{searchQuery ? "No trucks found matching your search" : "No data found"}</Text>
@@ -422,9 +449,6 @@ export default function InwadesScreen() {
           }
         />
       </View>
-      <Modal visible={showScanner} animationType="slide">
-        <QRScanner onScanComplete={handleScanComplete} onClose={() => setShowScanner(false)} />
-      </Modal>
 
       {/* Remarks Modal */}
       <Modal transparent visible={showRemarksModal} animationType="fade">

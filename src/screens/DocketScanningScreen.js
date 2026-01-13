@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetDocketScanList, useInsertScanningData } from "../../hooks/useApiQueries";
+import { useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 
@@ -35,7 +35,7 @@ export default function DocketScanningScreen({ route }) {
   const { thcid } = route.params;
 
   // Damage modal state
-  const [showDamageModal, setShowDamageModal] = useState(true);
+  const [showDamageModal, setShowDamageModal] = useState(false);
   const [damageReason, setDamageReason] = useState("");
   const [damagePhotos, setDamagePhotos] = useState([]);
   const [currentScannedBarcode, setCurrentScannedBarcode] = useState(null);
@@ -45,6 +45,7 @@ export default function DocketScanningScreen({ route }) {
   // Fetch docket scan list
   const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
   const insertScanningData = useInsertScanningData();
+  const insertDamageScanningData = useInsertDamageScanningData(); // For damage scans
 
   // Animated scanner line
   const scanAnimation = useRef(new Animated.Value(0)).current;
@@ -119,8 +120,22 @@ export default function DocketScanningScreen({ route }) {
     }
 
     try {
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (status !== "granted") {
+        Toast.show({
+          type: "error",
+          text1: "Permission Denied",
+          text2: "Camera permission is required to take photos",
+          position: "top",
+          visibilityTime: 3000,
+        });
+        return;
+      }
+
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: "images",
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -130,10 +145,11 @@ export default function DocketScanningScreen({ route }) {
         setDamagePhotos([...damagePhotos, result.assets[0].uri]);
       }
     } catch (error) {
+      console.error("Camera error:", error);
       Toast.show({
         type: "error",
         text1: "Camera Error",
-        text2: "Failed to take photo",
+        text2: error.message || "Failed to take photo",
         position: "top",
         visibilityTime: 2000,
       });
@@ -177,23 +193,25 @@ export default function DocketScanningScreen({ route }) {
       const formData = new FormData();
       formData.append("thcid", thcid);
       formData.append("branchCode", sessionData?.branchCode);
-      formData.append("barcode", currentScannedBarcode);
-      formData.append("isDamage", true);
-      formData.append("reason", damageReason.trim());
+      formData.append("barcode", 9000635596004);
+      formData.append("IsDamaged", "true"); // String boolean as per API spec
+      formData.append("Remarks", damageReason.trim());
+      formData.append("DocumentType", "damage"); // Empty as per API spec
 
-      // Append each photo file (actual files, not just URIs)
+      // Append each photo file to Attachments array (same key name for List<IFormFile>)
       damagePhotos.forEach((photoUri, index) => {
-        const fileName = `damage_photo_${Date.now()}_${index}.jpg`;
+        const fileName = `damage_${currentScannedBarcode}_${Date.now()}_${index}.jpg`;
 
-        formData.append("photos", {
+        // For React Native, the file object structure
+        formData.append("Attachments", {
           uri: photoUri,
-          type: "image/jpeg", // Camera always outputs JPEG
+          type: "image/jpeg",
           name: fileName,
         });
       });
 
       // Submit damage data to API with FormData
-      insertScanningData.mutate(formData, {
+      insertDamageScanningData.mutate(formData, {
         onSuccess: () => {
           setIsSubmittingDamage(false);
           Toast.show({

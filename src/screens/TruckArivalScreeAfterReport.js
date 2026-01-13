@@ -31,8 +31,6 @@ export default function TruckArivalScreeAfterReport() {
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
   const { data, isLoading, isError, error, refetch } = useGetTruckArrivalListAfterReport(branchCode, modifiedFromDate, modifiedToDate);
-  console.log("Truck Arrival List After Report Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
-
   // Filter data based on search query
   const filteredData = useMemo(() => {
     if (!data) return [];

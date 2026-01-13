@@ -31,6 +31,7 @@ export default function ManifestDetailScreen({ route }) {
   const theme = useCurrentTheme();
   const { manifestId } = route.params;
   const navigation = useNavigation();
+  console.log("ManifestDetailScreen manifestId:", manifestId);
 
   const { data, isLoading, isError, error, refetch } = useGetManifestTable(manifestId);
   // Loading state

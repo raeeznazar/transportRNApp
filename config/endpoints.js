@@ -41,6 +41,8 @@ export const API_ENDPOINTS = {
   DOCKET_SCAN_LIST: "/Inward/FetchTruckArrivalDetails_ScanningList",
   //Insert the scanned data of packets single barcode entry
   INSERT_SCANNING_DATA: "/Inward/InsertScanningDetails",
+  //Insert the scanned barcode of damage packets in formdata
+  INSERT_DAMAGE_BARCODE_PACKETS: "/Inward/InsertDamagedScanningDetails",
   //Get the shortage missing packets
   GET_SHORTAGE_PACKETS: "/Inward/GetShortageScanningDetails",
   //Enter the shortage missing packets in batch [barcode, reason]
@@ -48,6 +50,9 @@ export const API_ENDPOINTS = {
 
   //inwards dockets scanning summary header data
   SUMMARY_HEADER_DATA: "/Inward/GetScanningDetailsSummary",
+
+  //inwards dockets scanning summary submit
+  SUBMIT_DOCKET_SCAN_SUMMARY: "/Inward/InsertTruckUnloadingDetails",
 };
 
 // Example usage:

@@ -13,10 +13,10 @@ function formatDate(dateString) {
 export default function InwardesDetailsScreen({ route }) {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
-  const { inwardId, thcid, toStation } = route.params;
+  const { inwardId, thcId, toStation } = route.params;
   console.log("Inward Details Screen Params:", route.params);
-  const { data, isLoading, isError, error, refetch } = useGetManifestIdList(thcid, toStation);
-  console.log("Inward Details Manifest ID List Data:", data, "Loading:", isLoading, "Error:", isError, "Error Details:", error);
+  const { data, isLoading, isError, error, refetch } = useGetManifestIdList(thcId, toStation);
+
   const navigation = useNavigation();
 
   const handleCardPress = (manID) => {
