@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useSubmitMissingPackets } from "../../hooks/useApiQueries";
@@ -144,6 +144,7 @@ export default function DocketAddExtra({ route }) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
 
       {/* Scrollable Content */}

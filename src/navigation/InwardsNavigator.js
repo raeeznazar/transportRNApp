@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ProtectedScreen } from "../../components/ProtectedScreen";
 import { useCurrentTheme } from "../../stores/themeStore";
+import { ProtectedScreen } from "../components/ProtectedScreen";
 import DocketScanSummaryScreen from "../screens/DockectScanSummaryScreen";
 import DockectShowPendingPackets from "../screens/DockectShowPendingPackets";
 import DocketAddExtra from "../screens/DocketAddExtra";

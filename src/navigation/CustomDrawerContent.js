@@ -59,10 +59,10 @@ export default function CustomDrawerContent(props) {
       route: "Outward",
     },
     {
-      name: "Sales",
-      label: "Sales",
+      name: "Tracking",
+      label: "Tracking",
       icon: "cash-outline",
-      route: "Sales",
+      route: "Tracking",
     },
     {
       name: "Revenue",

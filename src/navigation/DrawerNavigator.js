@@ -9,10 +9,10 @@ import { useCurrentTheme } from "../../stores/themeStore";
 import DashboardHomeScreen from "../screens/DashboardHomeScreen";
 import OutWardScreen from "../screens/OutWardScreen";
 import RevenueScreen from "../screens/RevenueScreen";
-import SalesScreen from "../screens/SalesScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import CustomDrawerContent from "./CustomDrawerContent";
 import InwardsNavigator from "./InwardsNavigator";
+import TrackingNavigator from "./TrackingNavigator";
 
 export default function DrawerNavigator() {
   const Drawer = createDrawerNavigator();
@@ -68,6 +68,8 @@ export default function DrawerNavigator() {
         return "Docket Scan Summary";
       case "DocketPedningScreen":
         return "Docket Pending Packets";
+      case "TrackingHome":
+        return "Tracking";
       default:
         return "Inwards";
     }
@@ -77,7 +79,7 @@ export default function DrawerNavigator() {
     const routeName = getFocusedRouteNameFromRoute(route);
 
     // List of main/root screens that should show the drawer header
-    const mainScreens = ["InwardsList", "TruckArivalAfterReportScreen", "TruckUnloadingScreen"];
+    const mainScreens = ["InwardsList", "TruckArivalAfterReportScreen", "TruckUnloadingScreen", "TrackingHome"];
     // If routeName is not in mainScreens and exists, hide drawer header
     // This allows nested/detail screens to show their own headers with back buttons
     return routeName && !mainScreens.includes(routeName);
@@ -121,11 +123,13 @@ export default function DrawerNavigator() {
         }}
       />
       <Drawer.Screen
-        name="Sales"
-        component={SalesScreen}
-        options={{
+        name="Tracking"
+        component={TrackingNavigator}
+        options={({ route }) => ({
+          title: getHeaderTitle(route),
           drawerItemStyle: { display: "none" },
-        }}
+          headerShown: !shouldHideDrawerHeader(route),
+        })}
       />
       <Drawer.Screen
         name="Revenue"

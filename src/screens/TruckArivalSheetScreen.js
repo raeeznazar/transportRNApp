@@ -7,6 +7,7 @@ import { useGetTruckArrivalSheetHeader, useGetTruckArrivalSheetTable, useSubmitT
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { showErrorToast, showSuccessToast } from "../../utilityfunctions/toastHelper";
+import { getISTDateString } from "../utils/dateUtility";
 
 export default function TruckArrivalSheetScreen() {
   const insets = useSafeAreaInsets();
@@ -102,8 +103,8 @@ export default function TruckArrivalSheetScreen() {
       thcno: thcNo || 0,
       entryUser: sessionData?.userId || "",
       holdTruck: false, // Set based on your requirement
-      tasDate: arrivalSheetHeaderData?.tasDate || new Date().toISOString(),
-      tasTime: new Date().toISOString(),
+      tasDate: getISTDateString(),
+      tasTime: getISTDateString(),
       truckDetails: truckDetails,
     };
 
@@ -249,7 +250,6 @@ const styles = StyleSheet.create({
   tableContainer: {
     flex: 1,
   },
-  tableHeader: {},
   tableHeaderText: {
     fontSize: 12,
   },

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useFinalSubmitData, useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
@@ -136,9 +136,6 @@ export default function DocketScanSummaryScreen({ route }) {
       tusTime: tusTime,
     };
 
-    console.log("Finishing with params:", {
-      params,
-    });
     submitDocketScanSummary.mutate(params, {
       onSuccess: (data) => {
         Toast.show({
@@ -148,7 +145,7 @@ export default function DocketScanSummaryScreen({ route }) {
           position: "top",
           visibilityTime: 3000,
         });
-        navigation.navigate("InwardHome");
+        navigation.navigate("TruckArivalAfterReportScreen");
       },
       onError: (error) => {
         Toast.show({
@@ -165,6 +162,7 @@ export default function DocketScanSummaryScreen({ route }) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         <View className="px-4 pt-4 gap-6">

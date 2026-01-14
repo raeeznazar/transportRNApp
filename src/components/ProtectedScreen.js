@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { useAuthStore, useIsAuthenticated, useSectionData } from "../stores/authStore";
+import { useAuthStore, useIsAuthenticated, useSectionData } from "../../stores/authStore";
 
 export const ProtectedScreen = ({ children, requireUser = false, requireSession = false }) => {
   const navigation = useNavigation();

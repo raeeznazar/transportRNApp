@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ProtectedScreen } from "../../components/ProtectedScreen";
+import { ProtectedScreen } from "../components/ProtectedScreen";
 import LoginScreen from "../screens/LoginScreen";
 import SetupScreen from "../screens/SetupScreen";
 import SplashScreen from "../screens/Spash";

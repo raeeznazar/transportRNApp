@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Modal, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -255,7 +255,6 @@ export default function DocketMissingPacketsAdd() {
     submitMissingPackets.mutate(payload, {
       onSuccess: (response) => {
         // Show result modal with API response
-        console.log("Submission Successful:", response);
         setResultDetails(response.dataValue);
       },
       onError: (error) => {
@@ -282,6 +281,8 @@ export default function DocketMissingPacketsAdd() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
       {/* Header */}
       <View
         className="px-6 py-4 border-b"

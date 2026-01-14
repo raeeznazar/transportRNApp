@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetManifestIdList } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
@@ -13,8 +13,7 @@ function formatDate(dateString) {
 export default function InwardesDetailsScreen({ route }) {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
-  const { inwardId, thcId, toStation } = route.params;
-  console.log("Inward Details Screen Params:", route.params);
+  const { inwardId, thcId, thcNo, toStation, reportedType } = route.params;
   const { data, isLoading, isError, error, refetch } = useGetManifestIdList(thcId, toStation);
 
   const navigation = useNavigation();
@@ -100,6 +99,7 @@ export default function InwardesDetailsScreen({ route }) {
 
   return (
     <View style={{ flex: 1, paddingTop: 20, paddingBottom: insets.bottom, backgroundColor: theme.colors.appBg }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={theme.colors.primary} />

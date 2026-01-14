@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetShortagePacketList } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
@@ -59,6 +59,7 @@ export default function DockectShowPendingPackets({ route }) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
 
       {/* Main Content */}

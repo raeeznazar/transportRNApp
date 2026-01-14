@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, StatusBar, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetManifestTable } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
@@ -69,9 +69,7 @@ export default function ManifestDetailScreen({ route }) {
     <View
       style={{ flex: 1, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right, backgroundColor: theme.colors.appBg }}
     >
-      {/* <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 16, color: theme.colors.headingText, paddingHorizontal: 16, paddingTop: 4 }}>
-        Manifest Details
-      </Text> */}
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ReactNativeTable columns={COLUMNS} data={data} />
     </View>
   );

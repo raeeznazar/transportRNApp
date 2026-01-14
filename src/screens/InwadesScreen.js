@@ -12,6 +12,7 @@ import {
   Modal,
   Platform,
   RefreshControl,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -119,7 +120,6 @@ export default function InwadesScreen() {
     return date.toISOString().slice(0, 10);
   }
   const handleViewDetails = (thcId) => {
-    console.log("Navigating to InwardesDetails with thcId:", thcId);
     navigation.navigate("InwardesDetails", {
       inwardId: "25",
       thcId: thcId,
@@ -409,6 +409,7 @@ export default function InwadesScreen() {
   };
   return (
     <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">
         <View

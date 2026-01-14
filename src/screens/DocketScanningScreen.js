@@ -145,7 +145,6 @@ export default function DocketScanningScreen({ route }) {
         setDamagePhotos([...damagePhotos, result.assets[0].uri]);
       }
     } catch (error) {
-      console.error("Camera error:", error);
       Toast.show({
         type: "error",
         text1: "Camera Error",

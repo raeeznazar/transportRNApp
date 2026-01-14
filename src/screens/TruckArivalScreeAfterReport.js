@@ -3,7 +3,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetTruckArrivalListAfterReport } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
@@ -24,9 +24,16 @@ export default function TruckArivalScreeAfterReport() {
   const [showFrom, setShowFrom] = useState(false);
   const [showTo, setShowTo] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
@@ -66,7 +73,7 @@ export default function TruckArivalScreeAfterReport() {
 
   const handleManifestPress = (thcNo, thcid) => {
     navigation.navigate("InwardesDetails", {
-      thcid: thcid,
+      thcId: thcid,
       thcNo: thcNo,
       toStation: branchCode,
       reportedType: "afterReport",
@@ -188,6 +195,7 @@ export default function TruckArivalScreeAfterReport() {
 
   return (
     <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">
         <View
@@ -249,6 +257,16 @@ export default function TruckArivalScreeAfterReport() {
           keyExtractor={(item, idx) => `${item?.vehicle ?? ""}${idx}`}
           renderItem={renderCard}
           contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.buttonPrimaryBg]}
+              tintColor={theme.colors.buttonPrimaryBg}
+              title="Pull to refresh"
+              titleColor={theme.colors.textSecondary}
+            />
+          }
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-10">
               <Text className="text-inputText text-base">{searchQuery ? "No vehicles found matching your search" : "No data found"}</Text>
