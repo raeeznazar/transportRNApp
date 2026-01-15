@@ -33,7 +33,7 @@ export default function DocketScanningScreen({ route }) {
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const [isDamage, setIsDamage] = useState(false);
   const { thcid } = route.params;
-  console.log("THCID:", thcid);
+
   // Damage modal state
   const [showDamageModal, setShowDamageModal] = useState(false);
   const [damageReason, setDamageReason] = useState("");
@@ -41,8 +41,10 @@ export default function DocketScanningScreen({ route }) {
   const [currentScannedBarcode, setCurrentScannedBarcode] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [isSubmittingDamage, setIsSubmittingDamage] = useState(false);
-
-  // Fetch docket scan list with auto-refetch on focus and every 1 minute
+  const scrollViewRef = useRef(null);
+  const [highlightedDocketId, setHighlightedDocketId] = useState(null);
+  const previousScannedRef = useRef({});
+  const cardPositionsRef = useRef({});
   const {
     data: docketScanData,
     isLoading,
@@ -116,6 +118,69 @@ export default function DocketScanningScreen({ route }) {
     setHasCameraPermission(permission.granted);
   }, [permission, requestPermission]);
 
+  // Detect scanned count changes and highlight updated dockets
+  useEffect(() => {
+    if (docketScanData && Object.keys(previousScannedRef.current).length > 0) {
+      docketScanData.forEach((item) => {
+        const docketKey = `${item.docketid}`;
+        const prevScanned = previousScannedRef.current[docketKey] || 0;
+
+        // If scanned count increased, highlight that docket
+        if (item.scanned > prevScanned) {
+          console.log("Highlighting docket:", item.docketid, "Previous:", prevScanned, "New:", item.scanned);
+
+          // Vibrate for feedback
+          Vibration.vibrate(100);
+
+          setHighlightedDocketId(item.docketid);
+          setTimeout(() => setHighlightedDocketId(null), 3000);
+
+          // Scroll to the updated docket - find in filtered list
+          setTimeout(() => {
+            if (scrollViewRef.current) {
+              // Use stored position if available
+              const storedPosition = cardPositionsRef.current[item.docketid];
+
+              if (storedPosition) {
+                console.log("Scrolling to stored position:", storedPosition, "for docket:", item.docketid);
+
+                scrollViewRef.current.scrollTo({
+                  y: Math.max(0, storedPosition - 50), // 50px offset from top
+                  animated: true,
+                });
+              } else {
+                // Fallback to calculated position
+                const filteredList = docketScanData.filter((d) => d.scanned !== d.totalPackets);
+                const cardIndex = filteredList.findIndex((d) => d.docketid === item.docketid);
+
+                console.log("Using calculated position. Card index:", cardIndex, "Total cards:", filteredList.length);
+
+                if (cardIndex !== -1) {
+                  const cardHeight = 240;
+                  const yOffset = Math.max(0, cardIndex * cardHeight - 50);
+
+                  console.log("Scrolling to calculated Y:", yOffset);
+
+                  scrollViewRef.current.scrollTo({
+                    y: yOffset,
+                    animated: true,
+                  });
+                }
+              }
+            }
+          }, 300); // Increased delay to ensure data is rendered
+        }
+      });
+    }
+
+    // Update the previous scanned counts
+    const newScannedCounts = {};
+    docketScanData?.forEach((item) => {
+      newScannedCounts[`${item.docketid}`] = item.scanned;
+    });
+    previousScannedRef.current = newScannedCounts;
+  }, [docketScanData]);
+
   const [scannedDockets, setScannedDockets] = useState(new Set());
 
   // Take photo using camera
@@ -175,7 +240,6 @@ export default function DocketScanningScreen({ route }) {
 
   // Handle damage modal save with FormData for file uploads
   const handleDamageSave = async () => {
-    console.log("Submitting damage for barcode:", currentScannedBarcode);
     if (!damageReason.trim()) {
       Toast.show({
         type: "error",
@@ -226,6 +290,10 @@ export default function DocketScanningScreen({ route }) {
       insertDamageScanningData.mutate(formData, {
         onSuccess: () => {
           setIsSubmittingDamage(false);
+
+          // Extra vibration for damage scan
+          Vibration.vibrate([0, 150, 100, 150]);
+
           Toast.show({
             type: "success",
             text1: "Damage Recorded",
@@ -375,8 +443,31 @@ export default function DocketScanningScreen({ route }) {
         uniqueKey: `${item.docketid}_${item.docketno}_${idx}`,
       })) || [];
 
-  const DocketCard = ({ docket }) => {
+  const DocketCard = ({ docket, isHighlighted }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const highlightAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      if (isHighlighted) {
+        Animated.sequence([
+          Animated.timing(highlightAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: false,
+          }),
+          Animated.timing(highlightAnim, {
+            toValue: 0,
+            duration: 2700,
+            useNativeDriver: false,
+          }),
+        ]).start();
+      }
+    }, [isHighlighted]);
+
+    const highlightColor = highlightAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ["rgba(16, 185, 129, 0)", "rgba(16, 185, 129, 0.3)"],
+    });
 
     const handlePressIn = () => {
       Animated.spring(scaleAnim, {
@@ -394,14 +485,20 @@ export default function DocketScanningScreen({ route }) {
     };
 
     return (
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Animated.View
+        style={{ transform: [{ scale: scaleAnim }] }}
+        onLayout={(event) => {
+          const { y } = event.nativeEvent.layout;
+          cardPositionsRef.current[docket.id] = y;
+        }}
+      >
         <TouchableOpacity activeOpacity={0.9} onPressIn={handlePressIn} onPressOut={handlePressOut}>
-          <View
+          <Animated.View
             className="mb-4 rounded-2xl p-5"
             style={{
               backgroundColor: theme.colors.cardBg,
-              borderWidth: 1,
-              borderColor: "#CBD5E1" + "30",
+              borderWidth: isHighlighted ? 2 : 1,
+              borderColor: isHighlighted ? theme.colors.success : "#CBD5E1" + "30",
               shadowColor: "#d9d4d4ff",
               shadowOpacity: 0.04,
               shadowRadius: 4,
@@ -523,7 +620,7 @@ export default function DocketScanningScreen({ route }) {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -711,6 +808,7 @@ export default function DocketScanningScreen({ route }) {
 
         {/* Dockets List */}
         <ScrollView
+          ref={scrollViewRef}
           className="flex-1 px-4 py-4"
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
@@ -719,7 +817,7 @@ export default function DocketScanningScreen({ route }) {
           }}
         >
           {dockets.map((docket) => (
-            <DocketCard key={docket.uniqueKey} docket={docket} />
+            <DocketCard key={docket.uniqueKey} docket={docket} isHighlighted={highlightedDocketId === docket.id} />
           ))}
         </ScrollView>
 
