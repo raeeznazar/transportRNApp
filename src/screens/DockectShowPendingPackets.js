@@ -85,8 +85,8 @@ export default function DockectShowPendingPackets({ route }) {
 
         {/* Packet List */}
         <View className="gap-3">
-          {shortPackets?.map((packet) => (
-            <PacketCard key={packet?.id} packet={packet} />
+          {shortPackets?.map((packet, index) => (
+            <PacketCard key={packet?.id || packet?.barcode || `packet-${index}`} packet={packet} />
           ))}
         </View>
       </ScrollView>

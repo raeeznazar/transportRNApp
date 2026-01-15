@@ -131,6 +131,10 @@ export default function InwardsNavigator() {
         options={{
           headerShown: true,
           title: "Docket Scanning",
+          headerStatusBarHeight: 0,
+          headerTitleStyle: {
+            marginTop: 8,
+          },
         }}
       />
       <Stack.Screen

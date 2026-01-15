@@ -33,7 +33,7 @@ export default function DocketScanningScreen({ route }) {
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const [isDamage, setIsDamage] = useState(false);
   const { thcid } = route.params;
-
+  console.log("THCID:", thcid);
   // Damage modal state
   const [showDamageModal, setShowDamageModal] = useState(false);
   const [damageReason, setDamageReason] = useState("");
@@ -48,11 +48,13 @@ export default function DocketScanningScreen({ route }) {
     isLoading,
     isError,
     error,
+    refetch,
   } = useAutoRefetchQuery(
     useGetDocketScanList,
     [sessionData?.branchCode, thcid],
     60000 // 1 minute
   );
+  console.log("Docket Scan Data:", docketScanData);
   const insertScanningData = useInsertScanningData();
   // For damage scans
   const insertDamageScanningData = useInsertDamageScanningData();
@@ -173,6 +175,7 @@ export default function DocketScanningScreen({ route }) {
 
   // Handle damage modal save with FormData for file uploads
   const handleDamageSave = async () => {
+    console.log("Submitting damage for barcode:", currentScannedBarcode);
     if (!damageReason.trim()) {
       Toast.show({
         type: "error",
@@ -202,7 +205,7 @@ export default function DocketScanningScreen({ route }) {
       const formData = new FormData();
       formData.append("thcid", thcid);
       formData.append("branchCode", sessionData?.branchCode);
-      formData.append("barcode", 9000635596004);
+      formData.append("barcode", currentScannedBarcode);
       formData.append("IsDamaged", "true"); // String boolean as per API spec
       formData.append("Remarks", damageReason.trim());
       formData.append("DocumentType", "damage"); // Empty as per API spec
@@ -231,6 +234,7 @@ export default function DocketScanningScreen({ route }) {
             visibilityTime: 3000,
           });
           closeDamageModal(false);
+          refetch();
         },
         onError: (error) => {
           setIsSubmittingDamage(false);
@@ -241,6 +245,7 @@ export default function DocketScanningScreen({ route }) {
             position: "top",
             visibilityTime: 3000,
           });
+          refetch();
         },
       });
     } catch (error) {
@@ -323,6 +328,7 @@ export default function DocketScanningScreen({ route }) {
                   position: "top",
                   visibilityTime: 3000,
                 });
+                refetch();
               },
               onError: (error) => {
                 Toast.show({
@@ -332,6 +338,7 @@ export default function DocketScanningScreen({ route }) {
                   position: "top",
                   visibilityTime: 3000,
                 });
+                refetch();
 
                 // Remove from scanned set if API fails
                 setScannedDockets((prev) => {
@@ -358,13 +365,14 @@ export default function DocketScanningScreen({ route }) {
   const dockets =
     docketScanData
       ?.filter((item) => item.scanned !== item.totalPackets) // Filter out completed
-      .map((item) => ({
+      .map((item, idx) => ({
         id: item.docketid,
         number: item.docketno,
         total: item.totalPackets,
         scanned: item.scanned,
         short: item.totalPackets - item.scanned,
         completed: item.scanned === item.totalPackets,
+        uniqueKey: `${item.docketid}_${item.docketno}_${idx}`,
       })) || [];
 
   const DocketCard = ({ docket }) => {
@@ -704,36 +712,42 @@ export default function DocketScanningScreen({ route }) {
         {/* Dockets List */}
         <ScrollView
           className="flex-1 px-4 py-4"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           style={{
             backgroundColor: isDamage ? "#fef2f2" : "transparent",
           }}
         >
           {dockets.map((docket) => (
-            <DocketCard key={docket.id} docket={docket} />
+            <DocketCard key={docket.uniqueKey} docket={docket} />
           ))}
-
-          {/* Finish Button */}
-          <View className="px-2 pt-4" style={{ paddingBottom: insets.bottom + 24 }}>
-            <TouchableOpacity
-              className="w-full h-16 rounded-2xl flex-row items-center justify-center gap-3"
-              style={{
-                backgroundColor: theme.colors.primary,
-                shadowColor: theme.colors.primary,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.25,
-                shadowRadius: 24,
-                elevation: 10,
-              }}
-              activeOpacity={0.95}
-              onPress={() => navigation.navigate("DocketScanSummaryScreen", { thcid: thcid })}
-            >
-              <Ionicons name="checkmark-circle" size={22} color="#fff" />
-              <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
+
+        {/* Floating Finish Button */}
+        <View
+          className="absolute bottom-0 left-0 right-0 px-6"
+          style={{
+            paddingBottom: insets.bottom + 16,
+            backgroundColor: "transparent",
+          }}
+        >
+          <TouchableOpacity
+            className="w-full h-16 rounded-2xl flex-row items-center justify-center gap-3"
+            style={{
+              backgroundColor: theme.colors.primary,
+              shadowColor: theme.colors.primary,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.35,
+              shadowRadius: 24,
+              elevation: 12,
+            }}
+            activeOpacity={0.95}
+            onPress={() => navigation.navigate("DocketScanSummaryScreen", { thcid: thcid })}
+          >
+            <Ionicons name="checkmark-circle" size={22} color="#fff" />
+            <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Damage Modal */}
@@ -820,29 +834,32 @@ export default function DocketScanningScreen({ route }) {
 
                 {/* Photo Grid */}
                 <View className="flex-row flex-wrap gap-2">
-                  {damagePhotos.map((photo, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      className="relative rounded-lg overflow-hidden"
-                      style={{
-                        width: "48%",
-                        aspectRatio: 4 / 3,
-                        backgroundColor: theme.colors.background,
-                      }}
-                      onPress={() => setSelectedPhoto(photo)}
-                      disabled={isSubmittingDamage}
-                    >
-                      <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
+                  {damagePhotos.map((photo, index) => {
+                    const photoId = `${photo}_${index}`;
+                    return (
                       <TouchableOpacity
-                        className="absolute top-2 right-2 rounded-full p-1"
-                        style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-                        onPress={() => deletePhoto(index)}
+                        key={photoId}
+                        className="relative rounded-lg overflow-hidden"
+                        style={{
+                          width: "48%",
+                          aspectRatio: 4 / 3,
+                          backgroundColor: theme.colors.background,
+                        }}
+                        onPress={() => setSelectedPhoto(photo)}
                         disabled={isSubmittingDamage}
                       >
-                        <Ionicons name="trash" size={16} color="#fff" />
+                        <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
+                        <TouchableOpacity
+                          className="absolute top-2 right-2 rounded-full p-1"
+                          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                          onPress={() => deletePhoto(index)}
+                          disabled={isSubmittingDamage}
+                        >
+                          <Ionicons name="trash" size={16} color="#fff" />
+                        </TouchableOpacity>
                       </TouchableOpacity>
-                    </TouchableOpacity>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
 

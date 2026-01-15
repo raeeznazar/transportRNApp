@@ -40,13 +40,14 @@ export default function DocketScanSummaryScreen({ route }) {
   const submitDocketScanSummary = useFinalSubmitData();
 
   const dockets =
-    docketScanData?.map((item) => ({
+    docketScanData?.map((item, idx) => ({
       id: item?.docketid,
       number: item?.docketno,
       totalPackets: item?.totalPackets,
       scanned: item?.scanned,
       short: item?.totalPackets - item?.scanned,
       status: item?.scanned === item?.totalPackets ? "completed" : "shortage",
+      uniqueKey: `${item?.docketid}_${item?.docketno}_${idx}`,
     })) || [];
 
   const DocketCard = ({ docket }) => {
@@ -291,7 +292,7 @@ export default function DocketScanSummaryScreen({ route }) {
           {/* Docket Cards */}
           <View className="gap-3">
             {dockets?.map((docket) => (
-              <DocketCard key={docket?.id} docket={docket} />
+              <DocketCard key={docket?.uniqueKey} docket={docket} />
             ))}
           </View>
         </View>

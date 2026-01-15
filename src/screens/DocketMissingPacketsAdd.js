@@ -260,6 +260,7 @@ export default function DocketMissingPacketsAdd() {
         remarks: packet.reason,
       })),
     };
+    console.log("Submitting missing packets payload:", payload);
     // Call the mutation
     submitMissingPackets.mutate(payload, {
       onSuccess: (response) => {

@@ -1,19 +1,38 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetTrackingDocketDetails } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
-
 export default function TrackingDocketDetailsScreen({ route }) {
   const { params = {} } = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const theme = useCurrentTheme();
+  const [showAlert, setShowAlert] = useState(false);
 
   const { docket_Number } = route.params;
   const { data, isLoading, isError, error, refetch } = useGetTrackingDocketDetails(docket_Number);
   console.log("TrackingDocketDetailsScreen params:", data);
+  // Handle error - show alert
+  useEffect(() => {
+    if (isError) {
+      Alert.alert(
+        "Not Found",
+        `Docket ${docket_Number} not found`,
+        [
+          {
+            text: "Go Back",
+            onPress: () => navigation.goBack(),
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+  }, [isError, navigation, docket_Number]);
+
   const {
     docketNumber = data?.docketNo,
     docketDate = data?.docketDate,
@@ -53,10 +72,24 @@ export default function TrackingDocketDetailsScreen({ route }) {
     );
   }
 
+  if (isError) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background }}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View className="items-center gap-3">
+          <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+            No Data
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      {showAlert && <BlurView intensity={100} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} />}
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} scrollEnabled={!showAlert} pointerEvents={showAlert ? "none" : "auto"}>
         {/* General Info */}
         <View className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <View className="p-3 border-b border-slate-100 flex-row items-center justify-between bg-slate-50/50">
