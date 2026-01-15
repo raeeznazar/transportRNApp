@@ -111,12 +111,29 @@ export default function DocketScanningScreen({ route }) {
 
   // Sync permission state and request on first mount if undefined
   useEffect(() => {
-    if (!permission) {
-      // permission has not been checked yet
-      return;
-    }
-    setHasCameraPermission(permission.granted);
-  }, [permission, requestPermission]);
+    const requestCameraPermission = async () => {
+      try {
+        const { status } = await requestPermission();
+        setHasCameraPermission(status === "granted");
+
+        if (status !== "granted") {
+          Toast.show({
+            type: "error",
+            text1: "Camera Permission Required",
+            text2: "Please enable camera access to scan barcodes",
+            position: "top",
+            visibilityTime: 3000,
+          });
+        }
+      } catch (error) {
+        console.error("Camera permission error:", error);
+        setHasCameraPermission(false);
+      }
+    };
+
+    // Always request permission when screen mounts
+    requestCameraPermission();
+  }, []); // Empty array - runs every time component mounts (screen navigation)
 
   // Detect scanned count changes and highlight updated dockets
   useEffect(() => {
@@ -464,11 +481,6 @@ export default function DocketScanningScreen({ route }) {
       }
     }, [isHighlighted]);
 
-    const highlightColor = highlightAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["rgba(16, 185, 129, 0)", "rgba(16, 185, 129, 0.3)"],
-    });
-
     const handlePressIn = () => {
       Animated.spring(scaleAnim, {
         toValue: 0.98,
@@ -654,6 +666,7 @@ export default function DocketScanningScreen({ route }) {
         {hasCameraPermission === true ? (
           <CameraView
             facing="back"
+            enableTorch={flashEnabled} // Add this prop
             barcodeScannerSettings={{
               barcodeTypes: ["code128"], // Only scan Code128
             }}
