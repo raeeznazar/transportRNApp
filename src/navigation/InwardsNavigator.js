@@ -8,7 +8,6 @@ import DocketMissingPacketsAdd from "../screens/DocketMissingPacketsAdd";
 import DocketScanningScreen from "../screens/DocketScanningScreen";
 import InwadesScreen from "../screens/InwadesScreen";
 import InwardesDetailsScreen from "../screens/InwardesDetails";
-import InwardScanning from "../screens/InwardScanning";
 import ManifestDetailScreen from "../screens/ManifestDetail";
 import TruckArivalScreeAfterReport from "../screens/TruckArivalScreeAfterReport";
 import TruckArrivalSheetScreen from "../screens/TruckArivalSheetScreen";
@@ -25,12 +24,6 @@ const ProtectedInwardesDetailsScreen = (props) => (
 const ProtectedManifestDetailScreen = (props) => (
   <ProtectedScreen requireUser={true} requireSession={true}>
     <ManifestDetailScreen {...props} />
-  </ProtectedScreen>
-);
-
-const ProtectedInwardScanning = (props) => (
-  <ProtectedScreen requireUser={true} requireSession={true}>
-    <InwardScanning {...props} />
   </ProtectedScreen>
 );
 
