@@ -51,6 +51,9 @@ export const API_ENDPOINTS = {
   SUMMARY_HEADER_DATA: "/Inward/GetScanningDetailsSummary",
   //inwards dockets scanning summary submit
   SUBMIT_DOCKET_SCAN_SUMMARY: "/Inward/InsertTruckUnloadingDetails",
+
+  // Tracking endpoints
+  TRACKING_DOCKET_DETAILS: "/Tracking/GetDocketTracking",
 };
 
 // Example usage:

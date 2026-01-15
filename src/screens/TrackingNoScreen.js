@@ -24,7 +24,7 @@ export default function TreackingNoScreen() {
       setTimeout(() => {
         setLoading(false);
         // Navigate to details screen with docket number
-        navigation.navigate("DocketDetails", { docketNumber: docketNumber.trim() });
+        navigation.navigate("DocketDetails", { docket_Number: docketNumber.trim() });
       }, 1000);
     } catch (error) {
       setLoading(false);

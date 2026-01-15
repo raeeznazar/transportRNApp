@@ -1,14 +1,14 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { ProtectedScreen } from "../components/ProtectedScreen";
-import DocketDetailsScreen from "../screens/TrackingDocketDetailsScreen";
-import TreackingNoScreen from "../screens/TreackingNoScreen";
+import TrackingDocketDetailsScreen from "../screens/TrackingDocketDetailsScreen";
+import TrackingNoScreen from "../screens/TrackingNoScreen";
 
 const Stack = createNativeStackNavigator();
 
 const ProtectedDocketDetailsScreen = (props) => (
   <ProtectedScreen requireUser={true} requireSession={true}>
-    <DocketDetailsScreen {...props} />
+    <TrackingDocketDetailsScreen {...props} />
   </ProtectedScreen>
 );
 
@@ -26,7 +26,7 @@ export default function TrackingNavigator() {
     >
       <Stack.Screen
         name="TrackingHome"
-        component={TreackingNoScreen}
+        component={TrackingNoScreen}
         options={{
           headerShown: false,
           title: "Tracking",

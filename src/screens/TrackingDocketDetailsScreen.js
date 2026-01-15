@@ -1,22 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetTrackingDocketDetails } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
 
-export default function DocketDetailsScreen() {
+export default function TrackingDocketDetailsScreen({ route }) {
   const { params = {} } = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const theme = useCurrentTheme();
 
+  const { docket_Number } = route.params;
+  const { data, isLoading, isError, error, refetch } = useGetTrackingDocketDetails(docket_Number);
+  console.log("TrackingDocketDetailsScreen params:", data);
   const {
-    docketNumber = "#DK-99201",
-    docketDate = "Oct 24, 2023",
-    primaryRoute = "North-East Hub → Warehouse B",
-    sender = { name: "John Logistics", address: "123 Industry Way, Suite 400\nNew York, NY 10001" },
-    receiver = { name: "Sarah Terminal", address: "789 Delivery Rd, Building 2\nBrooklyn, NY 11201" },
-    packageDetails = { qty: "24 Units", weight: "142.5 kg", type: "Pallets" },
+    docketNumber = data?.docketNo,
+    docketDate = data?.docketDate,
+    primaryRoute = data?.fromStation + " → " + data?.toStation,
+    sender = { name: data?.consignorName, address: `${data?.consignorAddress1}\n${data?.consignorAddress2}, ${data?.consignorAddress3}` },
+    receiver = { name: data?.consigneeName, address: `${data?.consigneeAddress1}\n${data?.consigneeAddress2}, ${data?.consigneeAddress3}` },
+    packageDetails = { qty: `${data?.totalPackets}`, weight: `${data?.docketWeight}`, type: `${data?.bookingType}` },
     charges = {
       freight: "$1,240.00",
       handling: "$45.00",
@@ -34,6 +38,20 @@ export default function DocketDetailsScreen() {
 
   const headerBg = theme.colors.card ?? "#fff";
   const textPrimary = theme.colors.text ?? "#0f172a";
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background }}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View className="items-center gap-3">
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+            Loading docket details…
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>

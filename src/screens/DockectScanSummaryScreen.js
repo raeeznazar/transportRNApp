@@ -3,7 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useFinalSubmitData, useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
+import { useAutoRefetchQuery, useFinalSubmitData, useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -14,13 +14,29 @@ export default function DocketScanSummaryScreen({ route }) {
   const insets = useSafeAreaInsets();
   const { thcid } = route.params;
   const { sessionData } = useAuthStore();
-  const { data: summaryHeaderData, isLoading, isError, error } = useGetBarcodeSubmitSummaryHeader(thcid, sessionData?.branchCode);
+
+  const {
+    data: summaryHeaderData,
+    isLoading,
+    isError,
+    error,
+  } = useAutoRefetchQuery(
+    useGetBarcodeSubmitSummaryHeader,
+    [thcid, sessionData?.branchCode],
+    60000 // 1 minute
+  );
+
   const {
     data: docketScanData,
     isLoading: isDocketLoading,
     isError: isDocketError,
     error: docketError,
-  } = useGetDocketScanList(sessionData?.branchCode, thcid);
+  } = useAutoRefetchQuery(
+    useGetDocketScanList,
+    [sessionData?.branchCode, thcid],
+    60000 // 1 minute
+  );
+
   const submitDocketScanSummary = useFinalSubmitData();
 
   const dockets =

@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
+import { useAutoRefetchQuery, useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 
@@ -42,10 +42,20 @@ export default function DocketScanningScreen({ route }) {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [isSubmittingDamage, setIsSubmittingDamage] = useState(false);
 
-  // Fetch docket scan list
-  const { data: docketScanData, isLoading, isError, error } = useGetDocketScanList(sessionData?.branchCode, thcid);
+  // Fetch docket scan list with auto-refetch on focus and every 1 minute
+  const {
+    data: docketScanData,
+    isLoading,
+    isError,
+    error,
+  } = useAutoRefetchQuery(
+    useGetDocketScanList,
+    [sessionData?.branchCode, thcid],
+    60000 // 1 minute
+  );
   const insertScanningData = useInsertScanningData();
-  const insertDamageScanningData = useInsertDamageScanningData(); // For damage scans
+  // For damage scans
+  const insertDamageScanningData = useInsertDamageScanningData();
 
   // Animated scanner line
   const scanAnimation = useRef(new Animated.Value(0)).current;
@@ -346,14 +356,16 @@ export default function DocketScanningScreen({ route }) {
   // Sample data
   // Transform API data to match component structure
   const dockets =
-    docketScanData?.map((item) => ({
-      id: item.docketid,
-      number: item.docketno,
-      total: item.totalPackets,
-      scanned: item.scanned,
-      short: item.totalPackets - item.scanned,
-      completed: item.scanned === item.totalPackets,
-    })) || [];
+    docketScanData
+      ?.filter((item) => item.scanned !== item.totalPackets) // Filter out completed
+      .map((item) => ({
+        id: item.docketid,
+        number: item.docketno,
+        total: item.totalPackets,
+        scanned: item.scanned,
+        short: item.totalPackets - item.scanned,
+        completed: item.scanned === item.totalPackets,
+      })) || [];
 
   const DocketCard = ({ docket }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;

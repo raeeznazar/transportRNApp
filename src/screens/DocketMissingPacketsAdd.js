@@ -6,7 +6,7 @@ import { ActivityIndicator, Modal, ScrollView, StatusBar, Text, TouchableOpacity
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetShortagePacketList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
+import { useAutoRefetchQuery, useGetShortagePacketList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -134,7 +134,16 @@ export default function DocketMissingPacketsAdd() {
   const { sessionData } = useAuthStore();
   const { docketID, thcid } = route.params || {};
 
-  const { data: shortageData, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketID);
+  const {
+    data: shortageData,
+    isLoading,
+    isError,
+    error,
+  } = useAutoRefetchQuery(
+    useGetShortagePacketList,
+    [thcid, sessionData?.branchCode, docketID],
+    60000 // 1 minute
+  );
   const submitMissingPackets = useSubmitMissingPackets();
   const { isLoading: isSubmitting } = submitMissingPackets;
 

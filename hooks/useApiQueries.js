@@ -1,4 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
 import { API_ENDPOINTS } from "../config/endpoints";
 import apiClient from "../services/apiService";
 // Query Keys - centralized for cache management
@@ -14,7 +16,35 @@ export const queryKeys = {
   docketScanList: ["docketScanList"],
   shortagePacketList: ["shortagePacketList"],
   barcodeSubmitSummaryHeader: ["barcodeSubmitSummaryHeader"],
+  trackingDocketDetails: ["trackingDocketDetails"],
   // Add more query keys based on your screensApiService
+};
+
+// Custom hook for auto-refetching queries on screen focus with interval
+export const useAutoRefetchQuery = (queryHook, params, intervalMs = 60000) => {
+  const intervalRef = useRef(null);
+  const { refetch, ...queryResult } = queryHook(...params);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Refetch immediately when screen comes into focus
+      refetch();
+
+      // Set up interval to refetch every intervalMs
+      intervalRef.current = setInterval(() => {
+        refetch();
+      }, intervalMs);
+
+      // Cleanup: clear interval when screen loses focus
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    }, [...params, refetch, intervalMs])
+  );
+
+  return { refetch, ...queryResult };
 };
 
 // Fetch user inwards data
@@ -291,7 +321,7 @@ export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate, 
 
 //Fetch Docket Scan List Screen
 
-export const useGetDocketScanList = (branchCode, thcid) => {
+export const useGetDocketScanList = (branchCode, thcid, options = {}) => {
   return useQuery({
     queryKey: [...queryKeys.docketScanList, branchCode, thcid],
     queryFn: async () => {
@@ -317,12 +347,14 @@ export const useGetDocketScanList = (branchCode, thcid) => {
       }
     },
     enabled: !!branchCode && !!thcid,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0,
+    gcTime: 0,
     retry: 1,
+    ...options,
   });
 };
 
-// Submit Docket Scanning data Serial number
+// Submit Docket Scanning data Serial number normal scanning
 export const useInsertScanningData = () => {
   return useMutation({
     mutationFn: async (scanData) => {
@@ -524,5 +556,40 @@ export const useFinalSubmitData = () => {
         throw new Error(error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit final data");
       }
     },
+  });
+};
+
+export const useGetTrackingDocketDetails = (docketNo) => {
+  const cleanedDocketNo = String(docketNo ?? "").trim();
+
+  console.log("useGetTrackingDocketDetails Params:", { docketNo: cleanedDocketNo });
+  return useQuery({
+    queryKey: [...queryKeys.trackingDocketDetails, cleanedDocketNo],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.TRACKING_DOCKET_DETAILS, {
+          params: {
+            docketNo: cleanedDocketNo,
+          },
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getTrackingDocketDetails ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        throw new Error(error.response?.data?.message || "Failed to get tracking docket details");
+      }
+    },
+    enabled: cleanedDocketNo.length > 0,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: 1,
   });
 };
