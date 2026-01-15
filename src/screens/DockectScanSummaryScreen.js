@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useState } from "react";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -14,6 +15,7 @@ export default function DocketScanSummaryScreen({ route }) {
   const insets = useSafeAreaInsets();
   const { thcid } = route.params;
   const { sessionData } = useAuthStore();
+  const [filterStatus, setFilterStatus] = useState("all"); // "all", "completed", "shortage"
 
   const {
     data: summaryHeaderData,
@@ -49,6 +51,16 @@ export default function DocketScanSummaryScreen({ route }) {
       status: item?.scanned === item?.totalPackets ? "completed" : "shortage",
       uniqueKey: `${item?.docketid}_${item?.docketno}_${idx}`,
     })) || [];
+
+  const totalPacketsSum = dockets.reduce((sum, docket) => sum + (docket?.totalPackets || 0), 0);
+
+  // Filter dockets based on selected status
+  const filteredDockets = dockets.filter((docket) => {
+    if (filterStatus === "all") return true;
+    if (filterStatus === "completed") return docket?.status === "completed";
+    if (filterStatus === "shortage") return docket?.status === "shortage";
+    return true;
+  });
 
   const DocketCard = ({ docket }) => {
     const isShortage = docket?.status === "shortage";
@@ -209,7 +221,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Total Dockets
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData?.totalDockets}
+                  {summaryHeaderData?.totalDockets} / {dockets?.length}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -244,7 +256,7 @@ export default function DocketScanSummaryScreen({ route }) {
                   Packets
                 </Text>
                 <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                  {summaryHeaderData?.totalPackets}
+                  {summaryHeaderData?.totalPackets} / {totalPacketsSum}
                 </Text>
               </View>
               <View className="w-1/2 mb-5">
@@ -278,20 +290,82 @@ export default function DocketScanSummaryScreen({ route }) {
           </View>
 
           {/* Docket Details Header */}
-          <View className="flex-row items-center justify-between px-1">
-            <Text className="text-sm font-bold uppercase tracking-wider" style={{ color: theme.colors.secondaryText }}>
-              Docket Details
-            </Text>
-            <View className="px-2 py-1 rounded-full" style={{ backgroundColor: "#e2e8f0" + "40" }}>
-              <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
-                {dockets?.length} items
+          <View className="gap-3">
+            <View className="flex-row items-center justify-between px-1">
+              <Text className="text-sm font-bold uppercase tracking-wider" style={{ color: theme.colors.secondaryText }}>
+                Docket Details
               </Text>
+              <View className="px-2 py-1 rounded-full" style={{ backgroundColor: "#e2e8f0" + "40" }}>
+                <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
+                  {filteredDockets?.length} items
+                </Text>
+              </View>
+            </View>
+
+            {/* Filter Buttons */}
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                className="flex-1 py-2 px-3 rounded-lg items-center"
+                style={{
+                  backgroundColor: filterStatus === "all" ? theme.colors.primary : theme.colors.cardBg,
+                  borderWidth: 1,
+                  borderColor: filterStatus === "all" ? theme.colors.primary : "#e2e8f0" + "40",
+                }}
+                onPress={() => setFilterStatus("all")}
+              >
+                <Text
+                  className="text-xs font-bold"
+                  style={{
+                    color: filterStatus === "all" ? "#fff" : theme.colors.secondaryText,
+                  }}
+                >
+                  All ({dockets?.length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-1 py-2 px-3 rounded-lg items-center"
+                style={{
+                  backgroundColor: filterStatus === "completed" ? theme.colors.success : theme.colors.cardBg,
+                  borderWidth: 1,
+                  borderColor: filterStatus === "completed" ? theme.colors.success : "#e2e8f0" + "40",
+                }}
+                onPress={() => setFilterStatus("completed")}
+              >
+                <Text
+                  className="text-xs font-bold"
+                  style={{
+                    color: filterStatus === "completed" ? "#fff" : theme.colors.secondaryText,
+                  }}
+                >
+                  Complete ({dockets?.filter((d) => d?.status === "completed").length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-1 py-2 px-3 rounded-lg items-center"
+                style={{
+                  backgroundColor: filterStatus === "shortage" ? "#f97316" : theme.colors.cardBg,
+                  borderWidth: 1,
+                  borderColor: filterStatus === "shortage" ? "#f97316" : "#e2e8f0" + "40",
+                }}
+                onPress={() => setFilterStatus("shortage")}
+              >
+                <Text
+                  className="text-xs font-bold"
+                  style={{
+                    color: filterStatus === "shortage" ? "#fff" : theme.colors.secondaryText,
+                  }}
+                >
+                  Short ({dockets?.filter((d) => d?.status === "shortage").length})
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
           {/* Docket Cards */}
           <View className="gap-3">
-            {dockets?.map((docket) => (
+            {filteredDockets?.map((docket) => (
               <DocketCard key={docket?.uniqueKey} docket={docket} />
             ))}
           </View>

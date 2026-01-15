@@ -110,7 +110,7 @@ export default function TruckArivalScreeAfterReport() {
         end={{ x: 1, y: 0 }}
         style={{ height: 56 }}
       >
-        <View className="flex-row items-center justify-between px-4 h-full">
+        <View className="flex-row items-center justify-between px-2 h-full">
           <View className="flex-row items-center">
             <Text className="text-white text-lg font-extrabold">🚚 {item.vehicle || "N/A"}</Text>
           </View>
