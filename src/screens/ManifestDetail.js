@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, StatusBar, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetManifestTable } from "../../hooks/useApiQueries";
+import { useAutoRefetchQuery, useGetManifestTable } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
 import ReactNativeTable from "../components/ReactNativeTable";
 
@@ -18,7 +18,7 @@ const COLUMNS = [
   { label: "Vehicle", key: "vehicle", width: 160 },
   { label: "Manifest Date", key: "manifestDate", width: 160, render: (value) => formatDate(value) },
   { label: "AlsNo", key: "alsNo", width: 140 },
-  { label: "Total Dockets", key: "docketID", width: 140 },
+  { label: "Docket Number", key: "docketNo", width: 140 },
   { label: "Docket Date", key: "docketDate", width: 140, render: (value) => formatDate(value) },
   { label: "Consignor Name", key: "consignorName", width: 200 },
   { label: "Consignor Cust ID", key: "consignorCustID", width: 140 },
@@ -31,9 +31,13 @@ export default function ManifestDetailScreen({ route }) {
   const theme = useCurrentTheme();
   const { manifestId } = route.params;
   const navigation = useNavigation();
-  console.log("ManifestDetailScreen manifestId:", manifestId);
 
-  const { data, isLoading, isError, error, refetch } = useGetManifestTable(manifestId);
+  const { data, isLoading, isError, error, refetch } = useAutoRefetchQuery(
+    useGetManifestTable,
+    [manifestId],
+    60000 // 1 minute
+  );
+
   // Loading state
   if (isLoading) {
     return (

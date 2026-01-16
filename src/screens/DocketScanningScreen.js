@@ -56,7 +56,6 @@ export default function DocketScanningScreen({ route }) {
     [sessionData?.branchCode, thcid],
     60000 // 1 minute
   );
-  console.log("Docket Scan Data:", docketScanData);
   const insertScanningData = useInsertScanningData();
   // For damage scans
   const insertDamageScanningData = useInsertDamageScanningData();
@@ -126,7 +125,6 @@ export default function DocketScanningScreen({ route }) {
           });
         }
       } catch (error) {
-        console.error("Camera permission error:", error);
         setHasCameraPermission(false);
       }
     };
@@ -144,8 +142,6 @@ export default function DocketScanningScreen({ route }) {
 
         // If scanned count increased, highlight that docket
         if (item.scanned > prevScanned) {
-          console.log("Highlighting docket:", item.docketid, "Previous:", prevScanned, "New:", item.scanned);
-
           // Vibrate for feedback
           Vibration.vibrate(100);
 
@@ -159,8 +155,6 @@ export default function DocketScanningScreen({ route }) {
               const storedPosition = cardPositionsRef.current[item.docketid];
 
               if (storedPosition) {
-                console.log("Scrolling to stored position:", storedPosition, "for docket:", item.docketid);
-
                 scrollViewRef.current.scrollTo({
                   y: Math.max(0, storedPosition - 50), // 50px offset from top
                   animated: true,
@@ -169,15 +163,9 @@ export default function DocketScanningScreen({ route }) {
                 // Fallback to calculated position
                 const filteredList = docketScanData.filter((d) => d.scanned !== d.totalPackets);
                 const cardIndex = filteredList.findIndex((d) => d.docketid === item.docketid);
-
-                console.log("Using calculated position. Card index:", cardIndex, "Total cards:", filteredList.length);
-
                 if (cardIndex !== -1) {
                   const cardHeight = 240;
                   const yOffset = Math.max(0, cardIndex * cardHeight - 50);
-
-                  console.log("Scrolling to calculated Y:", yOffset);
-
                   scrollViewRef.current.scrollTo({
                     y: yOffset,
                     animated: true,
@@ -302,6 +290,8 @@ export default function DocketScanningScreen({ route }) {
           name: fileName,
         });
       });
+
+      console.log("Submitting damage data with photos:", formData);
 
       // Submit damage data to API with FormData
       insertDamageScanningData.mutate(formData, {
@@ -838,7 +828,7 @@ export default function DocketScanningScreen({ route }) {
         <View
           className="absolute bottom-0 left-0 right-0 px-6"
           style={{
-            paddingBottom: insets.bottom + 16,
+            paddingBottom: insets.bottom,
             backgroundColor: "transparent",
           }}
         >
