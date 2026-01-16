@@ -21,12 +21,20 @@ import Toast from "react-native-toast-message";
 import { useAutoRefetchQuery, useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
+import ScanLoader from "../components/ScanLoader";
+import { ScanToast } from "../components/ScanToast";
 
 export default function DocketScanningScreen({ route }) {
   const { sessionData } = useAuthStore();
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -41,10 +49,15 @@ export default function DocketScanningScreen({ route }) {
   const [currentScannedBarcode, setCurrentScannedBarcode] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [isSubmittingDamage, setIsSubmittingDamage] = useState(false);
+  // Add state to track loader visibility
+  const [showLoader, setShowLoader] = useState(false);
+  const loaderTimerRef = useRef(null);
   const scrollViewRef = useRef(null);
   const [highlightedDocketId, setHighlightedDocketId] = useState(null);
   const previousScannedRef = useRef({});
   const cardPositionsRef = useRef({});
+  // Determine if camera should be active
+  const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
   const {
     data: docketScanData,
     isLoading,
@@ -268,7 +281,11 @@ export default function DocketScanningScreen({ route }) {
     }
 
     setIsSubmittingDamage(true);
+    setShowLoader(true);
+    setScanningEnabled(false);
 
+    const minDisplayTime = 2000; // 2 seconds minimum loader display
+    const startTime = Date.now(); // Track when the API call starts
     try {
       // Create FormData to send actual files
       const formData = new FormData();
@@ -290,41 +307,47 @@ export default function DocketScanningScreen({ route }) {
           name: fileName,
         });
       });
-
-      console.log("Submitting damage data with photos:", formData);
-
       // Submit damage data to API with FormData
       insertDamageScanningData.mutate(formData, {
         onSuccess: () => {
-          setIsSubmittingDamage(false);
-
-          // Extra vibration for damage scan
-          Vibration.vibrate([0, 150, 100, 150]);
-
-          Toast.show({
-            type: "success",
-            text1: "Damage Recorded",
-            text2: "Damage scan saved successfully",
-            position: "top",
-            visibilityTime: 3000,
-          });
-          closeDamageModal(false);
-          refetch();
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+          loaderTimerRef.current = setTimeout(() => {
+            setShowLoader(false);
+            Vibration.vibrate([0, 150, 100, 150]);
+            setToastConfig({
+              visible: true,
+              type: "success",
+              title: "Scan Successful",
+              message: "Docket information has been updated",
+            });
+            closeDamageModal(false);
+            refetch();
+            setTimeout(() => {
+              setScanningEnabled(true);
+            }, 3000);
+          }, remainingTime);
         },
         onError: (error) => {
           setIsSubmittingDamage(false);
-          Toast.show({
+          closeDamageModal();
+          setShowLoader(false);
+          setToastConfig({
+            visible: true,
             type: "error",
-            text1: "Save Failed",
-            text2: error.message || "Failed to save damage record",
-            position: "top",
-            visibilityTime: 3000,
+            title: "Scan Failed",
+            message: error.message || "Failed to save damage record",
           });
           refetch();
+          setTimeout(() => {
+            setScanningEnabled(true);
+          }, 3000);
         },
       });
     } catch (error) {
+      closeDamageModal();
       setIsSubmittingDamage(false);
+      setShowLoader(false);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -332,6 +355,9 @@ export default function DocketScanningScreen({ route }) {
         position: "top",
         visibilityTime: 2000,
       });
+      setTimeout(() => {
+        setScanningEnabled(true);
+      }, 3000);
     }
   };
 
@@ -359,6 +385,17 @@ export default function DocketScanningScreen({ route }) {
 
       // Only accept Code128 barcodes
       if (type !== "code128") {
+        setScanningEnabled(false); // Disable scanning
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Already Scanned",
+          message: `Barcode ${scannedValue} is not valid`,
+        });
+        // Re-enable scanning after toast disappears
+        setTimeout(() => {
+          setScanningEnabled(true);
+        }, 3000);
         return;
       }
 
@@ -368,16 +405,39 @@ export default function DocketScanningScreen({ route }) {
       // Validate: must be exactly 13 digits (numeric only)
       const isValidFormat = /^\d{13}$/.test(scannedValue);
       if (!isValidFormat) {
+        setScanningEnabled(false); // Disable scanning
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Already Scanned",
+          message: `Barcode ${scannedValue} is not valid`,
+        });
+        // Re-enable scanning after toast disappears
+        setTimeout(() => {
+          setScanningEnabled(true);
+        }, 3000);
         return;
       }
 
       // Check if already scanned
       if (scannedDockets.has(scannedValue)) {
-        return;
+        setScanningEnabled(false); // Disable scanning
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Already Scanned",
+          message: `Barcode ${scannedValue} has already been scanned`,
+        });
+
+        // Re-enable scanning after toast disappears
+        setTimeout(() => {
+          setScanningEnabled(true);
+        }, 3000);
+        return; // Stop further execution
       }
+
       try {
         Vibration.vibrate([0, 100, 50, 100]);
-
         // Mark as scanned
         setScannedDockets((prev) => new Set(prev).add(scannedValue));
 
@@ -386,6 +446,11 @@ export default function DocketScanningScreen({ route }) {
           setCurrentScannedBarcode(scannedValue);
           setShowDamageModal(true);
         } else {
+          // Show loader for regular scans
+          setShowLoader(true);
+          setScanningEnabled(false);
+          const startTime = Date.now();
+          const minDisplayTime = 1500;
           // Regular scan - send to API
           insertScanningData.mutate(
             {
@@ -396,31 +461,49 @@ export default function DocketScanningScreen({ route }) {
             },
             {
               onSuccess: () => {
-                Toast.show({
-                  type: "success",
-                  text1: "Scan Successful",
-                  text2: "Scan data sent successfully",
-                  position: "top",
-                  visibilityTime: 3000,
-                });
-                refetch();
+                const elapsedTime = Date.now() - startTime;
+                const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+
+                loaderTimerRef.current = setTimeout(() => {
+                  setShowLoader(false);
+                  setToastConfig({
+                    visible: true,
+                    type: "success",
+                    title: "Scan Successful",
+                    message: "Docket information has been updated",
+                  });
+                  refetch();
+                  // Re-enable scanning after toast auto-hides (3 seconds)
+                  setTimeout(() => {
+                    setScanningEnabled(true);
+                  }, 3000);
+                }, remainingTime);
               },
               onError: (error) => {
-                Toast.show({
-                  type: "error",
-                  text1: "Scan Failed",
-                  text2: error.message || "Failed to send scan data",
-                  position: "top",
-                  visibilityTime: 3000,
-                });
-                refetch();
+                const elapsedTime = Date.now() - startTime;
+                const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
-                // Remove from scanned set if API fails
-                setScannedDockets((prev) => {
-                  const updated = new Set(prev);
-                  updated.delete(scannedValue);
-                  return updated;
-                });
+                loaderTimerRef.current = setTimeout(() => {
+                  setShowLoader(false);
+                  // Show custom error toast
+                  setToastConfig({
+                    visible: true,
+                    type: "error",
+                    title: "Scan Failed",
+                    message: error.message || "Unable to sync with server. Please check your connection.",
+                  });
+                  refetch();
+
+                  setScannedDockets((prev) => {
+                    const updated = new Set(prev);
+                    updated.delete(scannedValue);
+                    return updated;
+                  });
+                  // Re-enable scanning after toast auto-hides (3 seconds)
+                  setTimeout(() => {
+                    setScanningEnabled(true);
+                  }, 3000);
+                }, remainingTime);
               },
             }
           );
@@ -650,6 +733,21 @@ export default function DocketScanningScreen({ route }) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+      {showLoader && (
+        <View className="absolute inset-0 z-50">
+          <ScanLoader message={"Processing scan data..."} />
+        </View>
+      )}
+
+      {/* Custom Scan Toast */}
+      <ScanToast
+        visible={toastConfig.visible}
+        type={toastConfig.type}
+        title={toastConfig.title}
+        message={toastConfig.message}
+        onHide={() => setToastConfig({ ...toastConfig, visible: false })}
+      />
+
       {/* Camera View with Background */}
       <View className="relative h-[28vh]" style={{ backgroundColor: "#000", zIndex: 1 }}>
         {/* Camera/Background Layer */}
@@ -660,7 +758,7 @@ export default function DocketScanningScreen({ route }) {
             barcodeScannerSettings={{
               barcodeTypes: ["code128"], // Only scan Code128
             }}
-            onBarcodeScanned={scanningEnabled ? handleBarCodeScanned : undefined}
+            onBarcodeScanned={isCameraActive ? handleBarCodeScanned : undefined}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           />
         ) : (

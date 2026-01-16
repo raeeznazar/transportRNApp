@@ -484,8 +484,6 @@ export const useInsertDamageScanningData = () => {
   return useMutation({
     mutationFn: async (formData) => {
       try {
-        console.log("Submitting Damage Scanning Data with FormData:", formData);
-
         const response = await apiClient.post(API_ENDPOINTS.INSERT_DAMAGE_BARCODE_PACKETS, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -501,18 +499,17 @@ export const useInsertDamageScanningData = () => {
           throw new Error(response.data?.status?.message || "Failed to submit damage scanning data");
         }
       } catch (error) {
-        console.error("insertDamageScanningData ERROR Details:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          message: error.message,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            baseURL: error.config?.baseURL,
-          },
-        });
-
+        // console.error("insertDamageScanningData ERROR Details:", {
+        //   status: error.response?.status,
+        //   statusText: error.response?.statusText,
+        //   data: error.response?.data,
+        //   message: error.message,
+        //   config: {
+        //     url: error.config?.url,
+        //     method: error.config?.method,
+        //     baseURL: error.config?.baseURL,
+        //   },
+        // });
         // Re-throw with the correct error message path
         throw new Error(
           error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to insert damage scanning data"
