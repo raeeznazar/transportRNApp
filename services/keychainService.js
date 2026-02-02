@@ -26,7 +26,7 @@ function safeJsonStringify(value) {
 }
 
 export const SecureStoreService = {
-  async saveCredentials({ token, refreshToken, user, sessionData = null }) {
+  async saveCredentials({ token, refreshToken, user, sessionData = null || sessionData }) {
     try {
       const savePromises = [];
 
@@ -134,10 +134,16 @@ export const SecureStoreService = {
       // function throw — return parsed values independently.
       const user = safeJsonParse(userJson);
       const sessionData = safeJsonParse(sessionDataJson);
+      console.log("Retrieved credentials:", {
+        token,
+        refreshToken,
+        user,
+        sessionData,
+      });
 
       return {
-        token: token || null,
-        refreshToken: refreshToken || null,
+        token: token,
+        refreshToken: refreshToken,
         user,
         sessionData,
       };

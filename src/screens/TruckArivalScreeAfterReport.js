@@ -194,7 +194,16 @@ export default function TruckArivalScreeAfterReport() {
   );
 
   return (
-    <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
+    <View
+      style={{
+        flex: 1,
+        paddingTop: 0,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+        backgroundColor: theme.colors.appBg,
+      }}
+    >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">

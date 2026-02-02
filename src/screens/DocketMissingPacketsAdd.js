@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useAutoRefetchQuery, useGetShortagePacketList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
+import { useGetShortagePacketList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -133,17 +133,13 @@ export default function DocketMissingPacketsAdd() {
   const route = useRoute();
   const { sessionData } = useAuthStore();
   const { docketID, thcid } = route.params || {};
+  const isFocused = useIsFocused();
 
-  const {
-    data: shortageData,
-    isLoading,
-    isError,
-    error,
-  } = useAutoRefetchQuery(
-    useGetShortagePacketList,
-    [thcid, sessionData?.branchCode, docketID],
-    60000 // 1 minute
-  );
+  // Only fetch when screen is focused
+  const { data, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketID, {
+    enabled: isFocused && !!thcid && !!sessionData?.branchCode && !!docketID,
+  });
+
   const submitMissingPackets = useSubmitMissingPackets();
   const { isLoading: isSubmitting } = submitMissingPackets;
 

@@ -137,7 +137,7 @@ export default function TruckArrivalSheetScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.appBg }]}>
       {/* Header Section */}
       <View style={[styles.headerSection, { backgroundColor: theme.colors.primary }]} className="w-full px-4 py-4 mb-4">
         <View className="flex-row flex-wrap gap-2">

@@ -118,6 +118,7 @@ export default function SetupScreen({ navigation, route }) {
         paddingBottom: insets.bottom,
         paddingLeft: insets.left,
         paddingRight: insets.right,
+        backgroundColor: theme.colors.appBg,
       }}
     >
       <View style={styles.container}>

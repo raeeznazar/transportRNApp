@@ -47,10 +47,10 @@ export default function CustomDrawerContent(props) {
       ],
     },
     {
-      name: "Outward",
-      label: "Outward",
+      name: "Outwards",
+      label: "Outwards",
       icon: "exit-outline",
-      route: "Outward",
+      route: "Outwards",
     },
     {
       name: "Tracking",

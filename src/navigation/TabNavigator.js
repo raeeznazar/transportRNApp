@@ -1,53 +1,62 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Platform } from "react-native";
 import { useCurrentTheme } from "../../stores/themeStore";
 import TilesScreen from "../screens/TilesScreen";
 import DrawerNavigator from "./DrawerNavigator";
+
 const Tab = createBottomTabNavigator();
+
+// Platform-specific tab bar styling
+const TAB_BAR_HEIGHT = Platform.select({ ios: 85, android: 65 });
+const TAB_BAR_PADDING = Platform.select({ ios: 20, android: 10 });
 
 export default function TabNavigator() {
   const theme = useCurrentTheme();
 
-  const active = theme?.colors?.headerText ?? "#000";
-  const inactive = theme?.colors?.headerText ? `${theme.colors.headerText}80` : "#00000080";
+  const activeColor = theme?.colors?.headerText ?? "#000";
+  const inactiveColor = theme?.colors?.headerText ? `${theme.colors.headerText}80` : "#00000080";
+
+  const handleHomeTabPress = (navigation) => (e) => {
+    e.preventDefault();
+    navigation.navigate("Home", { screen: "Dashboard" });
+  };
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: active,
-        tabBarInactiveTintColor: inactive,
-        tabBarLabelStyle: { fontSize: 12 },
+        headerShown: false,
+        headerTintColor: theme?.colors?.headerText,
         headerStyle: { backgroundColor: theme?.colors?.headerBg },
-        tabBarStyle: { backgroundColor: theme?.colors?.headerBg },
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: inactiveColor,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "500",
+        },
+        tabBarStyle: {
+          backgroundColor: theme?.colors?.headerBg,
+          paddingBottom: TAB_BAR_PADDING,
+          height: TAB_BAR_HEIGHT,
+          borderTopWidth: 1,
+          borderTopColor: theme?.colors?.border ?? "#e0e0e0",
+          elevation: 8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+        },
       }}
     >
       <Tab.Screen
         name="Home"
         component={DrawerNavigator}
         listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            // Prevent default navigation
-            e.preventDefault();
-
-            // Get current navigation state
-            const state = navigation.getState();
-            const currentTab = state.routes[state.index];
-
-            // If we're not on Home tab, navigate to Home and Dashboard
-            if (currentTab.name !== "Home") {
-              navigation.navigate("Home", { screen: "Dashboard" });
-            } else {
-              // If we're already on Home tab, reset to Dashboard
-              navigation.navigate("Home", { screen: "Dashboard" });
-            }
-          },
+          tabPress: handleHomeTabPress(navigation),
         })}
         options={{
           title: "Home",
-          headerShown: false,
-          headerTintColor: theme?.colors?.headerText,
-          headerStyle: { backgroundColor: theme?.colors?.headerBg },
-          tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "home" : "home-outline"} size={size ?? 20} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "home" : "home-outline"} size={size ?? 24} color={color} />,
         }}
       />
       <Tab.Screen
@@ -55,10 +64,7 @@ export default function TabNavigator() {
         component={TilesScreen}
         options={{
           title: "Tiles",
-          headerShown: false,
-          headerTintColor: theme?.colors?.headerText,
-          headerStyle: { backgroundColor: theme?.colors?.headerBg },
-          tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "grid" : "grid-outline"} size={size ?? 20} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "grid" : "grid-outline"} size={size ?? 24} color={color} />,
         }}
       />
     </Tab.Navigator>

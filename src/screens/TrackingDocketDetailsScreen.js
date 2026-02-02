@@ -86,7 +86,7 @@ export default function TrackingDocketDetailsScreen({ route }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.appBg }}>
       {showAlert && <BlurView intensity={100} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} />}
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} scrollEnabled={!showAlert} pointerEvents={showAlert ? "none" : "auto"}>

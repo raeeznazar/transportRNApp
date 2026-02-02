@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useAutoRefetchQuery, useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
+import { useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import ScanLoader from "../components/ScanLoader";
@@ -56,19 +56,19 @@ export default function DocketScanningScreen({ route }) {
   const [highlightedDocketId, setHighlightedDocketId] = useState(null);
   const previousScannedRef = useRef({});
   const cardPositionsRef = useRef({});
+  const isFocused = useIsFocused();
   // Determine if camera should be active
   const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
+
   const {
     data: docketScanData,
     isLoading,
     isError,
     error,
-    refetch,
-  } = useAutoRefetchQuery(
-    useGetDocketScanList,
-    [sessionData?.branchCode, thcid],
-    60000 // 1 minute
-  );
+  } = useGetDocketScanList(sessionData?.branchCode, thcid, false, {
+    enabled: isFocused && !!sessionData?.branchCode && !!thcid,
+  });
+
   const insertScanningData = useInsertScanningData();
   // For damage scans
   const insertDamageScanningData = useInsertDamageScanningData();

@@ -25,16 +25,6 @@ apiClient.interceptors.request.use(
     } catch (error) {
       console.error("Error adding token to request:", error);
     }
-    // Log the request information
-    const fullUrl =
-      config.baseURL && config.url ? config.baseURL.replace(/\/$/, "") + "/" + config.url.replace(/^\//, "") : config.url || config.baseURL;
-    // console.log("API Request:", {
-    //   method: config.method?.toUpperCase(),
-    //   url: fullUrl,
-    //   baseURL: config.baseURL,
-    //   endpoint: config.url,
-    //   data: config.data,
-    // });
     return config;
   },
   (error) => {
@@ -48,11 +38,6 @@ apiClient.interceptors.request.use(
  * ****/
 apiClient.interceptors.response.use(
   (response) => {
-    // console.log("API Response:", {
-    //   status: response.status,
-    //   url: response.config.url,
-    //   data: response.data,
-    // });
     return response;
   },
   async (error) => {
@@ -62,12 +47,12 @@ apiClient.interceptors.response.use(
     if (originalRequest.baseURL && originalRequest.url) {
       errorUrl = originalRequest.baseURL.replace(/\/$/, "") + "/" + originalRequest.url.replace(/^\//, "");
     }
-    // console.error("API Error:", {
-    //   status: error.response?.status,
-    //   url: errorUrl,
-    //   message: error.response?.data?.message || error.message,
-    //   responseData: error.response?.data,
-    // });
+    console.error("API Error:", {
+      status: error.response?.status,
+      url: errorUrl,
+      message: error.response?.data?.message || error.message,
+      responseData: error.response?.data,
+    });
 
     // Handle 401 Unauthorized - Token expired
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -75,12 +60,25 @@ apiClient.interceptors.response.use(
 
       try {
         const refreshToken = await SecureStoreService.getRefreshToken();
+        const accessToken = await SecureStoreService.getToken();
 
-        if (refreshToken) {
+        console.log("Refresh Token:", refreshToken);
+
+        if (!refreshToken || !accessToken) {
+          console.log("No refresh token or access token available");
+          await SecureStoreService.clearCredentials();
+          const logoutError = new Error("Session expired, please login again");
+          logoutError.code = "SESSION_EXPIRED";
+          return Promise.reject(logoutError);
+        }
+
+        console.log("Attempting to refresh token...");
+
+        if (refreshToken && accessToken) {
           // Try to refresh the token
           const response = await axios.post(
             `${environment.API_BASE_URL}${API_ENDPOINTS.REFRESH_TOKEN}`,
-            { refreshToken: refreshToken },
+            { refreshToken: refreshToken, accessToken: accessToken },
             {
               headers: {
                 "Content-Type": "application/json",
@@ -88,25 +86,32 @@ apiClient.interceptors.response.use(
               },
             }
           );
-          const { accessToken: newToken, refreshToken: newRefreshToken } = response.data.data;
+          console.log("Token refresh response:", response.data);
+          // FIX: Don't shadow variable names
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
+
           const existingCredentials = await SecureStoreService.getCredentials();
           await SecureStoreService.saveCredentials({
-            token: newToken,
+            token: newAccessToken,
             refreshToken: newRefreshToken,
             user: existingCredentials.user, // preserve user data
             sessionData: existingCredentials.sessionData, // preserve session data
           });
+
+          console.log("Token refreshed successfully");
+
           // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
         // Clear stored credentials and handle logout
         await SecureStoreService.clearCredentials();
-        // Optional: You can throw a custom error to handle in components
+        // Throw custom error to handle in components
         const logoutError = new Error("Session expired, please login again");
         logoutError.code = "SESSION_EXPIRED";
-        // return Promise.reject(logoutError);
+        return Promise.reject(logoutError);
       }
     }
     return Promise.reject(error);

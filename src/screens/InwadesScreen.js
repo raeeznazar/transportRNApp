@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useCallback, useMemo, useState } from "react";
@@ -51,21 +51,17 @@ export default function InwadesScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentReportItem, setCurrentReportItem] = useState(null);
   const [pendingReportedThcId, setPendingReportedThcId] = useState(null); // NEW
-
+  const isFocused = useIsFocused();
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
   const branchName = sessionData?.branchName;
   const modifiedFromDate = formatDate(fromDate);
   const modifiedToDate = formatDate(toDate);
+
   const { data, isLoading, isError, error, refetch, isFetching } = useGetInward(branchCode, modifiedFromDate, modifiedToDate, {
-    enabled: !!branchCode,
-    staleTime: 0,
-    cacheTime: 0,
-    keepPreviousData: false,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
-    refetchOnReconnect: "always",
+    enabled: isFocused && !!branchCode && !!modifiedFromDate && !!modifiedToDate,
   });
+
   // Add the mutation hook
   const submitReportMutation = useSubmitInwardsReport();
 
@@ -408,7 +404,16 @@ export default function InwadesScreen() {
     );
   };
   return (
-    <View style={{ flex: 1, paddingTop: 0, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
+    <View
+      style={{
+        flex: 1,
+        paddingTop: 0,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+        backgroundColor: theme.colors.appBg,
+      }}
+    >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">

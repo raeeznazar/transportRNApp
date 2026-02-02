@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetShortagePacketList } from "../../hooks/useApiQueries";
@@ -10,11 +10,17 @@ export default function DockectShowPendingPackets({ route }) {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
   const { sessionData } = useAuthStore();
   const { docketId, thcid } = route.params || {};
 
-  const { data: shortageData, isLoading, isError, error } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketId);
+  const {
+    data: shortageData,
+    isLoading,
+    isError,
+    error,
+  } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketId, { enabled: isFocused });
   // Sample short packets data
   const shortPackets = shortageData || [];
 
@@ -58,7 +64,7 @@ export default function DockectShowPendingPackets({ route }) {
   );
 
   return (
-    <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+    <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
 

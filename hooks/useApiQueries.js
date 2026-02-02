@@ -17,11 +17,12 @@ export const queryKeys = {
   shortagePacketList: ["shortagePacketList"],
   barcodeSubmitSummaryHeader: ["barcodeSubmitSummaryHeader"],
   trackingDocketDetails: ["trackingDocketDetails"],
+  preloadingList: ["preloadingList"],
   // Add more query keys based on your screensApiService
 };
 
 // Custom hook for auto-refetching queries on screen focus with interval
-export const useAutoRefetchQuery = (queryHook, params, intervalMs = 60000) => {
+export const useAutoRefetchQuery = (queryHook, params, intervalMs = 1 * 60 * 1000) => {
   const intervalRef = useRef(null);
   const { refetch, ...queryResult } = queryHook(...params);
 
@@ -39,6 +40,7 @@ export const useAutoRefetchQuery = (queryHook, params, intervalMs = 60000) => {
       return () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
       };
     }, [...params, refetch, intervalMs])
@@ -78,8 +80,13 @@ export const useGetInward = (branchCode, fromDate, toDate, options = {}) => {
       }
     },
     enabled: !!branchCode && !!fromDate && !!toDate,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache (gcTime replaces cacheTime in newer React Query)
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
     ...options, // Spread any additional options passed from the component
   });
 };
@@ -113,7 +120,13 @@ export const useGetManifestIdList = (thcId, toStation) => {
       }
     },
     enabled: !!thcId && !!toStation,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 4 * 60 * 1000, // 4 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
   });
 };
 
@@ -145,7 +158,12 @@ export const useGetManifestTable = (manID) => {
       }
     },
     enabled: !!manID,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 5 * 60 * 1000, // 5 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 1,
   });
 };
@@ -213,7 +231,7 @@ export const useGetTruckArrivalSheetHeader = (thcId) => {
       }
     },
     enabled: !!thcId,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // 3 minutes
     retry: 1,
   });
 };
@@ -244,7 +262,12 @@ export const useGetTruckArrivalSheetTable = (thcId) => {
       }
     },
     enabled: !!thcId,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 1,
   });
 };
@@ -313,8 +336,13 @@ export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate, 
       }
     },
     enabled: !!branchCode && !!fromDate && !!toDate,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache (gcTime replaces cacheTime in newer React Query)
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 3 * 60 * 1000, // 3 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
     ...options,
   });
 };
@@ -347,8 +375,12 @@ export const useGetDocketScanList = (branchCode, thcid, options = {}) => {
       }
     },
     enabled: !!branchCode && !!thcid,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 4 * 60 * 1000, // 4 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 1,
     ...options,
   });
@@ -385,7 +417,7 @@ export const useInsertScanningData = () => {
   });
 };
 
-export const useGetShortagePacketList = (thcid, branchCode, docketID) => {
+export const useGetShortagePacketList = (thcid, branchCode, docketID, options = {}) => {
   console.log("useGetShortagePacketList Params:", { thcid, branchCode, docketID });
   return useQuery({
     queryKey: [...queryKeys.shortagePacketList, thcid, branchCode, docketID],
@@ -414,8 +446,14 @@ export const useGetShortagePacketList = (thcid, branchCode, docketID) => {
       }
     },
     enabled: !!thcid && !!branchCode && !!docketID,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 4 * 60 * 1000, // 4 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 1,
+    ...options,
   });
 };
 
@@ -448,7 +486,7 @@ export const useSubmitMissingPackets = () => {
 };
 
 // Fetch barcode submit summary header data
-export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode) => {
+export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode, options = {}) => {
   return useQuery({
     queryKey: [...queryKeys.barcodeSubmitSummaryHeader, thcid, branchCode],
     queryFn: async () => {
@@ -474,8 +512,14 @@ export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode) => {
       }
     },
     enabled: !!thcid && !!branchCode,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 2 * 60 * 1000, // 3 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 1,
+    ...options,
   });
 };
 
@@ -499,18 +543,6 @@ export const useInsertDamageScanningData = () => {
           throw new Error(response.data?.status?.message || "Failed to submit damage scanning data");
         }
       } catch (error) {
-        // console.error("insertDamageScanningData ERROR Details:", {
-        //   status: error.response?.status,
-        //   statusText: error.response?.statusText,
-        //   data: error.response?.data,
-        //   message: error.message,
-        //   config: {
-        //     url: error.config?.url,
-        //     method: error.config?.method,
-        //     baseURL: error.config?.baseURL,
-        //   },
-        // });
-        // Re-throw with the correct error message path
         throw new Error(
           error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to insert damage scanning data"
         );
@@ -559,7 +591,6 @@ export const useFinalSubmitData = () => {
 export const useGetTrackingDocketDetails = (docketNo) => {
   const cleanedDocketNo = String(docketNo ?? "").trim();
 
-  console.log("useGetTrackingDocketDetails Params:", { docketNo: cleanedDocketNo });
   return useQuery({
     queryKey: [...queryKeys.trackingDocketDetails, cleanedDocketNo],
     queryFn: async () => {
@@ -586,7 +617,50 @@ export const useGetTrackingDocketDetails = (docketNo) => {
       }
     },
     enabled: cleanedDocketNo.length > 0,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 1,
+  });
+};
+
+//API to get Preloading Sheet List
+export const useGetPreloadingList = (branchCode, finCode, includeAll = false, options = {}) => {
+  console.log("useGetPreloadingList Params:", { branchCode, finCode, includeAll });
+
+  return useQuery({
+    queryKey: [...queryKeys.preloadingList, branchCode, finCode, includeAll],
+    queryFn: async () => {
+      const timestamp = new Date().toLocaleTimeString();
+      console.log(`🔄 [${timestamp}] Fetching preloading list...`);
+
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.PRELOADING_SHEET_LIST, {
+          params: {
+            branchCode,
+            finCode,
+            includeAll,
+          },
+        });
+        console.log(`✅ [${timestamp}] Fetched successfully`);
+        console.log("Preloading List Response Data:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("getPreloadingList ERROR:", error.response?.data);
+        throw new Error(error.response?.data?.message || "Failed to get preloading list");
+      }
+    },
+    enabled: !!branchCode && !!finCode,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 30000, // 30 seconds
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
   });
 };

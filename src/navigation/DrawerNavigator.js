@@ -7,11 +7,11 @@ import { SecureStoreService } from "../../services/keychainService";
 import { useAuthStore, useSectionData } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import DashboardHomeScreen from "../screens/DashboardHomeScreen";
-import OutWadesEnteryScreen from "../screens/outWades/OutWadesEnteryScreen";
 import RevenueScreen from "../screens/RevenueScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import CustomDrawerContent from "./CustomDrawerContent";
 import InwardsNavigator from "./InwardsNavigator";
+import OutwardsNavigator from "./OutwardsNavigator";
 import TrackingNavigator from "./TrackingNavigator";
 
 export default function DrawerNavigator() {
@@ -45,8 +45,7 @@ export default function DrawerNavigator() {
   };
 
   const getHeaderTitle = (route) => {
-    const routeName = getFocusedRouteNameFromRoute(route) ?? "InwardsList";
-
+    const routeName = getFocusedRouteNameFromRoute(route) ?? route.name;
     switch (routeName) {
       case "InwardsList":
         return "Inwards List";
@@ -69,17 +68,30 @@ export default function DrawerNavigator() {
       case "DocketPedningScreen":
         return "Docket Pending Packets";
       case "TrackingHome":
+      case "Tracking":
         return "Tracking";
+      case "Outwards":
+        return "Pending Preloading";
+      case "OutwardsList":
+        return "Pending Preloading";
       default:
-        return "Inwards";
+        return "NeoEra Transport";
     }
   };
 
   const shouldHideDrawerHeader = (route) => {
-    const routeName = getFocusedRouteNameFromRoute(route);
+    const routeName = getFocusedRouteNameFromRoute(route) ?? route.name;
 
     // List of main/root screens that should show the drawer header
-    const mainScreens = ["InwardsList", "TruckArivalAfterReportScreen", "TruckUnloadingScreen", "TrackingHome"];
+    const mainScreens = [
+      "InwardsList",
+      "TruckArivalAfterReportScreen",
+      "TruckUnloadingScreen",
+      "TrackingHome",
+      "OutwardsList",
+      "Outwards",
+      "Tracking",
+    ];
     // If routeName is not in mainScreens and exists, hide drawer header
     // This allows nested/detail screens to show their own headers with back buttons
     return routeName && !mainScreens.includes(routeName);
@@ -116,11 +128,13 @@ export default function DrawerNavigator() {
         })}
       />
       <Drawer.Screen
-        name="Outward"
-        component={OutWadesEnteryScreen}
-        options={{
+        name="Outwards"
+        component={OutwardsNavigator}
+        options={({ route }) => ({
+          title: getHeaderTitle(route),
           drawerItemStyle: { display: "none" },
-        }}
+          headerShown: !shouldHideDrawerHeader(route),
+        })}
       />
       <Drawer.Screen
         name="Tracking"

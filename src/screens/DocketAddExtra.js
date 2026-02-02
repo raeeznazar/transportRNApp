@@ -143,7 +143,7 @@ export default function DocketAddExtra({ route }) {
   }, [barcodes]);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+    <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
 

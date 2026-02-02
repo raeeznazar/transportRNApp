@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useAutoRefetchQuery, useFinalSubmitData, useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
+import { useFinalSubmitData, useGetBarcodeSubmitSummaryHeader, useGetDocketScanList } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
@@ -16,28 +16,25 @@ export default function DocketScanSummaryScreen({ route }) {
   const { thcid } = route.params;
   const { sessionData } = useAuthStore();
   const [filterStatus, setFilterStatus] = useState("all"); // "all", "completed", "shortage"
+  const isFocused = useIsFocused();
 
   const {
     data: summaryHeaderData,
     isLoading,
     isError,
     error,
-  } = useAutoRefetchQuery(
-    useGetBarcodeSubmitSummaryHeader,
-    [thcid, sessionData?.branchCode],
-    60000 // 1 minute
-  );
+  } = useGetBarcodeSubmitSummaryHeader(thcid, sessionData?.branchCode, {
+    enabled: isFocused && !!thcid && !!sessionData?.branchCode,
+  });
 
   const {
     data: docketScanData,
     isLoading: isDocketLoading,
     isError: isDocketError,
     error: docketError,
-  } = useAutoRefetchQuery(
-    useGetDocketScanList,
-    [sessionData?.branchCode, thcid],
-    60000 // 1 minute
-  );
+  } = useGetDocketScanList(sessionData?.branchCode, thcid, {
+    enabled: isFocused && !!thcid && !!sessionData?.branchCode,
+  });
 
   const submitDocketScanSummary = useFinalSubmitData();
 
@@ -190,7 +187,7 @@ export default function DocketScanSummaryScreen({ route }) {
   }
 
   return (
-    <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+    <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>

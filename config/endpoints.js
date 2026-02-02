@@ -25,7 +25,7 @@ export const API_ENDPOINTS = {
   USER_FINANCIAL_YEARS: "/Auth/financial-years",
   PROCEED_DASHBOARD: "/Auth/initialize-session",
 
-  REFRESH_TOKEN: "Auth/refresh-token",
+  REFRESH_TOKEN: "/Auth/refresh-token",
 
   // Inward endpoints
   USER_INWARDS_DATA: "/Inward/Inward_GetDetails",
@@ -54,6 +54,11 @@ export const API_ENDPOINTS = {
 
   // Tracking endpoints
   TRACKING_DOCKET_DETAILS: "/Tracking/GetDocketTracking",
+
+  // OUTWARDS APIs
+
+  //Preloading sheet list
+  PRELOADING_SHEET_LIST: "/Outward/PreLoadSheet_GetList",
 };
 
 // Example usage:
