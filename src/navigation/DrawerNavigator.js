@@ -7,7 +7,7 @@ import { SecureStoreService } from "../../services/keychainService";
 import { useAuthStore, useSectionData } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import DashboardHomeScreen from "../screens/DashboardHomeScreen";
-import OutWardScreen from "../screens/OutWardScreen";
+import OutWadesEnteryScreen from "../screens/outWades/OutWadesEnteryScreen";
 import RevenueScreen from "../screens/RevenueScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import CustomDrawerContent from "./CustomDrawerContent";
@@ -117,7 +117,7 @@ export default function DrawerNavigator() {
       />
       <Drawer.Screen
         name="Outward"
-        component={OutWardScreen}
+        component={OutWadesEnteryScreen}
         options={{
           drawerItemStyle: { display: "none" },
         }}

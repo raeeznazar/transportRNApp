@@ -44,12 +44,6 @@ export default function CustomDrawerContent(props) {
           route: "Inwards",
           params: { screen: "TruckArivalAfterReportScreen" },
         },
-        // {
-        //   name: "Unloading",
-        //   label: "Unloading",
-        //   route: "Inwards",
-        //   params: { screen: "TruckUnloadingScreen" },
-        // },
       ],
     },
     {

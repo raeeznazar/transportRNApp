@@ -25,7 +25,7 @@ export const API_ENDPOINTS = {
   USER_FINANCIAL_YEARS: "/Auth/financial-years",
   PROCEED_DASHBOARD: "/Auth/initialize-session",
 
-  REFRESH_TOKEN: "/Auth/refresh",
+  REFRESH_TOKEN: "Auth/refresh-token",
 
   // Inward endpoints
   USER_INWARDS_DATA: "/Inward/Inward_GetDetails",

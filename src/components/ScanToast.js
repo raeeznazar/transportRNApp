@@ -64,6 +64,11 @@ export const ScanToast = ({ visible, type = "success", title, message, onHide })
       iconColor: "#DC2626",
       bgColor: "#DC2626",
     },
+    warning: {
+      icon: "warning-circle",
+      iconColor: "#D97706",
+      bgColor: "#D97706",
+    },
   };
 
   const currentConfig = config[type] || config.success;
