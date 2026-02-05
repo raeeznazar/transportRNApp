@@ -47,12 +47,12 @@ apiClient.interceptors.response.use(
     if (originalRequest.baseURL && originalRequest.url) {
       errorUrl = originalRequest.baseURL.replace(/\/$/, "") + "/" + originalRequest.url.replace(/^\//, "");
     }
-    console.error("API Error:", {
-      status: error.response?.status,
-      url: errorUrl,
-      message: error.response?.data?.message || error.message,
-      responseData: error.response?.data,
-    });
+    // console.error("API Error:", {
+    //   status: error.response?.status,
+    //   url: errorUrl,
+    //   message: error.response?.data?.message || error.message,
+    //   responseData: error.response?.data,
+    // });
 
     // Handle 401 Unauthorized - Token expired
     if (error.response?.status === 401 && !originalRequest._retry) {

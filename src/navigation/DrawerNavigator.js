@@ -74,6 +74,9 @@ export default function DrawerNavigator() {
         return "Pending Preloading";
       case "OutwardsList":
         return "Pending Preloading";
+      case "OutWadesDirectALS":
+      case "OutWadesALSscreen":
+        return "Actual Loading Sheet";
       default:
         return "NeoEra Transport";
     }

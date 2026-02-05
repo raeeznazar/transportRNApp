@@ -1,13 +1,12 @@
-import { useIsFocused } from "@react-navigation/native";
-import { useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, StatusBar, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetPreloadingList } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import { Button } from "../../components/Button";
 import { ScanToast } from "../../components/ScanToast";
-
 export default function OutWadesEnteryScreen() {
   const theme = useCurrentTheme();
   const { sessionData } = useAuthStore();
@@ -16,6 +15,7 @@ export default function OutWadesEnteryScreen() {
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const [selectedCardId, setSelectedCardId] = useState(null);
+  const navigation = useNavigation();
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     type: "success",
@@ -32,23 +32,53 @@ export default function OutWadesEnteryScreen() {
       setToastConfig({
         visible: true,
         type: "warning",
-        title: "Select ALS card",
-        message: "Please select a card first",
+        title: "No Card Selected",
+        message: "Please select a preloading card to proceed.",
       });
       return;
     }
-    console.log("Selected card ID:", selectedCardId);
+    const selectedItem = data.find((item) => item.id === selectedCardId);
     setToastConfig({
       visible: true,
       type: "success",
       title: "Card Selected",
-      message: `Processing card ${selectedCardId}`,
+      message: `Processing preloading card ${selectedCardId}`,
     });
+    setTimeout(() => {
+      navigation.navigate("OutWadesALSscreen", {
+        date: selectedItem.date,
+        routeDetails: selectedItem.routeDetails,
+        dockets: selectedItem.totalDockets,
+        packets: selectedItem.totalPackets,
+        weight: selectedItem.totalWeight,
+        cft: selectedItem.totalCft,
+        plsNo: selectedItem.plsNo,
+        alsId: selectedItem.id,
+      });
+    }, 600);
   }
-
+  function onHandleDirectALS() {
+    setSelectedCardId(null);
+    setToastConfig({
+      visible: true,
+      type: "success",
+      title: "Direct ALS Selected",
+      message: `Processing direct ALS`,
+    });
+    setTimeout(() => {
+      navigation.navigate("OutWadesDirectALS");
+    }, 600);
+  }
   const { data, isLoading, isError, error } = useGetPreloadingList(branchCode, finCode, false, {
     enabled: isFocused && !!branchCode && !!finCode,
   });
+  // Reset selectedCardId when page loses focus
+  useEffect(() => {
+    if (!isFocused) {
+      setSelectedCardId(null);
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }
+  }, [isFocused]);
 
   if (isLoading) {
     return (
@@ -145,6 +175,7 @@ export default function OutWadesEnteryScreen() {
         backgroundColor: theme.colors.appBg,
       }}
     >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
       {/* <View className="bg-white px-4 py-4">
         <Text className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
@@ -170,8 +201,8 @@ export default function OutWadesEnteryScreen() {
       />
 
       {/* Bottom Buttons */}
-      <View className="bg-white px-4 py-3 flex-row gap-3">
-        <Button variant="secondary" size="lg" className="flex-1">
+      <View className=" px-4 flex-row gap-3">
+        <Button variant="secondary" size="lg" className="flex-1" onPress={onHandleDirectALS}>
           Direct ALS
         </Button>
         <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>

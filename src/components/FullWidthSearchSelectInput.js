@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCurrentTheme } from "../../stores/themeStore";
 
-export default function FullWidthSelectInput({
+export default function FullWidthSearchSelectInput({
   label,
   value,
   onChange,
   items = [],
-  className, // if you use a Tailwind/className setup this will apply
+  className,
   style,
   placeholderText,
   autoOpen = false,
@@ -18,12 +18,35 @@ export default function FullWidthSelectInput({
 }) {
   const theme = useCurrentTheme();
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (autoOpen && items && items.length > 0) {
       setOpen(true);
     }
   }, [autoOpen, items]);
+
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery("");
+    }
+  }, [open]);
+
+  const filteredItems = items.filter((it) => it.label.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const renderItem = ({ item, index }) => (
+    <TouchableOpacity
+      key={`${String(item.value)}-${index}`}
+      onPress={() => {
+        onChange?.(item.value);
+        setOpen(false);
+        setSearchQuery("");
+      }}
+      style={styles.modalItem}
+    >
+      <Text style={{ color: theme.colors.inputText }}>{item.label}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View className={className} style={[styles.wrapper, style]}>
@@ -34,7 +57,6 @@ export default function FullWidthSelectInput({
           {label}
         </Text>
       ) : null}
-      {/* Modal-based picker fallback (pure JS) — safe replacement for native Picker */}
       <View style={[styles.pickerWrap, { borderColor: theme.colors.inputBorder, backgroundColor: theme.colors.inputBg }]} className="rounded-xl">
         <TouchableOpacity
           activeOpacity={0.7}
@@ -63,24 +85,26 @@ export default function FullWidthSelectInput({
         <Pressable style={styles.modalOverlay} onPress={() => setOpen(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: theme.colors.inputBg }]} onPress={() => {}}>
             <Text style={[styles.modalTitle, { color: theme.colors.bodyText }]}>{label ?? "Select an option"}</Text>
-            <ScrollView contentContainerStyle={styles.modalList}>
-              {items && items.length > 0 ? (
-                items.map((it) => (
-                  <TouchableOpacity
-                    key={String(it.value)}
-                    onPress={() => {
-                      onChange?.(it.value);
-                      setOpen(false);
-                    }}
-                    style={styles.modalItem}
-                  >
-                    <Text style={{ color: theme.colors.inputText }}>{it.label}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <Text style={{ color: theme.colors.inputPlaceholder, padding: 12 }}>No options</Text>
-              )}
-            </ScrollView>
+            <TextInput
+              style={[styles.searchInput, { borderColor: theme.colors.inputBorder, color: theme.colors.inputText }]}
+              placeholder="Search..."
+              placeholderTextColor={theme.colors.inputPlaceholder}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <FlatList
+              data={filteredItems}
+              renderItem={renderItem}
+              keyExtractor={(item, index) => `${String(item.value)}-${index}`}
+              contentContainerStyle={styles.modalList}
+              initialNumToRender={20}
+              maxToRenderPerBatch={20}
+              windowSize={10}
+              removeClippedSubviews={true}
+              ListEmptyComponent={
+                <Text style={{ color: theme.colors.inputPlaceholder, padding: 12 }}>{searchQuery ? "No results found" : "No options"}</Text>
+              }
+            />
             <TouchableOpacity onPress={() => setOpen(false)} style={styles.modalClose}>
               <Text style={{ color: theme.colors.inputPlaceholder }}>{Platform.OS === "android" ? "CANCEL" : "Done"}</Text>
             </TouchableOpacity>
@@ -112,6 +136,13 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 16,
+  },
+  searchInput: {
+    height: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    margin: 12,
   },
   modalOverlay: {
     flex: 1,

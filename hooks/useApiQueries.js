@@ -18,6 +18,12 @@ export const queryKeys = {
   barcodeSubmitSummaryHeader: ["barcodeSubmitSummaryHeader"],
   trackingDocketDetails: ["trackingDocketDetails"],
   preloadingList: ["preloadingList"],
+  vehicleListForALS: ["vehicleListForALS"],
+  driverListForALS: ["driverListForALS"],
+  routeListForALS: ["routeListForALS"],
+  teamsListForALS: ["teamsListForALS"],
+  baysListForALS: ["baysListForALS"],
+  godownsListForALS: ["godownsListForALS"],
   // Add more query keys based on your screensApiService
 };
 
@@ -659,6 +665,157 @@ export const useGetPreloadingList = (branchCode, finCode, includeAll = false, op
     refetchInterval: 30000, // 30 seconds
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+//API to get vechicle No List for ALS
+export const useGetVehicleListForALS = (branchCode, options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.vehicleListForALS, branchCode],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.VEHICLE_LIST_FOR_ALS, {
+          params: {
+            branchCode,
+          },
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        console.error("VEHICLE_LIST_FOR_ALS ERROR:", error.response?.data);
+        throw new Error(error.response?.data?.message || "Failed to get vehicle list for ALS");
+      }
+    },
+    enabled: !!branchCode,
+    staleTime: Infinity, // Never consider data stale
+    gcTime: Infinity, // Never garbage collect cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+//API to get driver List for ALS
+export const useGetDriverListForALS = (branchCode, options = {}) => {
+  console.log("useGetDriverListForALS Params:", { branchCode });
+
+  return useQuery({
+    queryKey: [...queryKeys.driverListForALS, branchCode],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.DRIVER_LIST_FOR_ALS, {
+          params: {
+            branchCode,
+          },
+        });
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get driver list for ALS");
+      }
+    },
+    enabled: !!branchCode,
+    staleTime: Infinity, // Never consider data stale
+    gcTime: Infinity, // Never garbage collect cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+//API to get Route List for ALS
+export const useGetRouteListForALS = (options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.routeListForALS],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.ROUTES_LIST_FOR_ALS);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get routes list for ALS");
+      }
+    },
+    staleTime: Infinity, // Never consider data stale
+    gcTime: Infinity, // Never garbage collect cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+//API to get Teams List for ALS - get
+export const useGetTeamsListForALS = (options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.teamsListForALS],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.TEAMS_LIST_FOR_ALS);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get teams list for ALS");
+      }
+    },
+    staleTime: Infinity, // Never consider data stale
+    gcTime: Infinity, // Never garbage collect cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+//API to get Bays List for ALS - get
+export const useGetBaysListForALS = (options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.baysListForALS],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.BAYS_LIST_FOR_ALS);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get bays list for ALS");
+      }
+    },
+    staleTime: Infinity, // Never consider data stale
+    gcTime: Infinity, // Never garbage collect cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+//API to get Godowns List for ALS - get
+export const useGetGodownsListForALS = (options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.godownsListForALS],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.GODOWNS_LIST_FOR_ALS);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get godowns list for ALS");
+      }
+    },
+    staleTime: Infinity, // Never consider data stale
+    gcTime: Infinity, // Never garbage collect cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
     refetchOnMount: true,
     retry: 1,
     ...options,

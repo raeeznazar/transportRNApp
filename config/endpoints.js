@@ -59,6 +59,27 @@ export const API_ENDPOINTS = {
 
   //Preloading sheet list
   PRELOADING_SHEET_LIST: "/Outward/PreLoadSheet_GetList",
+
+  //Vechicle list for ALS
+  VEHICLE_LIST_FOR_ALS: "/Outward/Vehicles_GetAvailable",
+
+  //Driver list for ALS
+  DRIVER_LIST_FOR_ALS: "/Outward/Drivers_GetAvailable",
+
+  //Route list for ALS
+  ROUTES_LIST_FOR_ALS: "/Outward/Routes_GetList",
+
+  //Teams list for ALS
+  TEAMS_LIST_FOR_ALS: "/Outward/Teams_GetDropdown",
+
+  //Bays list for ALS
+  BAYS_LIST_FOR_ALS: "/Outward/Bays_GetDropdown",
+
+  //Godown list for ALS
+  GODOWNS_LIST_FOR_ALS: "/Outward/Godowns_GetDropdown",
+
+  //Insert Outwards Actual Loading Sheet
+  INSERT_OUTWARDS_ALS: "/Outward/ActualLoadSheetTemp_Insert",
 };
 
 // Example usage:
