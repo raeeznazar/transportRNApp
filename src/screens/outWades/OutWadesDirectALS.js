@@ -128,8 +128,10 @@ export default function OutWadesDirectALS() {
   }
 
   // Get selected driver's contact number
-  const selectedDriver = driverData?.find((driver) => driver.did.toString() === driverName);
+  const selectedDriver = driverData?.find((driver) => driver.drivername.toString() === driverName);
   const driverContactNo = selectedDriver?.contactno || null;
+
+  console.log("Selected Driver Contact No:", driverContactNo);
 
   function onHandleProcceed() {
     if (!driverName || !vehicleNo || !teamsName || !baysName || !routeName) {
@@ -381,7 +383,7 @@ export default function OutWadesDirectALS() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <View className="mx-4 mb-6 flex-row gap-3">
+      <View className="mx-4 mb-1 flex-row gap-3">
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>

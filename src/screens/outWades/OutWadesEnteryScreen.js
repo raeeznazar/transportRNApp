@@ -201,7 +201,7 @@ export default function OutWadesEnteryScreen() {
       />
 
       {/* Bottom Buttons */}
-      <View className=" px-4 flex-row gap-3">
+      <View className="px-4 flex-row gap-3 mb-1">
         <Button variant="secondary" size="lg" className="flex-1" onPress={onHandleDirectALS}>
           Direct ALS
         </Button>

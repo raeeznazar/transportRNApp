@@ -24,6 +24,8 @@ export const queryKeys = {
   teamsListForALS: ["teamsListForALS"],
   baysListForALS: ["baysListForALS"],
   godownsListForALS: ["godownsListForALS"],
+  outwardsScanningDocketListForALS: ["outwardsScanningDocketListForALS"],
+  outwardsGetMissingPackets: ["outwardsGetMissingPackets"],
   // Add more query keys based on your screensApiService
 };
 
@@ -383,10 +385,10 @@ export const useGetDocketScanList = (branchCode, thcid, options = {}) => {
     enabled: !!branchCode && !!thcid,
     staleTime: 0, // Override global - always stale
     gcTime: 0, // Override global - no cache
-    refetchInterval: 4 * 60 * 1000, // 4 minutes
-    refetchIntervalInBackground: false,
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -454,7 +456,7 @@ export const useGetShortagePacketList = (thcid, branchCode, docketID, options = 
     enabled: !!thcid && !!branchCode && !!docketID,
     staleTime: 0, // Override global - always stale
     gcTime: 0, // Override global - no cache
-    refetchInterval: 4 * 60 * 1000, // 4 minutes
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -491,7 +493,7 @@ export const useSubmitMissingPackets = () => {
   });
 };
 
-// Fetch barcode submit summary header data
+// Fetch barcode submit summary header data - post
 export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode, options = {}) => {
   return useQuery({
     queryKey: [...queryKeys.barcodeSubmitSummaryHeader, thcid, branchCode],
@@ -557,17 +559,12 @@ export const useInsertDamageScanningData = () => {
   });
 };
 
-// Submit Final Docket Scan Summary (POST request) - Use Mutation
+// Submit Final Docket Scan Summary (POST request) - Use Mutation - post
 export const useFinalSubmitData = () => {
   return useMutation({
     mutationFn: async (params) => {
       try {
-        console.log("Submitting Final Data with params:", params);
-
         const response = await apiClient.post(API_ENDPOINTS.SUBMIT_DOCKET_SCAN_SUMMARY, params);
-
-        console.log("✅ Final Submit Data Response:", response.data);
-
         // Check if the API returned success
         if (response.data?.status?.isSuccess) {
           return response.data;
@@ -594,6 +591,7 @@ export const useFinalSubmitData = () => {
   });
 };
 
+// API to get tracking docket details - get
 export const useGetTrackingDocketDetails = (docketNo) => {
   const cleanedDocketNo = String(docketNo ?? "").trim();
 
@@ -633,16 +631,13 @@ export const useGetTrackingDocketDetails = (docketNo) => {
   });
 };
 
-//API to get Preloading Sheet List
+//API to get Preloading Sheet List - get
 export const useGetPreloadingList = (branchCode, finCode, includeAll = false, options = {}) => {
   console.log("useGetPreloadingList Params:", { branchCode, finCode, includeAll });
 
   return useQuery({
     queryKey: [...queryKeys.preloadingList, branchCode, finCode, includeAll],
     queryFn: async () => {
-      const timestamp = new Date().toLocaleTimeString();
-      console.log(`🔄 [${timestamp}] Fetching preloading list...`);
-
       try {
         const response = await apiClient.get(API_ENDPOINTS.PRELOADING_SHEET_LIST, {
           params: {
@@ -651,11 +646,8 @@ export const useGetPreloadingList = (branchCode, finCode, includeAll = false, op
             includeAll,
           },
         });
-        console.log(`✅ [${timestamp}] Fetched successfully`);
-        console.log("Preloading List Response Data:", response.data);
         return response.data.dataValue;
       } catch (error) {
-        console.error("getPreloadingList ERROR:", error.response?.data);
         throw new Error(error.response?.data?.message || "Failed to get preloading list");
       }
     },
@@ -671,7 +663,7 @@ export const useGetPreloadingList = (branchCode, finCode, includeAll = false, op
   });
 };
 
-//API to get vechicle No List for ALS
+//API to get vechicle No List for ALS - get
 export const useGetVehicleListForALS = (branchCode, options = {}) => {
   return useQuery({
     queryKey: [...queryKeys.vehicleListForALS, branchCode],
@@ -700,7 +692,7 @@ export const useGetVehicleListForALS = (branchCode, options = {}) => {
   });
 };
 
-//API to get driver List for ALS
+//API to get driver List for ALS - get
 export const useGetDriverListForALS = (branchCode, options = {}) => {
   console.log("useGetDriverListForALS Params:", { branchCode });
 
@@ -730,7 +722,7 @@ export const useGetDriverListForALS = (branchCode, options = {}) => {
   });
 };
 
-//API to get Route List for ALS
+//API to get Route List for ALS - get
 export const useGetRouteListForALS = (options = {}) => {
   return useQuery({
     queryKey: [...queryKeys.routeListForALS],
@@ -817,6 +809,137 @@ export const useGetGodownsListForALS = (options = {}) => {
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
     refetchOnMount: true,
+    retry: 1,
+    ...options,
+  });
+};
+
+// Submit Outwades ALS Data - Use Mutation - post
+export const useOutwadesAlsSubmit = () => {
+  return useMutation({
+    mutationFn: async (params) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.INSERT_OUTWARDS_ALS, params);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit outwades ALS data");
+        }
+      } catch (error) {
+        console.error("useOutwadesAlsSubmit ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit outwades ALS data"
+        );
+      }
+    },
+  });
+};
+
+//API to get docket list for Outwards sacnning - get
+export const useGetOutwardsScanningDocketListForALS = (branchCode, altId, options = {}) => {
+  console.log("useGetOutwardsScanningDocketListForALS Params:", { branchCode, altId });
+  return useQuery({
+    queryKey: [...queryKeys.outwardsScanningDocketListForALS, branchCode, altId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWARDS_SCANNING_DOCKET_LIST, {
+          params: {
+            branchCode,
+            altId,
+          },
+        });
+        console.log("OUTWARDS_SCANNING_DOCKET_LIST Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get godowns list for ALS");
+      }
+    },
+    enabled: !!branchCode && !!altId,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 3 * 60 * 1000, // 3 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
+    retry: 1,
+    ...options,
+  });
+};
+
+// Insert outwards Scanning data - Use Mutation - post
+export const useOutwadesScanningSubmit = () => {
+  return useMutation({
+    mutationFn: async (params) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.INSERT_OUTWARDS_SCANNING_DETAILS, params);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit outwades ALS data");
+        }
+      } catch (error) {
+        console.error("useOutwadesAlsSubmit ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit outwades ALS data"
+        );
+      }
+    },
+  });
+};
+
+//API to get docket list for Outwards sacnning - get
+export const useGetOutwardsGetMissingPackets = (docketId, options = {}) => {
+  console.log("useGetOutwardsGetMissingPackets Params:", { docketId });
+  return useQuery({
+    queryKey: [...queryKeys.outwardsGetMissingPackets, docketId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWARDS_MISSING_PACKETS_LIST, {
+          params: {
+            docketId,
+          },
+        });
+        console.log("OUTWARDS_SCANNING_DOCKET_LIST Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get missing packets for ALS");
+      }
+    },
+    enabled: !!docketId,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 3 * 60 * 1000, // 3 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 1,
     retry: 1,
     ...options,
   });

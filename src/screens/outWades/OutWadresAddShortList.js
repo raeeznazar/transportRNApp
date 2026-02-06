@@ -6,11 +6,11 @@ import { ActivityIndicator, Modal, ScrollView, StatusBar, Text, TouchableOpacity
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetShortagePacketList, useSubmitMissingPackets } from "../../hooks/useApiQueries";
-import { useAuthStore } from "../../stores/authStore";
-import { useCurrentTheme } from "../../stores/themeStore";
-import { Button } from "../components/Button";
-import FullWidthSelectInput from "../components/FullWidthSelectInput";
+import { useGetOutwardsGetMissingPackets, useSubmitMissingPackets } from "../../../hooks/useApiQueries";
+import { useAuthStore } from "../../../stores/authStore";
+import { useCurrentTheme } from "../../../stores/themeStore";
+import { Button } from "../../components/Button";
+import FullWidthSelectInput from "../../components/FullWidthSelectInput";
 
 const REASON_OPTIONS = [
   { label: "Not found", value: "Not found" },
@@ -51,7 +51,7 @@ const PacketRow = React.memo(
                 color: theme.colors.text,
               }}
             >
-              {packet.barcode}
+              {packet.missingBarcode}
             </Text>
           </View>
         </TouchableOpacity>
@@ -66,7 +66,7 @@ const PacketRow = React.memo(
             }}
           >
             <Text className="text-xs font-medium mb-2" style={{ color: theme.colors.text }}>
-              Reason for {packet.barcode}
+              Reason for {packet.missingBarcode}
             </Text>
 
             {/* Select Input */}
@@ -126,7 +126,7 @@ const PacketRow = React.memo(
   }
 );
 
-export default function DocketMissingPacketsAdd() {
+export default function OutWadresAddShortList() {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -141,8 +141,8 @@ export default function DocketMissingPacketsAdd() {
     isLoading,
     isError,
     error,
-  } = useGetShortagePacketList(thcid, sessionData?.branchCode, docketID, {
-    enabled: isFocused && !!thcid && !!sessionData?.branchCode && !!docketID,
+  } = useGetOutwardsGetMissingPackets(docketID, {
+    enabled: isFocused && !!docketID,
   });
 
   const submitMissingPackets = useSubmitMissingPackets();
@@ -372,20 +372,20 @@ export default function DocketMissingPacketsAdd() {
 
             {/* Table Rows */}
             {packets.map((packet) => {
-              const hasReason = packetsWithReasons.some((p) => p.serialNumber === packet.barcode);
-              const isEditing = currentEditingPacket === packet.barcode;
-              const savedReason = packetsWithReasons.find((p) => p.serialNumber === packet.barcode)?.reason;
+              const hasReason = packetsWithReasons.some((p) => p.serialNumber === packet.missingBarcode);
+              const isEditing = currentEditingPacket === packet.missingBarcode;
+              const savedReason = packetsWithReasons.find((p) => p.serialNumber === packet.missingBarcode)?.reason;
 
               return (
                 <PacketRow
-                  key={packet.barcode}
+                  key={packet.missingBarcode}
                   packet={packet}
                   hasReason={hasReason}
                   isEditing={isEditing}
                   currentReason={currentReason}
                   theme={theme}
-                  onToggle={() => togglePacket(packet.barcode)}
-                  onSaveReason={() => saveReason(packet.barcode)}
+                  onToggle={() => togglePacket(packet.missingBarcode)}
+                  onSaveReason={() => saveReason(packet.missingBarcode)}
                   onCancelReason={handleCancelReason}
                   onChangeReason={setCurrentReason}
                   savedReason={savedReason}

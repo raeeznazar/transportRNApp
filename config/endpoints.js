@@ -80,8 +80,13 @@ export const API_ENDPOINTS = {
 
   //Insert Outwards Actual Loading Sheet
   INSERT_OUTWARDS_ALS: "/Outward/ActualLoadSheetTemp_Insert",
-};
 
-// Example usage:
-// import { API_BASE_URL, buildUrl, API_ENDPOINTS } from '../config/endpoints'
-// const full = buildUrl(API_ENDPOINTS.DASHBOARD)
+  //Outwades scanning docket list cards - get
+  OUTWARDS_SCANNING_DOCKET_LIST: "/Outward/ActualLoadTempDetails_Get",
+
+  //Insert Outwards Scanning Details
+  INSERT_OUTWARDS_SCANNING_DETAILS: "/Outward/ActualLoadScanning_InsertBatch",
+
+  //Outwades get missing packets - get
+  OUTWARDS_MISSING_PACKETS_LIST: "/Outward/MissingBarcodes_Get?docketId",
+};

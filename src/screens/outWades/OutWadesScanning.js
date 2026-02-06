@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,16 +18,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetDocketScanList, useInsertDamageScanningData, useInsertScanningData } from "../../hooks/useApiQueries";
-import { useAuthStore } from "../../stores/authStore";
-import { useCurrentTheme } from "../../stores/themeStore";
-import ScanLoader from "../components/ScanLoader";
-import { ScanToast } from "../components/ScanToast";
-export default function DocketScanningScreen({ route }) {
+import { useGetOutwardsScanningDocketListForALS, useOutwadesScanningSubmit } from "../../../hooks/useApiQueries";
+import { useAuthStore } from "../../../stores/authStore";
+import { useCurrentTheme } from "../../../stores/themeStore";
+import ScanLoader from "../../components/ScanLoader";
+import { ScanToast } from "../../components/ScanToast";
+
+export default function OutWadesScanning({ route }) {
   const { sessionData } = useAuthStore();
+  const branchCode = sessionData?.branchCode;
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
+  const isDirect = route.params?.isDirect || false;
+
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     type: "success",
@@ -39,7 +44,7 @@ export default function DocketScanningScreen({ route }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const [isDamage, setIsDamage] = useState(false);
-  const { thcid } = route.params;
+  const { alsId } = route.params;
 
   // Damage modal state
   const [showDamageModal, setShowDamageModal] = useState(false);
@@ -48,45 +53,38 @@ export default function DocketScanningScreen({ route }) {
   const [currentScannedBarcode, setCurrentScannedBarcode] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [isSubmittingDamage, setIsSubmittingDamage] = useState(false);
-  // Add state to track loader visibility
+
+  // Scanned state
   const [showLoader, setShowLoader] = useState(false);
   const loaderTimerRef = useRef(null);
   const scrollViewRef = useRef(null);
   const [highlightedDocketId, setHighlightedDocketId] = useState(null);
   const previousScannedRef = useRef({});
   const cardPositionsRef = useRef({});
-  const isFocused = useIsFocused();
-  // Determine if camera should be active
-  const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
-
   const {
-    data: docketScanData,
+    data: scannedData,
     isLoading,
     isError,
     error,
     refetch,
-  } = useGetDocketScanList(sessionData?.branchCode, thcid, {
-    enabled: isFocused && !!sessionData?.branchCode && !!thcid,
-    refetchOnMount: "always", // Force refetch when component mounts
+    isFetching,
+  } = useGetOutwardsScanningDocketListForALS(branchCode, alsId, {
+    enabled: isFocused && !!branchCode && !!alsId,
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      if (isFocused && sessionData?.branchCode && thcid) {
-        refetch();
-      }
-    }, [isFocused, sessionData?.branchCode, thcid, refetch])
-  );
+  const insertNormalScanningData = useOutwadesScanningSubmit();
 
-  const insertScanningData = useInsertScanningData();
-  // For damage scans
-  const insertDamageScanningData = useInsertDamageScanningData();
+  // Determine if camera should be active
+  const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
 
   // Animated scanner line
   const scanAnimation = useRef(new Animated.Value(0)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (!isFocused) {
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }
     // Create scanning animation
     Animated.loop(
       Animated.sequence([
@@ -118,11 +116,11 @@ export default function DocketScanningScreen({ route }) {
         }),
       ])
     ).start();
-  }, []);
+  }, [isFocused]);
 
   const scanLineTranslateY = scanAnimation.interpolate({
     inputRange: [0, 0.1, 0.5, 0.9, 1],
-    outputRange: [0, 0, 112, 112, 0], // 0% to 80% of 140 (h-40 height in pixels)
+    outputRange: [0, 0, 112, 112, 0],
   });
 
   const scanLineOpacity = scanAnimation.interpolate({
@@ -130,7 +128,7 @@ export default function DocketScanningScreen({ route }) {
     outputRange: [0, 0.5, 0.5, 0, 0],
   });
 
-  // Sync permission state and request on first mount if undefined
+  // Request camera permission on mount
   useEffect(() => {
     const requestCameraPermission = async () => {
       try {
@@ -151,64 +149,47 @@ export default function DocketScanningScreen({ route }) {
       }
     };
 
-    // Always request permission when screen mounts
     requestCameraPermission();
-  }, []); // Empty array - runs every time component mounts (screen navigation)
+  }, []);
 
   // Detect scanned count changes and highlight updated dockets
   useEffect(() => {
-    if (docketScanData && Object.keys(previousScannedRef.current).length > 0) {
-      docketScanData.forEach((item) => {
-        const docketKey = `${item.docketid}`;
-        const prevScanned = previousScannedRef.current[docketKey] || 0;
+    if (dockets.length > 0 && Object.keys(previousScannedRef.current).length > 0) {
+      dockets.forEach((docket) => {
+        const prevScanned = previousScannedRef.current[docket.number] || 0;
 
-        // If scanned count increased, highlight that docket
-        if (item.scanned > prevScanned) {
-          // Vibrate for feedback
+        if (docket.scanned > prevScanned) {
           Vibration.vibrate(100);
 
-          setHighlightedDocketId(item.docketid);
+          setHighlightedDocketId(docket.id);
           setTimeout(() => setHighlightedDocketId(null), 3000);
 
-          // Scroll to the updated docket - find in filtered list
           setTimeout(() => {
             if (scrollViewRef.current) {
-              // Use stored position if available
-              const storedPosition = cardPositionsRef.current[item.docketid];
-
-              if (storedPosition) {
+              const cardIndex = dockets.findIndex((d) => d.id === docket.id);
+              if (cardIndex !== -1) {
+                const cardHeight = 240;
+                const yOffset = Math.max(0, cardIndex * cardHeight - 50);
                 scrollViewRef.current.scrollTo({
-                  y: Math.max(0, storedPosition - 50), // 50px offset from top
+                  y: yOffset,
                   animated: true,
                 });
-              } else {
-                // Fallback to calculated position
-                const filteredList = docketScanData.filter((d) => d.scanned !== d.totalPackets);
-                const cardIndex = filteredList.findIndex((d) => d.docketid === item.docketid);
-                if (cardIndex !== -1) {
-                  const cardHeight = 240;
-                  const yOffset = Math.max(0, cardIndex * cardHeight - 50);
-                  scrollViewRef.current.scrollTo({
-                    y: yOffset,
-                    animated: true,
-                  });
-                }
               }
             }
-          }, 300); // Increased delay to ensure data is rendered
+          }, 300);
         }
       });
     }
 
-    // Update the previous scanned counts
+    // Update previous scanned counts
     const newScannedCounts = {};
-    docketScanData?.forEach((item) => {
-      newScannedCounts[`${item.docketid}`] = item.scanned;
+    dockets.forEach((docket) => {
+      newScannedCounts[docket.number] = docket.scanned;
     });
     previousScannedRef.current = newScannedCounts;
-  }, [docketScanData]);
+  }, [dockets]);
 
-  const [scannedDockets, setScannedDockets] = useState(new Set());
+  const [scannedBarcodes, setScannedBarcodes] = useState(new Set());
 
   // Take photo using camera
   const takePhoto = async () => {
@@ -224,7 +205,6 @@ export default function DocketScanningScreen({ route }) {
     }
 
     try {
-      // Request camera permissions
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== "granted") {
@@ -265,7 +245,7 @@ export default function DocketScanningScreen({ route }) {
     setSelectedPhoto(null);
   };
 
-  // Handle damage modal save with FormData for file uploads
+  // Handle damage modal save
   const handleDamageSave = async () => {
     if (!damageReason.trim()) {
       Toast.show({
@@ -293,66 +273,30 @@ export default function DocketScanningScreen({ route }) {
     setShowLoader(true);
     setScanningEnabled(false);
 
-    const minDisplayTime = 2000; // 2 seconds minimum loader display
-    const startTime = Date.now(); // Track when the API call starts
+    const minDisplayTime = 2000;
+    const startTime = Date.now();
+
     try {
-      // Create FormData to send actual files
-      const formData = new FormData();
-      formData.append("thcid", thcid);
-      formData.append("branchCode", sessionData?.branchCode);
-      formData.append("barcode", currentScannedBarcode);
-      formData.append("IsDamaged", "true"); // String boolean as per API spec
-      formData.append("Remarks", damageReason.trim());
-      formData.append("DocumentType", "damage"); // Empty as per API spec
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Append each photo file to Attachments array (same key name for List<IFormFile>)
-      damagePhotos.forEach((photoUri, index) => {
-        const fileName = `damage_${currentScannedBarcode}_${Date.now()}_${index}.jpg`;
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
-        // For React Native, the file object structure
-        formData.append("Attachments", {
-          uri: photoUri,
-          type: "image/jpeg",
-          name: fileName,
+      loaderTimerRef.current = setTimeout(() => {
+        setShowLoader(false);
+        Vibration.vibrate([0, 150, 100, 150]);
+        setToastConfig({
+          visible: true,
+          type: "success",
+          title: "Damage Recorded",
+          message: "Damage information has been saved",
         });
-      });
-      // Submit damage data to API with FormData
-      insertDamageScanningData.mutate(formData, {
-        onSuccess: () => {
-          const elapsedTime = Date.now() - startTime;
-          const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
-          loaderTimerRef.current = setTimeout(() => {
-            setShowLoader(false);
-            Vibration.vibrate([0, 150, 100, 150]);
-            setToastConfig({
-              visible: true,
-              type: "success",
-              title: "Scan Successful",
-              message: "Docket information has been updated",
-            });
-            closeDamageModal(false);
-            refetch();
-            setTimeout(() => {
-              setScanningEnabled(true);
-            }, 3000);
-          }, remainingTime);
-        },
-        onError: (error) => {
-          setIsSubmittingDamage(false);
-          closeDamageModal();
-          setShowLoader(false);
-          setToastConfig({
-            visible: true,
-            type: "error",
-            title: "Scan Failed",
-            message: error.message || "Failed to save damage record",
-          });
-          refetch();
-          setTimeout(() => {
-            setScanningEnabled(true);
-          }, 3000);
-        },
-      });
+        closeDamageModal(false);
+        setTimeout(() => {
+          setScanningEnabled(true);
+        }, 3000);
+      }, remainingTime);
     } catch (error) {
       closeDamageModal();
       setIsSubmittingDamage(false);
@@ -370,10 +314,10 @@ export default function DocketScanningScreen({ route }) {
     }
   };
 
-  // Close modal and reset
+  // Close damage modal and reset
   const closeDamageModal = (removeScanned = true) => {
     if (removeScanned && currentScannedBarcode) {
-      setScannedDockets((prev) => {
+      setScannedBarcodes((prev) => {
         const next = new Set(prev);
         next.delete(currentScannedBarcode);
         return next;
@@ -387,41 +331,39 @@ export default function DocketScanningScreen({ route }) {
     setIsSubmittingDamage(false);
   };
 
-  // Scan handler — only accepts Code128 barcodes with 13 digits
+  // Scan handler
   const handleBarCodeScanned = useCallback(
     ({ type, data }) => {
       if (!scanningEnabled) return;
 
       // Only accept Code128 barcodes
       if (type !== "code128") {
-        setScanningEnabled(false); // Disable scanning
+        setScanningEnabled(false);
         setToastConfig({
           visible: true,
           type: "error",
-          title: "Already Scanned",
-          message: `Barcode ${scannedValue} is not valid`,
+          title: "Invalid Barcode",
+          message: `Barcode is not valid`,
         });
-        // Re-enable scanning after toast disappears
         setTimeout(() => {
           setScanningEnabled(true);
         }, 3000);
         return;
       }
 
-      // Normalize the scanned data
       const scannedValue = String(data).trim();
+      console.log("Scanned Barcode:", scannedValue);
 
       // Validate: must be exactly 13 digits (numeric only)
       const isValidFormat = /^\d{13}$/.test(scannedValue);
       if (!isValidFormat) {
-        setScanningEnabled(false); // Disable scanning
+        setScanningEnabled(false);
         setToastConfig({
           visible: true,
           type: "error",
-          title: "Already Scanned",
+          title: "Invalid Format",
           message: `Barcode ${scannedValue} is not valid`,
         });
-        // Re-enable scanning after toast disappears
         setTimeout(() => {
           setScanningEnabled(true);
         }, 3000);
@@ -429,93 +371,128 @@ export default function DocketScanningScreen({ route }) {
       }
 
       // Check if already scanned
-      if (scannedDockets.has(scannedValue)) {
-        setScanningEnabled(false); // Disable scanning
+      if (scannedBarcodes.has(scannedValue)) {
+        setScanningEnabled(false);
         setToastConfig({
           visible: true,
           type: "error",
           title: "Already Scanned",
           message: `Barcode ${scannedValue} has already been scanned`,
         });
-
-        // Re-enable scanning after toast disappears
         setTimeout(() => {
           setScanningEnabled(true);
         }, 3000);
-        return; // Stop further execution
+        return;
       }
 
       try {
         Vibration.vibrate([0, 100, 50, 100]);
-        // Mark as scanned
-        setScannedDockets((prev) => new Set(prev).add(scannedValue));
+
+        setScannedBarcodes((prev) => {
+          const updated = new Set(prev).add(scannedValue);
+          return updated;
+        });
 
         if (isDamage) {
           // Show damage modal
           setCurrentScannedBarcode(scannedValue);
           setShowDamageModal(true);
         } else {
-          // Show loader for regular scans
+          // Regular scan - show loader and send to API
           setShowLoader(true);
           setScanningEnabled(false);
           const startTime = Date.now();
           const minDisplayTime = 1500;
-          // Regular scan - send to API
-          insertScanningData.mutate(
-            {
-              thcid: thcid,
-              branchCode: sessionData?.branchCode,
-              barcode: scannedValue,
-              isDamage: false,
-            },
-            {
-              onSuccess: () => {
+
+          // Make API call to scan the barcode
+          setTimeout(() => {
+            // Create scanningDataArray AFTER state update with the new barcode included
+            const scanningDataArray = [
+              {
+                barcode: scannedValue,
+                alT_ID: alsId,
+                remarks: "",
+              },
+            ];
+
+            // Add the current scanned value if not yet in state
+            if (!Array.from(scannedBarcodes).includes(scannedValue)) {
+              scanningDataArray.push({
+                barcode: scannedValue,
+                alT_ID: alsId,
+                remarks: "",
+              });
+            }
+
+            const payload = {
+              isDirect: isDirect,
+              branchCode: branchCode,
+              entryUser: sessionData?.userId,
+              entryDate: new Date().toISOString(),
+              scanningData: scanningDataArray,
+            };
+
+            console.log("Payload to submit:", payload);
+            setShowLoader(false);
+
+            // Make API call to submit scanning data
+            insertNormalScanningData.mutate(payload, {
+              onSuccess: (data) => {
+                console.log("Payload to submit:", payload);
+
+                console.log("Scanning submission successful:", data);
+
                 const elapsedTime = Date.now() - startTime;
                 const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
                 loaderTimerRef.current = setTimeout(() => {
                   setShowLoader(false);
+
+                  // Refetch the data after API call
+                  refetch();
+
                   setToastConfig({
                     visible: true,
                     type: "success",
-                    title: "Scan Successful",
-                    message: "Docket information has been updated",
+                    title: "Success",
+                    message: data.status?.message || "Barcode scanned successfully",
                   });
-                  refetch();
-                  // Re-enable scanning after toast auto-hides (3 seconds)
+
                   setTimeout(() => {
                     setScanningEnabled(true);
                   }, 3000);
                 }, remainingTime);
               },
               onError: (error) => {
+                console.error("Error submitting scan:", error);
+
                 const elapsedTime = Date.now() - startTime;
                 const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
                 loaderTimerRef.current = setTimeout(() => {
                   setShowLoader(false);
-                  // Show custom error toast
+
                   setToastConfig({
                     visible: true,
                     type: "error",
-                    title: "Scan Failed",
-                    message: error.message || "Unable to sync with server. Please check your connection.",
+                    title: "Error",
+                    message: error?.message || "Failed to submit scan data. Please try again.",
                   });
-                  refetch();
 
-                  setScannedDockets((prev) => {
+                  // Remove the barcode from scanned set on error
+                  setScannedBarcodes((prev) => {
                     const updated = new Set(prev);
                     updated.delete(scannedValue);
                     return updated;
                   });
-                  // Re-enable scanning after toast auto-hides (3 seconds)
+
                   setTimeout(() => {
                     setScanningEnabled(true);
                   }, 3000);
                 }, remainingTime);
               },
-            }
-          );
+            });
+          }, 1000);
         }
       } catch (e) {
         console.warn("Scan handling error:", e);
@@ -524,23 +501,20 @@ export default function DocketScanningScreen({ route }) {
         setTimeout(() => setScanningEnabled(true), 2000);
       }
     },
-    [scanningEnabled, scannedDockets, thcid, sessionData?.branchCode, insertScanningData, isDamage]
+    [scanningEnabled, scannedBarcodes, isDamage, scannedData]
   );
 
-  // Sample data
-  // Transform API data to match component structure
-  const dockets =
-    docketScanData
-      ?.filter((item) => item.scanned !== item.totalPackets) // Filter out completed
-      .map((item, idx) => ({
-        id: item.docketid,
-        number: item.docketno,
-        total: item.totalPackets,
-        scanned: item.scanned,
-        short: item.totalPackets - item.scanned,
-        completed: item.scanned === item.totalPackets,
-        uniqueKey: `${item.docketid}_${item.docketno}_${idx}`,
-      })) || [];
+  // Transform scanned data directly to docket cards
+  const dockets = (scannedData || []).map((item, idx) => ({
+    id: item.docketID,
+    number: item.docketNo,
+    total: item.totalPackets,
+    scanned: item.scanned,
+    short: item.totalPackets - item.scanned,
+    completed: item.scanned === item.totalPackets,
+    barcode: item.docketNo,
+    uniqueKey: `${item.docketID}_${item.docketNo}_${idx}`,
+  }));
 
   const DocketCard = ({ docket, isHighlighted }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -693,25 +667,14 @@ export default function DocketScanningScreen({ route }) {
                 >
                   short
                 </Text>
-                <TouchableOpacity
-                  disabled={docket.short === 0}
-                  onPress={() => {
-                    if (docket.short > 0) {
-                      navigation.navigate("DocketMissingPacketsAdd", { docketID: docket.id, thcid: thcid });
-                    }
+                <Text
+                  className="text-lg font-semibold"
+                  style={{
+                    color: docket.completed ? theme.colors.secondaryText : theme.colors.text,
                   }}
-                  activeOpacity={docket.short > 0 ? 0.7 : 1}
                 >
-                  <Text
-                    className="text-lg font-semibold"
-                    style={{
-                      color: docket.completed ? theme.colors.secondaryText : theme.colors.text,
-                      textDecorationLine: docket.short > 0 ? "underline" : "none",
-                    }}
-                  >
-                    {docket.short}
-                  </Text>
-                </TouchableOpacity>
+                  {docket.short}
+                </Text>
               </View>
             </View>
           </Animated.View>
@@ -719,26 +682,6 @@ export default function DocketScanningScreen({ route }) {
       </Animated.View>
     );
   };
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.colors.background }}>
-        <Text style={{ color: theme.colors.text }}>Loading...</Text>
-      </View>
-    );
-  }
-
-  // Show error state
-  if (isError) {
-    return (
-      <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: theme.colors.background }}>
-        <Text className="text-center" style={{ color: theme.colors.error }}>
-          {error?.message || "Failed to load docket scan list"}
-        </Text>
-      </View>
-    );
-  }
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
@@ -763,9 +706,9 @@ export default function DocketScanningScreen({ route }) {
         {hasCameraPermission === true ? (
           <CameraView
             facing="back"
-            enableTorch={flashEnabled} // Add this prop
+            enableTorch={flashEnabled}
             barcodeScannerSettings={{
-              barcodeTypes: ["code128"], // Only scan Code128
+              barcodeTypes: ["code128"],
             }}
             onBarcodeScanned={isCameraActive ? handleBarCodeScanned : undefined}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
@@ -916,46 +859,68 @@ export default function DocketScanningScreen({ route }) {
           </View>
         </View>
 
-        {/* Dockets List */}
-        <ScrollView
-          ref={scrollViewRef}
-          className="flex-1 px-4 py-4"
-          contentContainerStyle={{ paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          style={{
-            backgroundColor: isDamage ? "#fef2f2" : "transparent",
-          }}
-        >
-          {dockets.map((docket) => (
-            <DocketCard key={docket.uniqueKey} docket={docket} isHighlighted={highlightedDocketId === docket.id} />
-          ))}
-        </ScrollView>
+        {/* Empty State */}
+        {dockets.length === 0 ? (
+          <View className="flex-1 items-center justify-center px-6">
+            <View
+              className="rounded-2xl p-8 items-center"
+              style={{
+                backgroundColor: theme.colors.cardBg,
+              }}
+            >
+              <Ionicons name="barcode" size={64} color={theme.colors.secondaryText + "60"} />
+              <Text className="text-center text-lg font-bold mt-4" style={{ color: theme.colors.text }}>
+                No Dockets Yet
+              </Text>
+              <Text className="text-center text-sm mt-2" style={{ color: theme.colors.secondaryText, opacity: 0.7 }}>
+                Scan a barcode to see docket data
+              </Text>
+            </View>
+          </View>
+        ) : (
+          /* Dockets List */
+          <ScrollView
+            ref={scrollViewRef}
+            className="flex-1 px-4 py-4"
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            style={{
+              backgroundColor: isDamage ? "#fef2f2" : "transparent",
+            }}
+          >
+            {dockets.map((docket) => (
+              <DocketCard key={docket.uniqueKey} docket={docket} isHighlighted={highlightedDocketId === docket.id} />
+            ))}
+          </ScrollView>
+        )}
 
         {/* Floating Finish Button */}
-        <View
-          className="absolute bottom-0 left-0 right-0 px-6"
-          style={{
-            paddingBottom: insets.bottom,
-            backgroundColor: "transparent",
-          }}
-        >
-          <TouchableOpacity
-            className="w-full h-16 rounded-2xl flex-row items-center justify-center gap-3"
+        {dockets.length > 0 && (
+          <View
+            className="absolute bottom-0 left-0 right-0 px-6"
             style={{
-              backgroundColor: theme.colors.primary,
-              shadowColor: theme.colors.primary,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.35,
-              shadowRadius: 24,
-              elevation: 12,
+              paddingBottom: insets.bottom,
+              backgroundColor: "transparent",
             }}
-            activeOpacity={0.95}
-            onPress={() => navigation.navigate("DocketScanSummaryScreen", { thcid: thcid })}
           >
-            <Ionicons name="checkmark-circle" size={22} color="#fff" />
-            <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              className="w-full h-16 rounded-2xl flex-row items-center justify-center gap-3"
+              style={{
+                backgroundColor: theme.colors.primary,
+                shadowColor: theme.colors.primary,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.35,
+                shadowRadius: 24,
+                elevation: 12,
+              }}
+              activeOpacity={0.95}
+              onPress={() => navigation.navigate("OutWadesScanSummary")}
+            >
+              <Ionicons name="checkmark-circle" size={22} color="#fff" />
+              <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Damage Modal */}

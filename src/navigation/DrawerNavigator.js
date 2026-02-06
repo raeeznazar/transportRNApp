@@ -62,6 +62,7 @@ export default function DrawerNavigator() {
       case "DocketScanningScreen":
         return "Docket Scanning";
       case "DocketMissingPacketsAdd":
+      case "OutWadresAddShortList":
         return "Docket Missing Packets Add";
       case "DocketScanSummaryScreen":
         return "Docket Scan Summary";
@@ -77,6 +78,8 @@ export default function DrawerNavigator() {
       case "OutWadesDirectALS":
       case "OutWadesALSscreen":
         return "Actual Loading Sheet";
+      case "OutWadesScanning":
+        return "OutWades Scanning";
       default:
         return "NeoEra Transport";
     }

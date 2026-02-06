@@ -1,9 +1,14 @@
-import { ActivityIndicator, Platform, Pressable, Text } from "react-native";
+import { useRef } from "react";
+import { ActivityIndicator, Animated, Platform, Pressable, Text, Vibration } from "react-native";
 import { useThemeName } from "../../stores/themeStore";
-
 export const Button = ({ variant = "primary", size = "md", disabled = false, loading = false, onPress, children, className = "" }) => {
   const themeName = useThemeName(); // Returns 'steelBlue', 'modernBlue', etc.
   const isDisabled = disabled || loading;
+
+  // Animated values
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
 
   // Base Tailwind classes
   const baseStyles = "flex-row items-center justify-center rounded-xl";
@@ -103,11 +108,66 @@ export const Button = ({ variant = "primary", size = "md", disabled = false, loa
     return "#FFFFFF";
   };
 
+  const handlePressIn = () => {
+    if (isDisabled) return;
+
+    // Trigger light vibration
+    Vibration.vibrate(Platform.OS === "ios" ? [10, 5] : 10);
+
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.88,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 4,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0.65,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  };
+  const handlePressOut = () => {
+    if (isDisabled) return;
+
+    // Trigger press complete vibration
+    Vibration.vibrate(Platform.OS === "ios" ? [5] : 5);
+
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 6,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   return (
     <Pressable
       className={`${baseStyles} ${getVariantStyles()} ${sizeStyles[size]} ${className}`}
       onPress={onPress}
       disabled={isDisabled}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       android_ripple={
         !isDisabled
           ? {
@@ -116,34 +176,30 @@ export const Button = ({ variant = "primary", size = "md", disabled = false, loa
             }
           : undefined
       }
-      style={({ pressed }) => [
-        // iOS shadow when not disabled
-        Platform.OS === "ios" &&
-          !isDisabled && {
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-          },
-        // Android elevation when not disabled
-        Platform.OS === "android" &&
-          !isDisabled && {
-            elevation: 2,
-          },
-        // iOS press feedback
-        Platform.OS === "ios" &&
-          pressed &&
-          !isDisabled && {
-            opacity: 0.8,
-            transform: [{ scale: 0.98 }],
-          },
-      ]}
     >
-      {loading ? (
-        <ActivityIndicator color={getIndicatorColor()} size="small" />
-      ) : (
-        <Text className={`${getTextVariantStyles()} ${textSizeStyles[size]} font-semibold`}>{children}</Text>
-      )}
+      <Animated.View
+        style={[
+          // iOS shadow when not disabled
+          Platform.OS === "ios" &&
+            !isDisabled && {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 3,
+            },
+          // Android elevation when not disabled
+          Platform.OS === "android" &&
+            !isDisabled && {
+              elevation: 2,
+            },
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={getIndicatorColor()} size="small" />
+        ) : (
+          <Text className={`${getTextVariantStyles()} ${textSizeStyles[size]} font-semibold`}>{children}</Text>
+        )}
+      </Animated.View>
     </Pressable>
   );
 };

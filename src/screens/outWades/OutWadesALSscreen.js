@@ -8,6 +8,7 @@ import {
   useGetGodownsListForALS,
   useGetTeamsListForALS,
   useGetVehicleListForALS,
+  useOutwadesAlsSubmit,
 } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
@@ -22,6 +23,8 @@ export default function OutWadesALSscreen({ route }) {
   const navigation = useNavigation();
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
+  const finCode = sessionData?.finCode;
+  const userId = sessionData?.userId;
   const { date, routeDetails, dockets, packets, weight, cft, plsNo, alsId } = route.params;
   const isFocused = useIsFocused();
   const [toastConfig, setToastConfig] = useState({
@@ -44,10 +47,10 @@ export default function OutWadesALSscreen({ route }) {
   const { data: teamsData, isLoading: teamsLoading, isError: teamsError } = useGetTeamsListForALS();
   const { data: baysData, isLoading: baysLoading, isError: baysError } = useGetBaysListForALS();
   const { data: godownsData, isLoading: godownsLoading, isError: godownsError } = useGetGodownsListForALS();
+  const submitALSMutation = useOutwadesAlsSubmit();
 
   useEffect(() => {
     if (!isFocused) {
-      setSelectedCardId(null);
       setToastConfig((prev) => ({ ...prev, visible: false }));
     }
   }, [isFocused]);
@@ -59,7 +62,7 @@ export default function OutWadesALSscreen({ route }) {
       .filter((vehicle) => vehicle.vehid != null && vehicle.regno)
       .map((vehicle) => ({
         label: vehicle.regno,
-        value: vehicle.vehid.toString(),
+        value: vehicle.regno.toString(),
       }));
   }, [vehicleData]);
 
@@ -70,17 +73,17 @@ export default function OutWadesALSscreen({ route }) {
       .filter((driver) => driver.did != null && driver.drivername)
       .map((driver) => ({
         label: driver.drivername,
-        value: driver.did.toString(),
+        value: driver.drivername.toString(),
       }));
   }, [driverData]);
 
   const teamsItems = useMemo(() => {
     if (!teamsData || !Array.isArray(teamsData)) return [];
     return teamsData
-      .filter((team) => team.team_Code != null)
+      .filter((team) => team.team_ID != null)
       .map((team) => ({
         label: team.team_Code,
-        value: team.team_Code.toString(),
+        value: team.team_ID,
       }));
   }, [teamsData]);
 
@@ -116,7 +119,7 @@ export default function OutWadesALSscreen({ route }) {
   const isLoadingData = vehicleLoading || driverLoading || teamsLoading || baysLoading || godownsLoading;
 
   // Get selected driver's contact number
-  const selectedDriver = driverData?.find((driver) => driver.did.toString() === driverName);
+  const selectedDriver = driverData?.find((driver) => driver.drivername.toString() === driverName);
   const driverContactNo = selectedDriver?.contactno || null;
 
   function onHandleProcceed() {
@@ -129,6 +132,75 @@ export default function OutWadesALSscreen({ route }) {
       });
       return;
     }
+    function getDate() {
+      const today = new Date();
+      const date = String(today.getDate()).padStart(2, "0");
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const year = today.getFullYear();
+      return `${year}-${month}-${date}`;
+    }
+    const now = new Date();
+
+    const time1 = now.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const payload = {
+      date1: getDate(),
+      time1: time1,
+      loadType,
+      vehicle: vehicleNo,
+      driver: driverName,
+      teamID: teamsName,
+      godown: godownsName,
+      capacity: 0,
+      finCode: finCode,
+      branchCode,
+      entryUser: sessionData?.userName,
+      bay: baysName,
+      routeDetails: routeDetails,
+      plsno: plsNo,
+      entryUser: userId,
+    };
+    // Wrap in correct format
+    const submitData = {
+      actualLoadSheets: [payload],
+    };
+
+    console.log("Actual Load Sheets to be submitted:", submitData);
+
+    submitALSMutation.mutate(submitData, {
+      onSuccess: (data) => {
+        console.log("ALS submission successful:", data);
+        setToastConfig({
+          visible: true,
+          type: "success",
+          title: "Success",
+          message: data.status.message || "ALS submitted successfully.",
+        });
+        setTimeout(() => {
+          navigation.navigate("OutWadesScanning", {
+            alsId: data.dataValue.insertedIds[0],
+          });
+        }, 600);
+      },
+      onError: (error) => {
+        console.error("Error submitting ALS:", error);
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Error",
+          message: "Failed to submit ALS. Please try again.",
+        });
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "OutwardsList" }],
+          });
+        }, 1500);
+      },
+    });
   }
 
   return (
@@ -355,7 +427,7 @@ export default function OutWadesALSscreen({ route }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View className="mx-4 mb-6 flex-row gap-3">
+      <View className="mx-4 mb-1 flex-row gap-3">
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>

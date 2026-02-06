@@ -151,7 +151,20 @@ export default function CustomDrawerContent(props) {
                       <DrawerItem
                         key={submenu.name}
                         label={submenu.label}
-                        onPress={() => navigation.navigate(submenu.route, submenu.params)}
+                        onPress={() => {
+                          navigation.reset({
+                            index: 0,
+                            routes: [
+                              {
+                                name: submenu.route,
+                                state: {
+                                  routes: [{ name: submenu.params?.screen }],
+                                  index: 0,
+                                },
+                              },
+                            ],
+                          });
+                        }}
                         style={styles.submenuItem}
                         labelStyle={{
                           color: theme?.colors?.headingText,
@@ -178,7 +191,23 @@ export default function CustomDrawerContent(props) {
           <DrawerItem
             key={item.name}
             label={item.label}
-            onPress={() => navigation.navigate(item.route)}
+            onPress={() => {
+              // Reset stack to first screen
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: item.route,
+                    state: item.firstScreen
+                      ? {
+                          routes: [{ name: item.firstScreen }],
+                          index: 0,
+                        }
+                      : undefined,
+                  },
+                ],
+              });
+            }}
             icon={({ size, color }) => <Ionicons name={item.icon} size={size} color={color} />}
             focused={isActiveRoute(item.name)}
             activeTintColor={theme?.colors?.primary}
