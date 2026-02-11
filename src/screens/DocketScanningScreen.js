@@ -67,7 +67,6 @@ export default function DocketScanningScreen({ route }) {
     refetch,
   } = useGetDocketScanList(sessionData?.branchCode, thcid, {
     enabled: isFocused && !!sessionData?.branchCode && !!thcid,
-    refetchOnMount: "always", // Force refetch when component mounts
   });
 
   useFocusEffect(

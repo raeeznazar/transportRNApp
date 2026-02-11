@@ -25,10 +25,10 @@ export const ScanToast = ({ visible, type = "success", title, message, onHide })
         }),
       ]).start();
 
-      // Auto hide after 3 seconds
+      // Auto hide after 1.5 seconds
       const timer = setTimeout(() => {
         hideToast();
-      }, 3000);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }

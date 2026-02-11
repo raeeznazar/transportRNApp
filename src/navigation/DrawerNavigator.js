@@ -80,6 +80,10 @@ export default function DrawerNavigator() {
         return "Actual Loading Sheet";
       case "OutWadesScanning":
         return "OutWades Scanning";
+      case "OutwadesDocketsRemoval":
+        return "Outwades Docket Removal";
+      case "OutwadesSummaryScreen":
+        return "Outwards Summary";
       default:
         return "NeoEra Transport";
     }

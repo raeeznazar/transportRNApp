@@ -1,10 +1,12 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useCurrentTheme } from "../../stores/themeStore";
+import OutWadesAddShortList from "../screens/outWades/OutWadesAddShortList";
 import OutWadesALSscreen from "../screens/outWades/OutWadesALSscreen";
 import OutWadesDirectALS from "../screens/outWades/OutWadesDirectALS";
+import OutwadesDocketsRemoval from "../screens/outWades/OutwadesDocketsRemoval";
 import OutWadesEnteryScreen from "../screens/outWades/OutWadesEnteryScreen";
 import OutWadesScanning from "../screens/outWades/OutWadesScanning";
-import OutWadresAddShortList from "../screens/outWades/OutWadresAddShortList";
+import OutwadesSummaryScreen from "../screens/outWades/OutwadesSummaryScreen";
 const Stack = createNativeStackNavigator();
 export default function OutwardsNavigator() {
   const theme = useCurrentTheme();
@@ -56,11 +58,31 @@ export default function OutwardsNavigator() {
         }}
       />
       <Stack.Screen
-        name="OutWadresAddShortList"
-        component={OutWadresAddShortList}
+        name="OutWadesAddShortList"
+        component={OutWadesAddShortList}
         options={{
           headerShown: true,
           title: "Docket Missing Packets Add",
+          unmountOnBlur: true,
+        }}
+      />
+
+      <Stack.Screen
+        name="OutwadesDocketsRemoval"
+        component={OutwadesDocketsRemoval}
+        options={{
+          headerShown: true,
+          title: "Outwades Docket Removal",
+          unmountOnBlur: true,
+        }}
+      />
+
+      <Stack.Screen
+        name="OutwadesSummaryScreen"
+        component={OutwadesSummaryScreen}
+        options={{
+          headerShown: true,
+          title: "Outwards Summary",
           unmountOnBlur: true,
         }}
       />

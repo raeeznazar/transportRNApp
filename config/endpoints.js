@@ -81,12 +81,21 @@ export const API_ENDPOINTS = {
   //Insert Outwards Actual Loading Sheet
   INSERT_OUTWARDS_ALS: "/Outward/ActualLoadSheetTemp_Insert",
 
-  //Outwades scanning docket list cards - get
+  //Outwades scanning docket list cards
   OUTWARDS_SCANNING_DOCKET_LIST: "/Outward/ActualLoadTempDetails_Get",
 
   //Insert Outwards Scanning Details
   INSERT_OUTWARDS_SCANNING_DETAILS: "/Outward/ActualLoadScanning_InsertBatch",
 
-  //Outwades get missing packets - get
-  OUTWARDS_MISSING_PACKETS_LIST: "/Outward/MissingBarcodes_Get?docketId",
+  //Outwades get missing packets
+  OUTWARDS_MISSING_PACKETS_LIST: "/Outward/MissingBarcodes_Get",
+
+  //Outwades scan damage packets
+  OUTWADES_SCAN_DAMAGE_PACKETS: "/Outward/DamagedScanning_InsertBatch",
+
+  //Outwades summary page header data
+  OUTWADES_SUMMARY_HEADER_DATA: "/Outward/LoadingSummary_Get",
+
+  //Outwades summary submit
+  OUTWADES_SUMMARY_SUBMIT: "/Outward/FinishSubmitActualLoadSheet",
 };

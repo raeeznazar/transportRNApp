@@ -25,7 +25,7 @@ export default function OutWadesALSscreen({ route }) {
   const branchCode = sessionData?.branchCode;
   const finCode = sessionData?.finCode;
   const userId = sessionData?.userId;
-  const { date, routeDetails, dockets, packets, weight, cft, plsNo, alsId } = route.params;
+  const { date, routeDetails, dockets, packets, weight, cft, plsNo } = route.params;
   const isFocused = useIsFocused();
   const [toastConfig, setToastConfig] = useState({
     visible: false,
@@ -40,9 +40,7 @@ export default function OutWadesALSscreen({ route }) {
   const [teamsName, setTeamsName] = useState(null);
   const [baysName, setBaysName] = useState(null);
   const [godownsName, setGodownsName] = useState(null);
-
   const { data: vehicleData, isLoading: vehicleLoading, isError: vehicleError } = useGetVehicleListForALS(branchCode);
-
   const { data: driverData, isLoading: driverLoading, isError: driverError } = useGetDriverListForALS(branchCode);
   const { data: teamsData, isLoading: teamsLoading, isError: teamsError } = useGetTeamsListForALS();
   const { data: baysData, isLoading: baysLoading, isError: baysError } = useGetBaysListForALS();
@@ -117,6 +115,9 @@ export default function OutWadesALSscreen({ route }) {
   }
 
   const isLoadingData = vehicleLoading || driverLoading || teamsLoading || baysLoading || godownsLoading;
+  const disableProcceed = [vehicleNo, driverName, baysName, teamsName, godownsName].some((value) => value == null);
+
+  console.log("disableProcceed", disableProcceed);
 
   // Get selected driver's contact number
   const selectedDriver = driverData?.find((driver) => driver.drivername.toString() === driverName);
@@ -162,6 +163,7 @@ export default function OutWadesALSscreen({ route }) {
       routeDetails: routeDetails,
       plsno: plsNo,
       entryUser: userId,
+      directScan: false,
     };
     // Wrap in correct format
     const submitData = {
@@ -181,7 +183,7 @@ export default function OutWadesALSscreen({ route }) {
         });
         setTimeout(() => {
           navigation.navigate("OutWadesScanning", {
-            alsId: data.dataValue.insertedIds[0],
+            altId: data.dataValue.insertedIds[0],
           });
         }, 600);
       },
@@ -431,7 +433,7 @@ export default function OutWadesALSscreen({ route }) {
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>
-        <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={isLoadingData}>
+        <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={disableProcceed}>
           Proceed
         </Button>
       </View>

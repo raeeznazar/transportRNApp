@@ -1,6 +1,6 @@
-import { useIsFocused, useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StatusBar, Text, View } from "react-native";
+import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetPreloadingList } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
@@ -16,16 +16,13 @@ export default function OutWadesEnteryScreen() {
   const insets = useSafeAreaInsets();
   const [selectedCardId, setSelectedCardId] = useState(null);
   const navigation = useNavigation();
+  const resumeKey = true;
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     type: "success",
     title: "",
     message: "",
   });
-
-  function toHierarchyLevels(str) {
-    return str.split("-").join(" -> ");
-  }
 
   function onHandleProceedToALS() {
     if (!selectedCardId) {
@@ -53,7 +50,7 @@ export default function OutWadesEnteryScreen() {
         weight: selectedItem.totalWeight,
         cft: selectedItem.totalCft,
         plsNo: selectedItem.plsNo,
-        alsId: selectedItem.id,
+        altId: selectedItem.id,
       });
     }, 600);
   }
@@ -69,9 +66,18 @@ export default function OutWadesEnteryScreen() {
       navigation.navigate("OutWadesDirectALS");
     }, 600);
   }
-  const { data, isLoading, isError, error } = useGetPreloadingList(branchCode, finCode, false, {
+  const { data, isLoading, refetch, isError, error } = useGetPreloadingList(branchCode, finCode, false, {
     enabled: isFocused && !!branchCode && !!finCode,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isFocused && sessionData?.branchCode && finCode) {
+        refetch();
+      }
+    }, [isFocused, sessionData?.branchCode, finCode, refetch])
+  );
+
   // Reset selectedCardId when page loses focus
   useEffect(() => {
     if (!isFocused) {
@@ -89,80 +95,141 @@ export default function OutWadesEnteryScreen() {
     );
   }
 
-  const renderPreloadingCard = ({ item }) => (
-    <View
-      className="bg-white rounded-2xl p-4 mb-3 shadow-lg"
-      style={{
-        borderWidth: selectedCardId === item.id ? 2 : 0,
-        borderColor: selectedCardId === item.id ? theme.colors.alertColor : "transparent",
-        backgroundColor: selectedCardId === item.id ? theme.colors.cardBg : "white",
-      }}
-      onTouchEnd={() => setSelectedCardId(selectedCardId === item.id ? null : item.id)}
-    >
-      <View className="flex-row justify-between mb-3">
-        <View>
-          <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-            PLS NO
-          </Text>
-          <Text className="text-lg font-bold" style={{ color: theme.colors.textPrimary }}>
-            {item.plsNo}
-          </Text>
-        </View>
-        <View className="items-end">
-          <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-            DATE
-          </Text>
-          <Text className="font-semibold" style={{ color: theme.colors.textPrimary }}>
-            {new Date(item.date).toLocaleDateString()}
-          </Text>
-        </View>
-      </View>
+  const renderPreloadingCard = ({ item }) => {
+    return (
+      <View
+        className="rounded-2xl mb-2 overflow-hidden"
+        style={{
+          backgroundColor: selectedCardId === item.id ? "#F0F4FF" : theme.colors.cardBg,
+          borderWidth: selectedCardId === item.id ? 2 : 1,
+          borderColor: selectedCardId === item.id ? theme.colors.primary : "#f7fafc",
+          shadowColor: selectedCardId === item.id ? theme.colors.primary : "#000",
+          shadowOffset: { width: 0, height: selectedCardId === item.id ? 6 : 2 },
+          shadowOpacity: selectedCardId === item.id ? 0.12 : 0.06,
+          shadowRadius: selectedCardId === item.id ? 12 : 6,
+          elevation: selectedCardId === item.id ? 6 : 2,
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            // Prevent selection if alT_ID is not 0
+            if (item.alT_ID !== 0) {
+              return; // Do nothing if alT_ID is not 0
+            }
+            setSelectedCardId(selectedCardId === item.id ? null : item.id);
+          }}
+        >
+          <View className="px-4 py-3">
+            {/* PLS NO & DATE Header */}
+            <View className="flex-row justify-between mb-3 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: "#E8EBF0" }}>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  PLS NO
+                </Text>
+                <Text className="text-lg font-semibold" style={{ color: theme.colors.primary }}>
+                  {item.plsNo}
+                </Text>
+              </View>
+              <View className="flex-1 items-end">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  DATE
+                </Text>
+                <Text className="text-sm font-medium" style={{ color: theme.colors.headingText }}>
+                  {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </Text>
+              </View>
+            </View>
 
-      <View className="mb-3">
-        <Text className="text-xs mb-1" style={{ color: theme.colors.inputText }}>
-          ROUTE
-        </Text>
-        <Text className="font-semibold" style={{ color: theme.colors.textPrimary }}>
-          {toHierarchyLevels(item.routeDetails)}
-        </Text>
-      </View>
+            {/* ROUTE */}
+            <View className="mb-3">
+              <Text className="text-xs font-semibold mb-2" style={{ color: theme.colors.accent }}>
+                ROUTE
+              </Text>
+              <View className="flex-row items-center gap-1.5 flex-wrap">
+                {item.routeDetails.split("-").map((route, index) => (
+                  <View key={index} className="flex-row items-center">
+                    <View
+                      className="px-2.5 py-1 rounded-lg border"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderColor: theme.colors.buttonSecondaryBorder,
+                      }}
+                    >
+                      <Text className="font-medium text-xs" style={{ color: theme.colors.primary }}>
+                        {route.trim()}
+                      </Text>
+                    </View>
+                    {index < item.routeDetails.split("-").length - 1 && (
+                      <Text className="mx-0.5 font-semibold text-xs" style={{ color: theme.colors.accent }}>
+                        →
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
 
-      <View className="flex-row flex-wrap">
-        <View className="w-1/2 mb-2">
-          <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-            DOCKETS
-          </Text>
-          <Text className="font-bold" style={{ color: theme.colors.textPrimary }}>
-            {item.totalDockets || 0}
-          </Text>
-        </View>
-        <View className="w-1/2 mb-2">
-          <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-            PACKETS
-          </Text>
-          <Text className="font-bold" style={{ color: theme.colors.textPrimary }}>
-            {item.totalPackets || 0}
-          </Text>
-        </View>
-        <View className="w-1/2">
-          <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-            WEIGHT
-          </Text>
-          <Text className="font-bold" style={{ color: theme.colors.textPrimary }}>
-            {item.totalWeight || 0} kg
-          </Text>
-        </View>
-        <View className="w-1/2">
-          <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-            CFT
-          </Text>
-          <Text className="font-bold" style={{ color: theme.colors.textPrimary }}>
-            {item.totalCFT || 0}
-          </Text>
-        </View>
+            {/* DOCKETS, PACKETS, WEIGHT, CFT */}
+            <View className="flex-row " style={{ borderBottomColor: "#E8EBF0" }}>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  DOCKETS
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
+                  {item.totalDockets || 0}
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  PACKETS
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
+                  {item.totalPackets || 0}
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  WEIGHT
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
+                  {item.totalWeight || 0}t
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  CFT
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
+                  {item.totalCFT || 0}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* REMOVE PACKETS Button */}
+        {item.alT_ID !== 0 && (
+          <TouchableOpacity
+            onPress={() => {
+              // Handle remove packets action
+              navigation.navigate("OutWadesScanning", { altId: item.alT_ID });
+            }}
+            activeOpacity={0.6}
+          >
+            <View
+              className="items-center py-3 px-4"
+              style={{ borderTopWidth: 1, borderTopColor: "#f0efe8ff", backgroundColor: theme.colors.primary + "1A" }}
+            >
+              <Text className="font-medium text-md font-semibold" style={{ color: theme.colors.primary }}>
+                Resume
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View

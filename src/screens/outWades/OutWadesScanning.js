@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { useGetOutwardsScanningDocketListForALS, useOutwadesScanningSubmit } from "../../../hooks/useApiQueries";
+import { useGetOutwardsScanningDocketListForALS, useInsertOutwadesDamageScanningData, useOutwadesScanningSubmit } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import ScanLoader from "../../components/ScanLoader";
@@ -44,7 +44,7 @@ export default function OutWadesScanning({ route }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const [isDamage, setIsDamage] = useState(false);
-  const { alsId } = route.params;
+  const { altId } = route.params;
 
   // Damage modal state
   const [showDamageModal, setShowDamageModal] = useState(false);
@@ -68,11 +68,14 @@ export default function OutWadesScanning({ route }) {
     error,
     refetch,
     isFetching,
-  } = useGetOutwardsScanningDocketListForALS(branchCode, alsId, {
-    enabled: isFocused && !!branchCode && !!alsId,
+  } = useGetOutwardsScanningDocketListForALS(branchCode, altId, {
+    enabled: isFocused && !!branchCode && !!altId,
   });
 
+  console.log("Scanned Data:", scannedData);
+
   const insertNormalScanningData = useOutwadesScanningSubmit();
+  const insertDamageScanningData = useInsertOutwadesDamageScanningData();
 
   // Determine if camera should be active
   const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
@@ -277,37 +280,97 @@ export default function OutWadesScanning({ route }) {
     const startTime = Date.now();
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Create FormData to send actual files
+      const formData = new FormData();
+      formData.append("branchCode", sessionData?.branchCode);
+      formData.append("barcode", currentScannedBarcode);
+      formData.append("IsDamaged", "true"); // String boolean as per API spec
+      formData.append("Remarks", damageReason.trim());
+      formData.append("DocumentType", "DamagedPackage");
 
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      // Append each photo file to Attachments array (same key name for List<IFormFile>)
+      damagePhotos.forEach((photoUri, index) => {
+        const fileName = `damage_${currentScannedBarcode}_${Date.now()}_${index}.jpg`;
 
-      loaderTimerRef.current = setTimeout(() => {
-        setShowLoader(false);
-        Vibration.vibrate([0, 150, 100, 150]);
-        setToastConfig({
-          visible: true,
-          type: "success",
-          title: "Damage Recorded",
-          message: "Damage information has been saved",
+        // For React Native, the file object structure
+        formData.append("Attachments", {
+          uri: photoUri,
+          type: "image/jpeg",
+          name: fileName,
         });
-        closeDamageModal(false);
-        setTimeout(() => {
-          setScanningEnabled(true);
-        }, 3000);
-      }, remainingTime);
+      });
+
+      console.log("Submitting damage data for barcode:", currentScannedBarcode);
+
+      // Call the mutation with FormData
+      insertDamageScanningData.mutate(formData, {
+        onSuccess: (data) => {
+          console.log("Damage submission successful:", data);
+
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+
+          loaderTimerRef.current = setTimeout(() => {
+            setShowLoader(false);
+            setIsSubmittingDamage(false);
+            Vibration.vibrate([0, 150, 100, 150]);
+
+            setToastConfig({
+              visible: true,
+              type: "success",
+              title: "Damage Recorded",
+              message: data?.status?.message || "Damage information has been saved",
+            });
+
+            closeDamageModal(false);
+            refetch(); // Refresh the docket list
+
+            setTimeout(() => {
+              setScanningEnabled(true);
+            }, 3000);
+          }, remainingTime);
+        },
+        onError: (error) => {
+          console.error("Damage submission error:", error);
+
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+
+          loaderTimerRef.current = setTimeout(() => {
+            setShowLoader(false);
+            setIsSubmittingDamage(false);
+
+            setToastConfig({
+              visible: true,
+              type: "error",
+              title: "Submission Failed",
+              message: error?.message || "Failed to save damage record. Please try again.",
+            });
+
+            closeDamageModal(true); // Remove from scanned set on error
+            refetch();
+
+            setTimeout(() => {
+              setScanningEnabled(true);
+            }, 3000);
+          }, remainingTime);
+        },
+      });
     } catch (error) {
-      closeDamageModal();
-      setIsSubmittingDamage(false);
+      console.error("Error preparing damage data:", error);
+
       setShowLoader(false);
+      setIsSubmittingDamage(false);
+      closeDamageModal(true);
+
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to prepare files for upload",
+        text2: "Failed to prepare damage data for upload",
         position: "top",
         visibilityTime: 2000,
       });
+
       setTimeout(() => {
         setScanningEnabled(true);
       }, 3000);
@@ -387,7 +450,6 @@ export default function OutWadesScanning({ route }) {
 
       try {
         Vibration.vibrate([0, 100, 50, 100]);
-
         setScannedBarcodes((prev) => {
           const updated = new Set(prev).add(scannedValue);
           return updated;
@@ -410,7 +472,7 @@ export default function OutWadesScanning({ route }) {
             const scanningDataArray = [
               {
                 barcode: scannedValue,
-                alT_ID: alsId,
+                alT_ID: altId,
                 remarks: "",
               },
             ];
@@ -419,7 +481,7 @@ export default function OutWadesScanning({ route }) {
             if (!Array.from(scannedBarcodes).includes(scannedValue)) {
               scanningDataArray.push({
                 barcode: scannedValue,
-                alT_ID: alsId,
+                alT_ID: altId,
                 remarks: "",
               });
             }
@@ -656,7 +718,14 @@ export default function OutWadesScanning({ route }) {
                 </Text>
               </View>
 
-              <View className="flex-1 pl-3">
+              <TouchableOpacity
+                className="flex-1 pl-3"
+                onPress={() => {
+                  Vibration.vibrate(100);
+                  handleAddMissingPackets(docket.id);
+                }}
+                activeOpacity={0.7}
+              >
                 <Text
                   className="text-[10px] uppercase font-bold mb-2"
                   style={{
@@ -671,11 +740,13 @@ export default function OutWadesScanning({ route }) {
                   className="text-lg font-semibold"
                   style={{
                     color: docket.completed ? theme.colors.secondaryText : theme.colors.text,
+                    textDecorationLine: "underline",
+                    hoverBackgroundColor: theme.colors.danger + "10",
                   }}
                 >
                   {docket.short}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </Animated.View>
         </TouchableOpacity>
@@ -683,8 +754,12 @@ export default function OutWadesScanning({ route }) {
     );
   };
 
+  function handleAddMissingPackets(docketID) {
+    navigation.navigate("OutWadesAddShortList", { docketID, altId });
+  }
+
   return (
-    <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+    <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
       {showLoader && (
         <View className="absolute inset-0 z-50">
           <ScanLoader message={"Processing scan data..."} />
@@ -914,7 +989,7 @@ export default function OutWadesScanning({ route }) {
                 elevation: 12,
               }}
               activeOpacity={0.95}
-              onPress={() => navigation.navigate("OutWadesScanSummary")}
+              onPress={() => navigation.navigate("OutwadesSummaryScreen", { altId: altId })}
             >
               <Ionicons name="checkmark-circle" size={22} color="#fff" />
               <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>

@@ -1,16 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Toast from "react-native-toast-message";
-import { useGetOutwardsGetMissingPackets, useSubmitMissingPackets } from "../../../hooks/useApiQueries";
+import { useGetOutwardsGetMissingPackets, useOutwadesSubmitAddMissingPackets } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import { Button } from "../../components/Button";
 import FullWidthSelectInput from "../../components/FullWidthSelectInput";
+import { ScanToast } from "../../components/ScanToast";
 
 const REASON_OPTIONS = [
   { label: "Not found", value: "Not found" },
@@ -126,14 +126,15 @@ const PacketRow = React.memo(
   }
 );
 
-export default function OutWadresAddShortList() {
+export default function OutWadesAddShortList() {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
   const { sessionData } = useAuthStore();
-  const { docketID, thcid } = route.params || {};
+  const { docketID, altId } = route.params || {};
   const isFocused = useIsFocused();
+  const isDirect = route.params?.isDirect || false;
 
   // Only fetch when screen is focused
   const {
@@ -145,17 +146,30 @@ export default function OutWadresAddShortList() {
     enabled: isFocused && !!docketID,
   });
 
-  const submitMissingPackets = useSubmitMissingPackets();
+  console.log("Fetched shortage data:", shortageData);
+
+  const submitMissingPackets = useOutwadesSubmitAddMissingPackets();
   const { isLoading: isSubmitting } = submitMissingPackets;
 
   const [packetsWithReasons, setPacketsWithReasons] = useState([]);
   const [currentEditingPacket, setCurrentEditingPacket] = useState(null);
   const [currentReason, setCurrentReason] = useState("");
   const [resultDetails, setResultDetails] = useState(null);
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  useEffect(() => {
+    if (!isFocused) {
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }
+  }, [isFocused]);
 
   // Sample packet data
   const packets = shortageData || [];
-
   const togglePacket = useCallback(
     (barcode) => {
       // Check if packet already has a reason
@@ -180,12 +194,11 @@ export default function OutWadresAddShortList() {
 
         // Check if another packet is being edited
         if (current && current !== barcode) {
-          Toast.show({
+          setToastConfig({
+            visible: true,
             type: "error",
-            text1: "Reason Required",
-            text2: `Please add reason for packet ${current}`,
-            position: "top",
-            visibilityTime: 3000,
+            title: "Reason Required",
+            message: `Please add reason for packet ${current}`,
           });
           return current;
         }
@@ -201,12 +214,11 @@ export default function OutWadresAddShortList() {
   const saveReason = useCallback(
     (barcode) => {
       if (!currentReason || currentReason.trim() === "") {
-        Toast.show({
+        setToastConfig({
+          visible: true,
           type: "error",
-          text1: "Reason Required",
-          text2: `Please select a reason for packet ${barcode}`,
-          position: "top",
-          visibilityTime: 3000,
+          title: "Reason Required",
+          message: `Please select a reason for packet ${barcode}`,
         });
         return;
       }
@@ -216,12 +228,11 @@ export default function OutWadresAddShortList() {
       setCurrentEditingPacket(null);
       setCurrentReason("");
 
-      Toast.show({
+      setToastConfig({
+        visible: true,
         type: "success",
-        text1: "Reason Added",
-        text2: `Reason saved for packet ${barcode}`,
-        position: "top",
-        visibilityTime: 2000,
+        title: "Reason Added",
+        message: `Reason saved for packet ${barcode}`,
       });
     },
     [currentReason]
@@ -230,34 +241,35 @@ export default function OutWadresAddShortList() {
   const handleSubmit = useCallback(() => {
     // Check if there's an unsaved packet being edited
     if (currentEditingPacket) {
-      Toast.show({
+      setToastConfig({
+        visible: true,
         type: "error",
-        text1: "Unsaved Reason",
-        text2: `Please save or cancel the reason for packet ${currentEditingPacket}`,
-        position: "top",
-        visibilityTime: 3000,
+        title: "Unsaved Reason",
+        message: `Please save or cancel the reason for packet ${currentEditingPacket}`,
       });
       return;
     }
 
     // Validate packets with reasons
     if (packetsWithReasons.length === 0) {
-      Toast.show({
+      setToastConfig({
+        visible: true,
         type: "error",
-        text1: "No Packets Selected",
-        text2: "Please select at least one packet with a reason",
-        position: "top",
-        visibilityTime: 3000,
+        title: "No Packets Selected",
+        message: "Please select at least one packet with a reason",
       });
       return;
     }
 
     // Build the payload in the format your API expects
     const payload = {
-      thcid: thcid,
+      isDirect: isDirect,
       branchCode: sessionData?.branchCode,
-      barcodeData: packetsWithReasons.map((packet) => ({
+      entryUser: sessionData?.userId,
+      entryDate: new Date().toISOString(),
+      scanningData: packetsWithReasons.map((packet) => ({
         barcode: packet.serialNumber,
+        alT_ID: altId,
         remarks: packet.reason,
       })),
     };
@@ -269,16 +281,15 @@ export default function OutWadresAddShortList() {
         setResultDetails(response.dataValue);
       },
       onError: (error) => {
-        Toast.show({
+        setToastConfig({
+          visible: true,
           type: "error",
-          text1: "Submission Failed",
-          text2: error.message || "Failed to submit missing packets",
-          position: "top",
-          visibilityTime: 3000,
+          title: "Submission Failed",
+          message: error?.message || "Failed to save damage record. Please try again.",
         });
       },
     });
-  }, [packetsWithReasons, thcid, sessionData?.branchCode, currentEditingPacket, submitMissingPackets, navigation]);
+  }, [packetsWithReasons, sessionData?.branchCode, currentEditingPacket, submitMissingPackets, navigation]);
 
   const handleCancelReason = useCallback(() => {
     setCurrentEditingPacket(null);
@@ -291,8 +302,17 @@ export default function OutWadresAddShortList() {
   }, [navigation]);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+    <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Custom Scan Toast */}
+      <ScanToast
+        visible={toastConfig.visible}
+        type={toastConfig.type}
+        title={toastConfig.title}
+        message={toastConfig.message}
+        onHide={() => setToastConfig({ ...toastConfig, visible: false })}
+      />
 
       {/* Header */}
       <View

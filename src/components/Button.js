@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ActivityIndicator, Animated, Platform, Pressable, Text, Vibration } from "react-native";
+import { ActivityIndicator, Animated, Platform, Text, TouchableOpacity, Vibration } from "react-native";
 import { useThemeName } from "../../stores/themeStore";
 export const Button = ({ variant = "primary", size = "md", disabled = false, loading = false, onPress, children, className = "" }) => {
   const themeName = useThemeName(); // Returns 'steelBlue', 'modernBlue', etc.
@@ -162,20 +162,16 @@ export const Button = ({ variant = "primary", size = "md", disabled = false, loa
   };
 
   return (
-    <Pressable
+    <TouchableOpacity
       className={`${baseStyles} ${getVariantStyles()} ${sizeStyles[size]} ${className}`}
       onPress={onPress}
       disabled={isDisabled}
+      activeOpacity={0.8}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      android_ripple={
-        !isDisabled
-          ? {
-              color: variant === "secondary" ? "#94A3B8" : "rgba(255, 255, 255, 0.3)",
-              borderless: false,
-            }
-          : undefined
-      }
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       <Animated.View
         style={[
@@ -200,6 +196,6 @@ export const Button = ({ variant = "primary", size = "md", disabled = false, loa
           <Text className={`${getTextVariantStyles()} ${textSizeStyles[size]} font-semibold`}>{children}</Text>
         )}
       </Animated.View>
-    </Pressable>
+    </TouchableOpacity>
   );
 };

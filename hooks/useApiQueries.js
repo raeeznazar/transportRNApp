@@ -26,6 +26,7 @@ export const queryKeys = {
   godownsListForALS: ["godownsListForALS"],
   outwardsScanningDocketListForALS: ["outwardsScanningDocketListForALS"],
   outwardsGetMissingPackets: ["outwardsGetMissingPackets"],
+  outwardsSummaryHeaderData: ["outwardsSummaryHeaderData"],
   // Add more query keys based on your screensApiService
 };
 
@@ -93,7 +94,7 @@ export const useGetInward = (branchCode, fromDate, toDate, options = {}) => {
     refetchInterval: 2 * 60 * 1000, // 2 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options, // Spread any additional options passed from the component
   });
@@ -133,7 +134,7 @@ export const useGetManifestIdList = (thcId, toStation) => {
     refetchInterval: 4 * 60 * 1000, // 4 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
   });
 };
@@ -171,7 +172,7 @@ export const useGetManifestTable = (manID) => {
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
   });
 };
@@ -275,7 +276,7 @@ export const useGetTruckArrivalSheetTable = (thcId) => {
     refetchInterval: 2 * 60 * 1000, // 2 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
   });
 };
@@ -349,7 +350,7 @@ export const useGetTruckArrivalListAfterReport = (branchCode, fromDate, toDate, 
     refetchInterval: 3 * 60 * 1000, // 3 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -386,7 +387,7 @@ export const useGetDocketScanList = (branchCode, thcid, options = {}) => {
     staleTime: 0, // Override global - always stale
     gcTime: 0, // Override global - no cache
     refetchInterval: 2 * 60 * 1000, // 2 minutes
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     retry: 1,
@@ -459,7 +460,7 @@ export const useGetShortagePacketList = (thcid, branchCode, docketID, options = 
     refetchInterval: 2 * 60 * 1000, // 2 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -471,6 +472,7 @@ export const useSubmitMissingPackets = () => {
     mutationFn: async (payload) => {
       try {
         const response = await apiClient.post(API_ENDPOINTS.ENTER_BATCH_SHORTAGE_PACKETS, payload);
+        console.log("✅ Submit Missing Packets Response:", response.data);
         return response.data;
       } catch (error) {
         console.error("submitMissingPackets ERROR Details:", {
@@ -525,7 +527,7 @@ export const useGetBarcodeSubmitSummaryHeader = (thcid, branchCode, options = {}
     refetchInterval: 2 * 60 * 1000, // 3 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -626,7 +628,7 @@ export const useGetTrackingDocketDetails = (docketNo) => {
     refetchInterval: 2 * 60 * 1000, // 2 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
   });
 };
@@ -657,7 +659,7 @@ export const useGetPreloadingList = (branchCode, finCode, includeAll = false, op
     refetchInterval: 30000, // 30 seconds
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -686,7 +688,7 @@ export const useGetVehicleListForALS = (branchCode, options = {}) => {
     refetchInterval: false, // Disable automatic refetching
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -716,7 +718,7 @@ export const useGetDriverListForALS = (branchCode, options = {}) => {
     refetchInterval: false, // Disable automatic refetching
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -739,7 +741,7 @@ export const useGetRouteListForALS = (options = {}) => {
     refetchInterval: false, // Disable automatic refetching
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -762,7 +764,7 @@ export const useGetTeamsListForALS = (options = {}) => {
     refetchInterval: false, // Disable automatic refetching
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -785,7 +787,7 @@ export const useGetBaysListForALS = (options = {}) => {
     refetchInterval: false, // Disable automatic refetching
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -808,7 +810,7 @@ export const useGetGodownsListForALS = (options = {}) => {
     refetchInterval: false, // Disable automatic refetching
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     ...options,
   });
@@ -873,7 +875,7 @@ export const useGetOutwardsScanningDocketListForALS = (branchCode, altId, option
     refetchInterval: 3 * 60 * 1000, // 3 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     retry: 1,
     ...options,
@@ -916,7 +918,6 @@ export const useOutwadesScanningSubmit = () => {
 
 //API to get docket list for Outwards sacnning - get
 export const useGetOutwardsGetMissingPackets = (docketId, options = {}) => {
-  console.log("useGetOutwardsGetMissingPackets Params:", { docketId });
   return useQuery({
     queryKey: [...queryKeys.outwardsGetMissingPackets, docketId],
     queryFn: async () => {
@@ -938,9 +939,132 @@ export const useGetOutwardsGetMissingPackets = (docketId, options = {}) => {
     refetchInterval: 3 * 60 * 1000, // 3 minutes
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 1,
     retry: 1,
     ...options,
+  });
+};
+
+// Submit Damage Scanning data with photos (FormData)
+export const useInsertOutwadesDamageScanningData = () => {
+  return useMutation({
+    mutationFn: async (formData) => {
+      console.log("Submitting Outwards Damage Scanning Data with FormData:", formData);
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.OUTWADES_SCAN_DAMAGE_PACKETS, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        console.log("✅ Insert Damage Scanning Data Response:", response.data);
+
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit damage scanning data");
+        }
+      } catch (error) {
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to insert damage scanning data"
+        );
+      }
+    },
+  });
+};
+
+//submit outwades missing packets with reasons batch (Add missing packets outwades) -post
+export const useOutwadesSubmitAddMissingPackets = () => {
+  return useMutation({
+    mutationFn: async (payload) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.INSERT_OUTWARDS_SCANNING_DETAILS, payload);
+        console.log("✅ Submit Missing Packets Response:", response.data);
+        return response.data;
+      } catch (error) {
+        console.error("submitMissingPackets ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit missing packets"
+        );
+      }
+    },
+  });
+};
+
+//Get outwades summary header data - get
+export const useGetOutwardsSummaryHeaderData = (altId, options = {}) => {
+  console.log("useGetOutwardsSummaryHeaderData Params:", { altId });
+  return useQuery({
+    queryKey: [...queryKeys.outwardsSummaryHeaderData, altId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWADES_SUMMARY_HEADER_DATA, {
+          params: {
+            altId,
+          },
+        });
+        console.log("useGetOutwardsSummaryHeaderData Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get godowns list for ALS");
+      }
+    },
+    enabled: !!altId,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    retry: 1,
+    ...options,
+  });
+};
+
+// Insert outwards Scanning data - Use Mutation - post
+export const useOutwadesSummarySubmit = () => {
+  return useMutation({
+    mutationFn: async (params) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.OUTWADES_SUMMARY_SUBMIT, params);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit outwades summary data");
+        }
+      } catch (error) {
+        console.error("useOutwadesSummarySubmit ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit outwades ALS data"
+        );
+      }
+    },
   });
 };
