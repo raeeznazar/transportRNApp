@@ -95,6 +95,15 @@ export default function OutWadesEnteryScreen() {
     );
   }
 
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={theme.colors.alertColor} />
+        <Text className="mt-2 text-inputText">Server error loading data…</Text>
+      </View>
+    );
+  }
+
   const renderPreloadingCard = ({ item }) => {
     return (
       <View

@@ -1,27 +1,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetOutwardsSummaryRemainingDockets, useOutwadesDocketsRemovalSubmit } from "../../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import { Button } from "../../components/Button";
 import FullWidthSelectInput from "../../components/FullWidthSelectInput";
-
-// Demo data
-const DEMO_PACKETS = [
-  { id: 1, docketNumber: "PKT-90234851", weight: "12.5", reason: "Shortage (Not in Warehouse)", selected: true },
-  { id: 2, docketNumber: "PKT-90234852", weight: "10.0", reason: "", selected: false },
-  { id: 3, docketNumber: "PKT-90234855", weight: "15.2", reason: "Damaged Item", selected: true },
-  { id: 4, docketNumber: "PKT-90234860", weight: "8.5", reason: "", selected: false },
-  { id: 5, docketNumber: "PKT-90234862", weight: "20.3", reason: "", selected: false },
-  { id: 6, docketNumber: "PKT-90234865", weight: "7.8", reason: "", selected: false },
-  { id: 7, docketNumber: "PKT-90234870", weight: "13.2", reason: "", selected: false },
-  { id: 8, docketNumber: "PKT-90234875", weight: "9.5", reason: "", selected: false },
-  { id: 9, docketNumber: "PKT-90234880", weight: "11.0", reason: "", selected: false },
-  { id: 10, docketNumber: "PKT-90234885", weight: "14.5", reason: "", selected: false },
-  { id: 11, docketNumber: "PKT-90234890", weight: "16.8", reason: "", selected: false },
-  { id: 12, docketNumber: "PKT-90234895", weight: "12.0", reason: "", selected: false },
-];
 
 const REASON_OPTIONS = [
   { label: "Shortage (Not in Warehouse)", value: "Shortage (Not in Warehouse)" },
@@ -34,10 +19,68 @@ export default function OutwadesDocketsRemoval({ route }) {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-
-  const [packets, setPackets] = useState(DEMO_PACKETS);
+  const { altId } = route.params || {};
+  const [packets, setPackets] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [bulkReason, setBulkReason] = useState("");
+  const isFocused = useIsFocused();
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const { data, error, isLoading } = useGetOutwardsSummaryRemainingDockets(altId);
+  console.log("OutwadesDocketsRemoval Data:", data);
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text className="mt-2 text-inputText">Loading dockets...</Text>
+      </View>
+    );
+  }
+  // Handle error state
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={theme.colors.alertColor} />
+        <Text className="mt-2 text-inputText">Error loading dockets</Text>
+      </View>
+    );
+  }
+  // Handle empty data state
+  if (!data || data.length === 0) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <MaterialIcons name="inbox" size={48} color={theme.colors.secondaryText} />
+        <Text className="mt-2 text-inputText">No dockets to remove</Text>
+      </View>
+    );
+  }
+  const removableDocketsRemovalSubmit = useOutwadesDocketsRemovalSubmit();
+
+  // Initialize packets from API data
+  useEffect(() => {
+    if (data && Array.isArray(data)) {
+      const formattedPackets = data.map((item) => ({
+        id: item.docketID,
+        docketNumber: item.docketNo,
+        totalPackets: item.totalPackets,
+        plsId: item.plsId,
+        plsNo: item.plsNo,
+        slNo: item.slNo,
+        reason: "",
+        selected: false,
+      }));
+      setPackets(formattedPackets);
+    }
+    if (!isFocused) {
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }
+  }, [data, isFocused]);
 
   // Calculate selected count
   const selectedCount = packets.filter((p) => p.selected).length;
@@ -45,14 +88,14 @@ export default function OutwadesDocketsRemoval({ route }) {
 
   // Toggle individual packet selection
   const togglePacket = (id) => {
-    setPackets((prev) => prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p)));
+    setPackets(packets.map((packet) => (packet.id === id ? { ...packet, selected: !packet.selected } : packet)));
   };
 
   // Toggle select all
   const handleSelectAll = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);
-    setPackets((prev) => prev.map((p) => ({ ...p, selected: newSelectAll })));
+    setPackets(packets.map((packet) => ({ ...packet, selected: newSelectAll })));
   };
 
   // Update individual packet reason
@@ -64,14 +107,53 @@ export default function OutwadesDocketsRemoval({ route }) {
   const applyBulkReason = (reason) => {
     setBulkReason(reason);
     if (reason) {
-      setPackets((prev) => prev.map((p) => (p.selected ? { ...p, reason } : p)));
+      setPackets((prev) => prev.map((p) => ({ ...p, reason })));
     }
   };
 
   // Handle confirm removal
   const handleConfirmRemoval = () => {
-    const selectedPackets = packets.filter((p) => p.selected);
-    console.log("Removing packets:", selectedPackets);
+    const selectedPackets = packets.filter((p) => p.selected && p.reason);
+    const docketsToRemove = selectedPackets.map((packet) => ({
+      docketID: packet.id,
+      removalReason: packet.reason,
+      removeRemarks: packet.reason, // You can add a separate remarks field if needed
+    }));
+
+    // Get plsNo and plsId from the first packet (all packets share the same PLS)
+    const plsNo = packets.length > 0 ? packets[0].plsNo : null;
+    const plsId = packets.length > 0 ? packets[0].plsId : null;
+
+    const removal = {
+      plsNo,
+      plsId,
+      removedUserID: "ADMIN",
+      docketsToRemove,
+    };
+    console.log("docketsToRemove:", removal);
+
+    if (removal) {
+      removableDocketsRemovalSubmit.mutate(removal, {
+        onSuccess: (response) => {
+          setToastConfig({
+            visible: true,
+            type: "success",
+            title: "Success",
+            message: response?.status?.message || "Dockets removed successfully",
+          });
+          navigation.navigate("OutwadesSummaryScreen", { altId });
+        },
+        onError: (error) => {
+          setToastConfig({
+            visible: true,
+            type: "error",
+            title: "Error",
+            message: error?.status?.message || "Failed to remove dockets",
+          });
+          // Handle error, show toast or alert
+        },
+      });
+    }
     // Add your API call here
   };
 
@@ -162,7 +244,12 @@ export default function OutwadesDocketsRemoval({ route }) {
               {selectedCount} of {totalCount}
             </Text>
           </View>
-          <Button variant="primary" size="lg" disabled={selectedCount === 0} onPress={handleConfirmRemoval}>
+          <Button
+            variant="primary"
+            size="lg"
+            disabled={selectedCount === 0 || !packets.some((p) => p.selected && p.reason)}
+            onPress={handleConfirmRemoval}
+          >
             <MaterialIcons name="delete-sweep" size={20} color="#FFFFFF" />
             <Text className="text-white text-base font-bold ml-2">Confirm Removal</Text>
           </Button>
@@ -210,10 +297,10 @@ function PacketCard({ packet, theme, onToggle, onReasonChange }) {
         </TouchableOpacity>
         <View className="items-end">
           <Text className="text-[10px] font-bold tracking-widest uppercase mb-0.5" style={{ color: theme.colors.inputPlaceholder }}>
-            WEIGHT
+            PACKETS
           </Text>
           <Text className="text-sm font-semibold" style={{ color: theme.colors.bodyText }}>
-            {packet.weight} kg
+            {packet.totalPackets}
           </Text>
         </View>
       </View>

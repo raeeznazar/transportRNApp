@@ -35,13 +35,12 @@ export default function NewSummaryScreen({ route }) {
     enabled: isFocused && !!altId,
   });
 
-  const { data: docketData } = useGetOutwardsScanningDocketListForALS(branchCode, altId, {
+  const { data: docketData, error: docketError } = useGetOutwardsScanningDocketListForALS(branchCode, altId, {
     enabled: isFocused && !!altId,
   });
 
   const summaryDataSubmit = useOutwadesSummarySubmit();
 
-  console.log("Summary Screen Data:", { data, docketData, isLoading, isError, error });
   // Dummy data for summary header and dockets
   const summaryHeaderData = {
     vehicleNo: data?.truckNo || "",
@@ -53,6 +52,15 @@ export default function NewSummaryScreen({ route }) {
     short: data?.totalPackets - data?.scanned || 0,
     excessCount: data?.excessCount || 0,
   };
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={theme.colors.alertColor} />
+        <Text className="mt-2 text-inputText">Server error loading data…</Text>
+      </View>
+    );
+  }
 
   // Transform API docketData to match the expected dockets array structure
   const dockets = Array.isArray(docketData)
@@ -68,6 +76,8 @@ export default function NewSummaryScreen({ route }) {
   const DocketCard = ({ docket }) => {
     const isShortage = docket.status === "shortage";
     const borderColor = isShortage ? "#f97316" : theme.colors.success;
+    const shortCount = docket.totalPackets - docket.scanned;
+    const isShortLink = shortCount > 0;
 
     return (
       <View
@@ -121,6 +131,25 @@ export default function NewSummaryScreen({ route }) {
               {docket.scanned}
             </Text>
           </View>
+          <TouchableOpacity
+            className="flex-1 items-center border-r"
+            style={{ borderRightColor: "#e2e8f0" + "40" }}
+            disabled={!isShortLink}
+            onPress={() => {
+              if (!isShortLink) return;
+              navigation.navigate("OutwardsSummaryPendingPackets", { docketId: docket.id });
+            }}
+          >
+            <Text className="text-[10px] uppercase" style={{ color: theme.colors.secondaryText }}>
+              Short
+            </Text>
+            <Text
+              className={`text-sm font-semibold ${isShortLink ? "underline" : ""}`}
+              style={{ color: isShortLink ? theme.colors.text : theme.colors.secondaryText }}
+            >
+              {shortCount}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -139,7 +168,6 @@ export default function NewSummaryScreen({ route }) {
     summaryDataSubmit.mutate(params, {
       onSuccess: (response) => {
         console.log("Summary data submitted successfully:", response);
-
         setToastConfig({
           visible: true,
           type: "success",
@@ -147,6 +175,7 @@ export default function NewSummaryScreen({ route }) {
           message: `${response?.status?.message}`,
         });
         // Optionally, navigate to another screen or show a success message
+        navigation.navigate("OutwardsList");
       },
       onError: (error) => {
         console.error("Error submitting summary data:", error);
@@ -171,7 +200,7 @@ export default function NewSummaryScreen({ route }) {
         message={toastConfig.message}
         onHide={() => setToastConfig({ ...toastConfig, visible: false })}
       />
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}>
         <View className="px-4 pt-4 gap-6">
           {/* Summary Card */}
           <View
@@ -256,6 +285,13 @@ export default function NewSummaryScreen({ route }) {
             </View>
           </View>
 
+          {/* Header Shortage and Navigation */}
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center" }}>
+            <TouchableOpacity onPress={() => navigation.navigate("OutwadesDocketsRemoval", { altId: altId })}>
+              <Text style={{ color: theme.colors.primary }}>Remove Docket from ALS</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Filter Buttons */}
           <View className="flex-row gap-2">
             <TouchableOpacity
@@ -318,11 +354,29 @@ export default function NewSummaryScreen({ route }) {
 
           {/* Docket Cards */}
           <View className="gap-3">
-            {dockets
-              .filter((docket) => filterStatus === "all" || docket.status === filterStatus)
-              .map((docket) => (
-                <DocketCard key={docket.id} docket={docket} />
-              ))}
+            {docketError ? (
+              <View
+                className="rounded-xl p-4 shadow-sm border border-l-[6px]"
+                style={{
+                  backgroundColor: theme.colors.cardBg,
+                  borderColor: "#e2e8f0" + "40",
+                  borderLeftColor: theme.colors.alertColor,
+                }}
+              >
+                <View className="flex-row justify-between items-start mb-2">
+                  <Text className="text-base font-bold" style={{ color: theme.colors.alertColor }}>
+                    Server error loading dockets…
+                  </Text>
+                </View>
+                <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
+                  Please try again.
+                </Text>
+              </View>
+            ) : (
+              dockets
+                .filter((docket) => filterStatus === "all" || docket.status === filterStatus)
+                .map((docket) => <DocketCard key={docket.id} docket={docket} />)
+            )}
           </View>
         </View>
       </ScrollView>
@@ -340,11 +394,6 @@ export default function NewSummaryScreen({ route }) {
           <View className="flex-1">
             <Button variant="secondary" size="lg" onPress={() => handleSumbitSumaryData()}>
               Finish
-            </Button>
-          </View>
-          <View className="flex-1">
-            <Button variant="primary" size="lg" onPress={() => navigation.navigate("AddExtraScreen")}>
-              Add Extra
             </Button>
           </View>
         </View>

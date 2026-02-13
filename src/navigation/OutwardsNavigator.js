@@ -7,6 +7,7 @@ import OutwadesDocketsRemoval from "../screens/outWades/OutwadesDocketsRemoval";
 import OutWadesEnteryScreen from "../screens/outWades/OutWadesEnteryScreen";
 import OutWadesScanning from "../screens/outWades/OutWadesScanning";
 import OutwadesSummaryScreen from "../screens/outWades/OutwadesSummaryScreen";
+import OutwardsSummaryPendingPackets from "../screens/outWades/OutwardsSummaryPendingPackets";
 const Stack = createNativeStackNavigator();
 export default function OutwardsNavigator() {
   const theme = useCurrentTheme();
@@ -83,6 +84,15 @@ export default function OutwardsNavigator() {
         options={{
           headerShown: true,
           title: "Outwards Summary",
+          unmountOnBlur: true,
+        }}
+      />
+      <Stack.Screen
+        name="OutwardsSummaryPendingPackets"
+        component={OutwardsSummaryPendingPackets}
+        options={{
+          headerShown: true,
+          title: "Outwards Summary Pending Packets",
           unmountOnBlur: true,
         }}
       />

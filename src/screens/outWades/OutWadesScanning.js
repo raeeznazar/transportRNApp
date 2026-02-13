@@ -721,8 +721,10 @@ export default function OutWadesScanning({ route }) {
               <TouchableOpacity
                 className="flex-1 pl-3"
                 onPress={() => {
-                  Vibration.vibrate(100);
-                  handleAddMissingPackets(docket.id);
+                  if (docket.short > 0) {
+                    Vibration.vibrate(100);
+                    handleAddMissingPackets(docket.id);
+                  }
                 }}
                 activeOpacity={0.7}
               >
@@ -740,7 +742,7 @@ export default function OutWadesScanning({ route }) {
                   className="text-lg font-semibold"
                   style={{
                     color: docket.completed ? theme.colors.secondaryText : theme.colors.text,
-                    textDecorationLine: "underline",
+                    textDecorationLine: docket.short > 0 ? "underline" : "none", // Underline if short > 0
                     hoverBackgroundColor: theme.colors.danger + "10",
                   }}
                 >

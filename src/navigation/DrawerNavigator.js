@@ -84,6 +84,8 @@ export default function DrawerNavigator() {
         return "Outwades Docket Removal";
       case "OutwadesSummaryScreen":
         return "Outwards Summary";
+      case "OutwardsSummaryPendingPackets":
+        return "Outwards Summary Pending Packets";
       default:
         return "NeoEra Transport";
     }

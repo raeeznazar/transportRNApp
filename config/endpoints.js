@@ -98,4 +98,10 @@ export const API_ENDPOINTS = {
 
   //Outwades summary submit
   OUTWADES_SUMMARY_SUBMIT: "/Outward/FinishSubmitActualLoadSheet",
+
+  //Dockets removable screen api for outwades summary
+  OUTWADES_DOCKETS_REMOVABLE: "/Outward/RemainingDockets_Get",
+
+  //Dockets removal submit api for outwades summary
+  OUTWADES_DOCKETS_REMOVAL_SUBMIT: "/Outward/PreLoadSheet_RemoveDockets",
 };

@@ -27,6 +27,7 @@ export const queryKeys = {
   outwardsScanningDocketListForALS: ["outwardsScanningDocketListForALS"],
   outwardsGetMissingPackets: ["outwardsGetMissingPackets"],
   outwardsSummaryHeaderData: ["outwardsSummaryHeaderData"],
+  outwardsSummaryRemainingDockets: ["outwardsSummaryRemainingDockets"],
   // Add more query keys based on your screensApiService
 };
 
@@ -1041,6 +1042,71 @@ export const useOutwadesSummarySubmit = () => {
     mutationFn: async (params) => {
       try {
         const response = await apiClient.post(API_ENDPOINTS.OUTWADES_SUMMARY_SUBMIT, params);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit outwades summary data");
+        }
+      } catch (error) {
+        console.error("useOutwadesSummarySubmit ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit outwades ALS data"
+        );
+      }
+    },
+  });
+};
+
+//Get outwades summary remaining dockets - get
+export const useGetOutwardsSummaryRemainingDockets = (altId, options = {}) => {
+  console.log("outwardsSummaryRemainingDockets Params:", { altId });
+  return useQuery({
+    queryKey: [...queryKeys.outwardsSummaryRemainingDockets, altId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWADES_DOCKETS_REMOVABLE, {
+          params: {
+            altId,
+          },
+        });
+        console.log("useGetOutwardsSummaryRemainingDockets Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get remaining dockets for ALS");
+      }
+    },
+    enabled: !!altId,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    retry: 1,
+    ...options,
+  });
+};
+
+// Insert outwards removal data - Use Mutation - post
+export const useOutwadesDocketsRemovalSubmit = () => {
+  return useMutation({
+    mutationFn: async (params) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.OUTWADES_DOCKETS_REMOVAL_SUBMIT, params);
         // Check if the API returned success
         if (response.data?.status?.isSuccess) {
           return response.data;
