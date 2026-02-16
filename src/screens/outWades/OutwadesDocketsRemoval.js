@@ -32,7 +32,28 @@ export default function OutwadesDocketsRemoval({ route }) {
   });
 
   const { data, error, isLoading } = useGetOutwardsSummaryRemainingDockets(altId);
-  console.log("OutwadesDocketsRemoval Data:", data);
+  const removableDocketsRemovalSubmit = useOutwadesDocketsRemovalSubmit();
+
+  // Initialize packets from API data
+  useEffect(() => {
+    if (data && Array.isArray(data)) {
+      const formattedPackets = data.map((item) => ({
+        id: item.docketID,
+        docketNumber: item.docketNo,
+        totalPackets: item.totalPackets,
+        plsId: item.plsId,
+        plsNo: item.plsNo,
+        slNo: item.slNo,
+        reason: "",
+        selected: false,
+      }));
+      setPackets(formattedPackets);
+    }
+    if (!isFocused) {
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }
+  }, [data, isFocused]);
+
   // Handle loading state
   if (isLoading) {
     return (
@@ -60,27 +81,6 @@ export default function OutwadesDocketsRemoval({ route }) {
       </View>
     );
   }
-  const removableDocketsRemovalSubmit = useOutwadesDocketsRemovalSubmit();
-
-  // Initialize packets from API data
-  useEffect(() => {
-    if (data && Array.isArray(data)) {
-      const formattedPackets = data.map((item) => ({
-        id: item.docketID,
-        docketNumber: item.docketNo,
-        totalPackets: item.totalPackets,
-        plsId: item.plsId,
-        plsNo: item.plsNo,
-        slNo: item.slNo,
-        reason: "",
-        selected: false,
-      }));
-      setPackets(formattedPackets);
-    }
-    if (!isFocused) {
-      setToastConfig((prev) => ({ ...prev, visible: false }));
-    }
-  }, [data, isFocused]);
 
   // Calculate selected count
   const selectedCount = packets.filter((p) => p.selected).length;
@@ -130,8 +130,8 @@ export default function OutwadesDocketsRemoval({ route }) {
       removedUserID: "ADMIN",
       docketsToRemove,
     };
-    console.log("docketsToRemove:", removal);
 
+    console.log("Removal Payload:", removal); // Debug log to check the payload structure
     if (removal) {
       removableDocketsRemovalSubmit.mutate(removal, {
         onSuccess: (response) => {
@@ -235,7 +235,7 @@ export default function OutwadesDocketsRemoval({ route }) {
           paddingBottom: insets.bottom + 20,
         }}
       >
-        <View className="gap-3 max-w-[512px] w-full self-center">
+        <View className="gap-3 max-w-[512px] w-full self-center" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View className="flex-row justify-between items-center px-1">
             <Text className="text-sm font-medium" style={{ color: theme.colors.bodyText }}>
               Items selected:

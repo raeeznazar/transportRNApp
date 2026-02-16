@@ -17,12 +17,36 @@ export default function OutWadesEnteryScreen() {
   const [selectedCardId, setSelectedCardId] = useState(null);
   const navigation = useNavigation();
   const resumeKey = true;
+  const [refreshing, setRefreshing] = useState(false);
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     type: "success",
     title: "",
     message: "",
   });
+
+  const { data, isLoading, refetch, isError, error } = useGetPreloadingList(branchCode, finCode, false, {
+    enabled: isFocused && !!branchCode && !!finCode,
+  });
+
+  // Filter out items with totalDockets === 0
+  const filteredPreloadingData = data?.filter((item) => item.totalDockets > 0) || [];
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isFocused && sessionData?.branchCode && finCode) {
+        refetch();
+      }
+    }, [isFocused, sessionData?.branchCode, finCode, refetch])
+  );
+
+  // Reset selectedCardId when page loses focus
+  useEffect(() => {
+    if (!isFocused) {
+      setSelectedCardId(null);
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }
+  }, [isFocused]);
 
   function onHandleProceedToALS() {
     if (!selectedCardId) {
@@ -34,7 +58,7 @@ export default function OutWadesEnteryScreen() {
       });
       return;
     }
-    const selectedItem = data.find((item) => item.id === selectedCardId);
+    const selectedItem = filteredPreloadingData.find((item) => item.id === selectedCardId);
     setToastConfig({
       visible: true,
       type: "success",
@@ -66,25 +90,17 @@ export default function OutWadesEnteryScreen() {
       navigation.navigate("OutWadesDirectALS");
     }, 600);
   }
-  const { data, isLoading, refetch, isError, error } = useGetPreloadingList(branchCode, finCode, false, {
-    enabled: isFocused && !!branchCode && !!finCode,
-  });
 
-  useFocusEffect(
-    useCallback(() => {
-      if (isFocused && sessionData?.branchCode && finCode) {
-        refetch();
-      }
-    }, [isFocused, sessionData?.branchCode, finCode, refetch])
-  );
-
-  // Reset selectedCardId when page loses focus
-  useEffect(() => {
-    if (!isFocused) {
-      setSelectedCardId(null);
-      setToastConfig((prev) => ({ ...prev, visible: false }));
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
     }
-  }, [isFocused]);
+  };
 
   if (isLoading) {
     return (
@@ -269,18 +285,20 @@ export default function OutWadesEnteryScreen() {
         onHide={() => setToastConfig({ ...toastConfig, visible: false })}
       />
       <FlatList
-        data={data}
+        data={filteredPreloadingData}
         renderItem={renderPreloadingCard}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
         scrollEnabled={true}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
       />
 
       {/* Bottom Buttons */}
-      <View className="px-4 flex-row gap-3 mb-1">
-        <Button variant="secondary" size="lg" className="flex-1" onPress={onHandleDirectALS}>
+      <View className="px-4 flex-row gap-3" style={{ paddingBottom: insets.bottom, paddingTop: insets.top, backgroundColor: theme.colors.appBg }}>
+        {/* <Button variant="secondary" size="lg" className="flex-1" onPress={onHandleDirectALS}>
           Direct ALS
-        </Button>
+        </Button> */}
         <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
           Proceed to ALS
         </Button>

@@ -131,8 +131,6 @@ export default function OutWadesDirectALS() {
   const selectedDriver = driverData?.find((driver) => driver.drivername.toString() === driverName);
   const driverContactNo = selectedDriver?.contactno || null;
 
-  console.log("Selected Driver Contact No:", driverContactNo);
-
   function onHandleProcceed() {
     if (!driverName || !vehicleNo || !teamsName || !baysName || !routeName) {
       //   alert("Please fill all the fields before proceeding.");

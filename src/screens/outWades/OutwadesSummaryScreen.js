@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
-import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwardsScanningDocketListForALS, useGetOutwardsSummaryHeaderData, useOutwadesSummarySubmit } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
@@ -51,6 +51,9 @@ export default function NewSummaryScreen({ route }) {
     scanned: data?.scanned || 0,
     short: data?.totalPackets - data?.scanned || 0,
     excessCount: data?.excessCount || 0,
+    damagedCount: data?.damagedCount || 0,
+    routeFrom: data?.routeFrom || "",
+    routeTo: data?.routeTo || "",
   };
 
   if (error) {
@@ -158,8 +161,6 @@ export default function NewSummaryScreen({ route }) {
   const [filterStatus, setFilterStatus] = useState("all");
 
   function handleSumbitSumaryData() {
-    console.log("Submitting summary data with altId:", altId);
-
     const params = {
       branchCode: branchCode,
       alT_ID: altId,
@@ -167,7 +168,6 @@ export default function NewSummaryScreen({ route }) {
 
     summaryDataSubmit.mutate(params, {
       onSuccess: (response) => {
-        console.log("Summary data submitted successfully:", response);
         setToastConfig({
           visible: true,
           type: "success",
@@ -178,7 +178,6 @@ export default function NewSummaryScreen({ route }) {
         navigation.navigate("OutwardsList");
       },
       onError: (error) => {
-        console.error("Error submitting summary data:", error);
         setToastConfig({
           visible: true,
           type: "error",
@@ -231,14 +230,14 @@ export default function NewSummaryScreen({ route }) {
             </View>
             <View className="flex-row flex-wrap">
               <View className="w-full flex-row gap-3">
-                <View className="flex-1">
+                {/* <View className="flex-1">
                   <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
                     Total Dockets
                   </Text>
                   <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
                     {summaryHeaderData.totalDockets}
                   </Text>
-                </View>
+                </View> */}
                 <View className="flex-1">
                   <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
                     Total Packets
@@ -252,7 +251,16 @@ export default function NewSummaryScreen({ route }) {
                     Total Damage
                   </Text>
                   <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                    {summaryHeaderData.totalPackets}
+                    {summaryHeaderData.damagedCount}
+                  </Text>
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
+                    Route
+                  </Text>
+                  <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
+                    {summaryHeaderData.routeFrom} - {summaryHeaderData.routeTo}
                   </Text>
                 </View>
               </View>
@@ -387,6 +395,7 @@ export default function NewSummaryScreen({ route }) {
         style={{
           backgroundColor: theme.colors.cardBg,
           borderTopColor: "#e2e8f0" + "40",
+          paddingTop: insets.top,
           paddingBottom: insets.bottom,
         }}
       >

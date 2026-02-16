@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StatusBar, StyleSheet, Text, View } from "react-native";
 import { useCurrentTheme } from "../../stores/themeStore";
 
 export default function DashboardHomeScreen({ route }) {
@@ -7,6 +7,7 @@ export default function DashboardHomeScreen({ route }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.appBg }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <Text style={[styles.title, { color: theme.colors.headingText }]}>Home</Text>
       <Text style={{ color: theme.colors.bodyText }}>Welcome to your home screen.</Text>
       {filters && (

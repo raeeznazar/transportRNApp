@@ -72,8 +72,6 @@ export default function OutWadesScanning({ route }) {
     enabled: isFocused && !!branchCode && !!altId,
   });
 
-  console.log("Scanned Data:", scannedData);
-
   const insertNormalScanningData = useOutwadesScanningSubmit();
   const insertDamageScanningData = useInsertOutwadesDamageScanningData();
 
@@ -300,13 +298,9 @@ export default function OutWadesScanning({ route }) {
         });
       });
 
-      console.log("Submitting damage data for barcode:", currentScannedBarcode);
-
       // Call the mutation with FormData
       insertDamageScanningData.mutate(formData, {
         onSuccess: (data) => {
-          console.log("Damage submission successful:", data);
-
           const elapsedTime = Date.now() - startTime;
           const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
@@ -331,8 +325,6 @@ export default function OutWadesScanning({ route }) {
           }, remainingTime);
         },
         onError: (error) => {
-          console.error("Damage submission error:", error);
-
           const elapsedTime = Date.now() - startTime;
           const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
@@ -357,8 +349,6 @@ export default function OutWadesScanning({ route }) {
         },
       });
     } catch (error) {
-      console.error("Error preparing damage data:", error);
-
       setShowLoader(false);
       setIsSubmittingDamage(false);
       closeDamageModal(true);
@@ -415,7 +405,6 @@ export default function OutWadesScanning({ route }) {
       }
 
       const scannedValue = String(data).trim();
-      console.log("Scanned Barcode:", scannedValue);
 
       // Validate: must be exactly 13 digits (numeric only)
       const isValidFormat = /^\d{13}$/.test(scannedValue);
@@ -494,16 +483,11 @@ export default function OutWadesScanning({ route }) {
               scanningData: scanningDataArray,
             };
 
-            console.log("Payload to submit:", payload);
             setShowLoader(false);
 
             // Make API call to submit scanning data
             insertNormalScanningData.mutate(payload, {
               onSuccess: (data) => {
-                console.log("Payload to submit:", payload);
-
-                console.log("Scanning submission successful:", data);
-
                 const elapsedTime = Date.now() - startTime;
                 const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
@@ -526,8 +510,6 @@ export default function OutWadesScanning({ route }) {
                 }, remainingTime);
               },
               onError: (error) => {
-                console.error("Error submitting scan:", error);
-
                 const elapsedTime = Date.now() - startTime;
                 const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
 
@@ -876,7 +858,7 @@ export default function OutWadesScanning({ route }) {
           </View>
 
           {/* Toggle Switch */}
-          <View
+          {/* <View
             className="flex-row rounded-full p-0.5"
             style={{
               backgroundColor: theme.colors.cardBg,
@@ -933,7 +915,7 @@ export default function OutWadesScanning({ route }) {
                 Damage
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* Empty State */}
@@ -977,6 +959,7 @@ export default function OutWadesScanning({ route }) {
             className="absolute bottom-0 left-0 right-0 px-6"
             style={{
               paddingBottom: insets.bottom,
+              paddingTop: insets.top,
               backgroundColor: "transparent",
             }}
           >

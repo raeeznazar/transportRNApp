@@ -429,7 +429,7 @@ export default function OutWadesALSscreen({ route }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View className="mx-4 mb-1 flex-row gap-3">
+      <View className="mx-4 flex-row gap-3" style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}>
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>

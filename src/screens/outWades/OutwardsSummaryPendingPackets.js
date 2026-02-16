@@ -3,7 +3,6 @@ import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwardsGetMissingPackets } from "../../../hooks/useApiQueries";
-import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import { Button } from "../../components/Button";
 export default function OutwardsSummaryPendingPackets({ route }) {
@@ -12,25 +11,45 @@ export default function OutwardsSummaryPendingPackets({ route }) {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
 
-  const { sessionData } = useAuthStore();
-  const { docketID } = route.params || {};
+  const { docketId } = route.params || {};
 
   const {
     data: shortageData,
     isLoading,
     isError,
     error,
-  } = useGetOutwardsGetMissingPackets(docketID, {
-    enabled: isFocused && !!docketID,
+  } = useGetOutwardsGetMissingPackets(docketId, {
+    enabled: isFocused && !!docketId,
   });
   // Sample short packets data
   const shortPackets = shortageData || [];
 
-  if (error) {
+  if (error || isError) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color={theme.colors.alertColor} />
         <Text className="mt-2 text-inputText">Server error loading data…</Text>
+      </View>
+    );
+  }
+
+  // Handle empty data state
+  if (!shortPackets || shortPackets.length === 0) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Ionicons name="checkmark-circle" size={48} color={theme.colors.successColor} />
+        <Text className="mt-2 text-base font-semibold" style={{ color: theme.colors.text }}>
+          No Missing Packets
+        </Text>
+      </View>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={theme.colors.alertColor} />
+        <Text className="mt-2 text-inputText">Loading data…</Text>
       </View>
     );
   }
@@ -54,7 +73,7 @@ export default function OutwardsSummaryPendingPackets({ route }) {
       </View>
       <View className="flex-1">
         <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-          {packet?.serialNumber}
+          {packet?.missingBarcode}
         </Text>
         <View className="flex-row items-center gap-2 mt-0.5">
           <View
@@ -103,7 +122,7 @@ export default function OutwardsSummaryPendingPackets({ route }) {
         {/* Packet List */}
         <View className="gap-3">
           {shortPackets?.map((packet, index) => (
-            <PacketCard key={packet?.id || packet?.barcode || `packet-${index}`} packet={packet} />
+            <PacketCard key={`${packet?.docketID}+${index}`} packet={packet} />
           ))}
         </View>
       </ScrollView>
@@ -115,6 +134,7 @@ export default function OutwardsSummaryPendingPackets({ route }) {
           backgroundColor: theme.colors.cardBg,
           borderTopColor: "#e2e8f0" + "40",
           paddingBottom: insets.bottom,
+          paddingTop: insets.top,
         }}
       >
         <Button
