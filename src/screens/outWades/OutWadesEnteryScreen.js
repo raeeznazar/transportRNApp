@@ -260,8 +260,6 @@ export default function OutWadesEnteryScreen() {
     <View
       style={{
         flex: 1,
-        paddingTop: 0,
-        paddingBottom: insets.bottom,
         paddingLeft: insets.left,
         paddingRight: insets.right,
         backgroundColor: theme.colors.appBg,

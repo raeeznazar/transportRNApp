@@ -172,10 +172,12 @@ export default function NewSummaryScreen({ route }) {
           visible: true,
           type: "success",
           title: "Submitted successfully",
-          message: `${response?.status?.message}`,
+          message: `${response?.status?.message}` || "Summary data submitted successfully.",
         });
         // Optionally, navigate to another screen or show a success message
-        navigation.navigate("OutwardsList");
+        setTimeout(() => {
+          navigation.navigate("OutwardsList");
+        }, 2000);
       },
       onError: (error) => {
         setToastConfig({
@@ -391,7 +393,7 @@ export default function NewSummaryScreen({ route }) {
 
       {/* Footer Buttons */}
       <View
-        className="absolute bottom-0 w-full px-4 py-4 border-t"
+        className="absolute bottom-0 w-full px-4 border-t"
         style={{
           backgroundColor: theme.colors.cardBg,
           borderTopColor: "#e2e8f0" + "40",

@@ -131,7 +131,6 @@ export default function OutwadesDocketsRemoval({ route }) {
       docketsToRemove,
     };
 
-    console.log("Removal Payload:", removal); // Debug log to check the payload structure
     if (removal) {
       removableDocketsRemovalSubmit.mutate(removal, {
         onSuccess: (response) => {
@@ -150,7 +149,6 @@ export default function OutwadesDocketsRemoval({ route }) {
             title: "Error",
             message: error?.status?.message || "Failed to remove dockets",
           });
-          // Handle error, show toast or alert
         },
       });
     }
@@ -161,11 +159,11 @@ export default function OutwadesDocketsRemoval({ route }) {
     <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
       {/* Header Section */}
       <View
-        className="px-5 pb-5 border-b"
+        className="px-5 border-b"
         style={{
           backgroundColor: "#FFFFFF",
           borderBottomColor: theme.colors.cardBorder,
-          paddingTop: insets.top + 16,
+          paddingTop: insets.top,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.05,
@@ -211,7 +209,7 @@ export default function OutwadesDocketsRemoval({ route }) {
         className="flex-1"
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: insets.bottom + 140,
+          paddingBottom: insets.bottom + 120,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -230,12 +228,13 @@ export default function OutwadesDocketsRemoval({ route }) {
       <View
         className="absolute bottom-0 left-0 right-0 px-5 pt-5 border-t"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: theme.colors.cardBg,
           borderTopColor: theme.colors.cardBorder,
-          paddingBottom: insets.bottom + 20,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
         }}
       >
-        <View className="gap-3 max-w-[512px] w-full self-center" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+        <View className="gap-3 max-w-[512px] w-full self-center">
           <View className="flex-row justify-between items-center px-1">
             <Text className="text-sm font-medium" style={{ color: theme.colors.bodyText }}>
               Items selected:
