@@ -1,29 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Platform, RefreshControl, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetTruckArrivalListAfterReport } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { Button } from "../components/Button";
+import CalendarInput from "../components/CalendarInput";
 
 export default function TruckArivalScreeAfterReport() {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const DATE_PICKER_DISPLAY = Platform.OS === "ios" ? "default" : "calendar";
 
   const today = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
-  const [fromDate, setFromDate] = useState(thirtyDaysAgo);
-  const [toDate, setToDate] = useState(today);
-  const [showFrom, setShowFrom] = useState(false);
-  const [showTo, setShowTo] = useState(false);
+  const [fromDate, setFromDate] = useState(thirtyDaysAgo.toISOString().split("T")[0]);
+  const [toDate, setToDate] = useState(today.toISOString().split("T")[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -36,9 +33,7 @@ export default function TruckArivalScreeAfterReport() {
     setRefreshing(false);
   };
 
-  const modifiedFromDate = formatDate(fromDate);
-  const modifiedToDate = formatDate(toDate);
-  const { data, isLoading, isError, error, refetch } = useGetTruckArrivalListAfterReport(branchCode, modifiedFromDate, modifiedToDate, {
+  const { data, isLoading, isError, error, refetch } = useGetTruckArrivalListAfterReport(branchCode, fromDate, toDate, {
     staleTime: 0,
     cacheTime: 0,
     keepPreviousData: false,
@@ -57,20 +52,6 @@ export default function TruckArivalScreeAfterReport() {
       return normalizedVehicle.includes(normalizedQuery);
     });
   }, [data, searchQuery]);
-
-  function formatDate(date) {
-    return date.toISOString().split("T")[0];
-  }
-
-  const onChangeFrom = (event, selectedDate) => {
-    setShowFrom(false);
-    if (selectedDate) setFromDate(selectedDate);
-  };
-
-  const onChangeTo = (event, selectedDate) => {
-    setShowTo(false);
-    if (selectedDate) setToDate(selectedDate);
-  };
 
   const handleManifestPress = (thcNo, thcid) => {
     navigation.navigate("InwardesDetails", {
@@ -233,39 +214,16 @@ export default function TruckArivalScreeAfterReport() {
         )}
       </View>
 
-      {/* Date Pickers */}
+      {/* Date Range Pickers */}
       <View className="mx-4 mt-2 mb-2 flex-row items-center gap-2">
-        <TouchableOpacity
-          onPress={() => setShowFrom(true)}
-          className="flex-1 flex-row items-center justify-start bg-white border border-gray-200 rounded-lg px-3 py-2.5"
-        >
-          <Text className="text-textSecondary text-sm">From : </Text>
-          <Text className="text-textPrimary font-medium">{fromDate.toLocaleDateString("en-GB")}</Text>
-        </TouchableOpacity>
-
+        <View className="flex-1">
+          <CalendarInput label="From Date" value={fromDate} onChange={setFromDate} maxDate={toDate} />
+        </View>
         <Ionicons name="arrow-forward" size={16} color={theme.colors.inputText} />
-
-        <TouchableOpacity
-          onPress={() => setShowTo(true)}
-          className="flex-1 flex-row items-center justify-start bg-white border border-gray-200 rounded-lg px-3 py-2.5"
-        >
-          <Text className="text-textSecondary text-sm">To : </Text>
-          <Text className="text-textPrimary font-medium">{toDate.toLocaleDateString("en-GB")}</Text>
-        </TouchableOpacity>
+        <View className="flex-1">
+          <CalendarInput label="To Date" value={toDate} onChange={setToDate} minDate={fromDate} maxDate={today.toISOString().split("T")[0]} />
+        </View>
       </View>
-
-      {showFrom && <DateTimePicker value={fromDate} mode="date" display={DATE_PICKER_DISPLAY} onChange={onChangeFrom} maximumDate={toDate} />}
-
-      {showTo && (
-        <DateTimePicker
-          value={toDate}
-          mode="date"
-          display={DATE_PICKER_DISPLAY}
-          onChange={onChangeTo}
-          minimumDate={fromDate}
-          maximumDate={new Date()}
-        />
-      )}
 
       {/* Truck List */}
       <View className="flex-1 mt-3">

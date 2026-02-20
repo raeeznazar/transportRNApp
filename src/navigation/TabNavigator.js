@@ -37,7 +37,7 @@ export default function TabNavigator() {
         tabBarStyle: {
           backgroundColor: theme?.colors?.headerBg,
           paddingBottom: (Platform.select({ ios: 20, android: 10 }) ?? 10) + insets.bottom,
-          height: (Platform.select({ ios: 85, android: 65 }) ?? 65) + insets.bottom,
+          height: (Platform.select({ ios: 70, android: 65 }) ?? 65) + insets.bottom,
           borderTopWidth: 1,
           borderTopColor: theme?.colors?.border ?? "#e0e0e0",
           elevation: 8,

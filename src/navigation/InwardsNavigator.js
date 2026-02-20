@@ -98,7 +98,7 @@ export default function InwardsNavigator() {
         component={ProtectedInwardesDetailsScreen}
         options={{
           headerShown: true,
-          title: "Manifest List",
+          title: "Inwardes Details",
         }}
       />
       <Stack.Screen

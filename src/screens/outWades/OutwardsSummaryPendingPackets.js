@@ -4,6 +4,7 @@ import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-nativ
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwardsGetMissingPackets } from "../../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../../stores/themeStore";
+import BottomButtonContainer from "../../components/ButtomTwoButtonContainer";
 import { Button } from "../../components/Button";
 export default function OutwardsSummaryPendingPackets({ route }) {
   const theme = useCurrentTheme();
@@ -128,7 +129,7 @@ export default function OutwardsSummaryPendingPackets({ route }) {
       </ScrollView>
 
       {/* Footer Button */}
-      <View
+      {/* <View
         className="border-t p-4 shadow-lg"
         style={{
           backgroundColor: theme.colors.cardBg,
@@ -146,7 +147,18 @@ export default function OutwardsSummaryPendingPackets({ route }) {
         >
           Confirm Short List
         </Button>
-      </View>
+      </View> */}
+      <BottomButtonContainer>
+        <Button
+          variant="primary"
+          size="lg"
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
+          Confirm Short List
+        </Button>
+      </BottomButtonContainer>
     </View>
   );
 }

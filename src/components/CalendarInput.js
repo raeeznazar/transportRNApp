@@ -1,19 +1,22 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Calendar } from "react-native-calendars";
 
+import { useCurrentTheme } from "../../stores/themeStore";
+
 const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat = "DD/MM/YYYY" }) => {
   const [visible, setVisible] = useState(false);
+  const theme = useCurrentTheme();
+  const s = useMemo(() => styles(theme), [theme]);
 
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Format date for display based on provided format
   const formatDisplayDate = (dateString, format) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -95,19 +98,19 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
 
   return (
     <>
-      <View style={styles.row}>
-        <TouchableOpacity style={styles.inputContainer} onPress={openCalendar}>
-          <Text style={value ? styles.valueText : styles.placeholder}>{value ? formatDisplayDate(value, displayFormat) : label}</Text>
+      <View style={s.row}>
+        <TouchableOpacity style={s.inputContainer} onPress={openCalendar}>
+          <Text style={value ? s.valueText : s.placeholder}>{value ? formatDisplayDate(value, displayFormat) : label}</Text>
           <Ionicons name="calendar-outline" size={22} color="#9CA3AF" />
         </TouchableOpacity>
       </View>
 
       <Modal transparent visible={visible}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeCalendar}>
+        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={closeCalendar}>
           <Animated.View
             onStartShouldSetResponder={() => true}
             style={[
-              styles.calendarWrapper,
+              s.calendarWrapper,
               {
                 opacity: opacityAnim,
                 transform: [{ scale: scaleAnim }],
@@ -119,7 +122,7 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
               minDate={minDate}
               maxDate={maxDate}
               onDayPress={handleDayPress}
-              theme={styles.calendarStyle}
+              theme={s.calendarStyle}
               markedDates={value ? { [value]: { selected: true } } : {}}
             />
           </Animated.View>
@@ -129,109 +132,139 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
   );
 };
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+const styles = (theme) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
 
-  inputContainer: {
-    width: "100%",
-    height: 60,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+    inputContainer: {
+      width: "100%",
+      height: 50,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.inputBorder,
+      paddingHorizontal: 16,
+      backgroundColor: theme.colors.inputBg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
 
-  placeholder: {
-    color: "#9CA3AF",
-    fontSize: 16,
-  },
+    inputBg: "#FFFFFF",
 
-  valueText: {
-    color: "#8C939D",
-    fontSize: 16,
-    fontFamily: "Figtree-Regular",
-  },
+    placeholder: {
+      color: "#9CA3AF",
+      fontSize: 16,
+    },
 
-  icon: {
-    width: 22,
-    height: 24,
-    resizeMode: "contain",
-  },
+    valueText: {
+      color: "#8C939D",
+      fontSize: 16,
+      fontFamily: "Figtree-Regular",
+    },
 
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    padding: 20,
-  },
+    icon: {
+      width: 22,
+      height: 24,
+      resizeMode: "contain",
+    },
 
-  calendarWrapper: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-  },
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      justifyContent: "center",
+      padding: 20,
+    },
 
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "green",
-  },
+    calendarWrapper: {
+      backgroundColor: "#FFFFFF",
+      borderRadius: 16,
+      paddingVertical: 10,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 10,
+    },
 
-  halfDayContainer: {
-    flex: 0.25,
-    alignItems: "center",
-    marginTop: 24,
-  },
+    rowBetween: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: "green",
+    },
 
-  halfDayText: {
-    fontSize: 14,
-    color: "#374151",
-    marginBottom: 6,
-  },
+    halfDayContainer: {
+      flex: 0.25,
+      alignItems: "center",
+      marginTop: 24,
+    },
 
-  descriptionContainer: {
-    marginTop: 24,
-  },
+    halfDayText: {
+      fontSize: 14,
+      color: "#374151",
+      marginBottom: 6,
+    },
 
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: 8,
-  },
+    descriptionContainer: {
+      marginTop: 24,
+    },
 
-  textArea: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 14,
-    color: "#111827",
-    minHeight: 100,
-    backgroundColor: "#FFFFFF",
-  },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: "#374151",
+      marginBottom: 8,
+    },
 
-  calendarStyle: {
-    selectedDayBackgroundColor: "#4F5BD5",
-    todayTextColor: "#4F5BD5",
-    arrowColor: "#4F5BD5",
-    textDayFontSize: 14,
-    textMonthFontSize: 16,
-    textDayHeaderFontSize: 12,
-  },
-});
+    textArea: {
+      borderWidth: 1,
+      borderColor: "#E5E7EB",
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 14,
+      color: "#111827",
+      minHeight: 100,
+      backgroundColor: "#FFFFFF",
+    },
+
+    calendarStyle: {
+      // Background
+      calendarBackground: theme.colors.cardBg,
+
+      // Selected day
+      selectedDayBackgroundColor: theme.colors.buttonPrimaryBg,
+      selectedDayTextColor: theme.colors.buttonPrimaryText,
+
+      // Today
+      todayTextColor: theme.colors.primary,
+      todayBackgroundColor: theme.colors.buttonSecondaryBg,
+
+      // Day text
+      dayTextColor: theme.colors.inputText,
+      textDisabledColor: theme.colors.inputPlaceholder,
+
+      // Month/year header
+      monthTextColor: theme.colors.headingText,
+      textMonthFontWeight: "700",
+
+      // Navigation arrows
+      arrowColor: theme.colors.buttonPrimaryBg,
+
+      // Day-of-week header
+      textSectionTitleColor: theme.colors.accent,
+
+      // Dot markers
+      dotColor: theme.colors.buttonPrimaryBg,
+      selectedDotColor: theme.colors.buttonPrimaryText,
+
+      // Font sizes
+      textDayFontSize: 14,
+      textMonthFontSize: 16,
+      textDayHeaderFontSize: 12,
+    },
+  });
 
 export default memo(CalendarInput);

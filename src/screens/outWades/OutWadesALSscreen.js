@@ -12,6 +12,7 @@ import {
 } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
+import ButtomTwoButtonContainer from "../../components/ButtomTwoButtonContainer";
 import { Button } from "../../components/Button";
 import FullWidthSearchSelectInput from "../../components/FullWidthSearchSelectInput";
 import FullWidthSelectInput from "../../components/FullWidthSelectInput";
@@ -429,14 +430,23 @@ export default function OutWadesALSscreen({ route }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View className="mx-4 flex-row gap-3" style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}>
+      {/* <View className="mx-4 flex-row gap-3" style={{ paddingBottom: insets.bottom + 20, paddingTop: insets.top }}>
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>
         <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={disableProcceed}>
           Proceed
         </Button>
-      </View>
+      </View> */}
+
+      <ButtomTwoButtonContainer>
+        <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
+          Back
+        </Button>
+        <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={disableProcceed}>
+          Proceed
+        </Button>
+      </ButtomTwoButtonContainer>
     </View>
   );
 }

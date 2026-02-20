@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetPreloadingList } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
+import BottomButtonContainer from "../../components/ButtomTwoButtonContainer";
 import { Button } from "../../components/Button";
 import { ScanToast } from "../../components/ScanToast";
 export default function OutWadesEnteryScreen() {
@@ -292,15 +293,11 @@ export default function OutWadesEnteryScreen() {
         refreshing={refreshing}
       />
 
-      {/* Bottom Buttons */}
-      <View className="px-4 flex-row gap-3" style={{ paddingBottom: insets.bottom, paddingTop: insets.top, backgroundColor: theme.colors.appBg }}>
-        {/* <Button variant="secondary" size="lg" className="flex-1" onPress={onHandleDirectALS}>
-          Direct ALS
-        </Button> */}
+      <BottomButtonContainer>
         <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
           Proceed to ALS
         </Button>
-      </View>
+      </BottomButtonContainer>
     </View>
   );
 }

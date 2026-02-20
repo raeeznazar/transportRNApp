@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwardsScanningDocketListForALS, useGetOutwardsSummaryHeaderData, useOutwadesSummarySubmit } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
+import BottomButtonContainer from "../../components/ButtomTwoButtonContainer";
 import { Button } from "../../components/Button";
 import { ScanToast } from "../../components/ScanToast";
 
@@ -401,13 +402,11 @@ export default function NewSummaryScreen({ route }) {
           paddingBottom: insets.bottom,
         }}
       >
-        <View className="flex-row gap-4">
-          <View className="flex-1">
-            <Button variant="secondary" size="lg" onPress={() => handleSumbitSumaryData()}>
-              Finish
-            </Button>
-          </View>
-        </View>
+        <BottomButtonContainer>
+          <Button variant="secondary" size="lg" onPress={() => handleSumbitSumaryData()}>
+            Finish
+          </Button>
+        </BottomButtonContainer>
       </View>
     </View>
   );
