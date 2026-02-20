@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
@@ -13,7 +12,6 @@ import {
   Platform,
   RefreshControl,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -26,48 +24,46 @@ import { useAuthStore } from "../../stores/authStore";
 import { useCurrentTheme } from "../../stores/themeStore";
 import { showErrorToast, showSuccessToast } from "../../utilityfunctions/toastHelper";
 import { Button } from "../components/Button";
+import CalendarInput from "../components/CalendarInput";
 
 export default function InwadesScreen() {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+
   const today = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
-  const [fromDate, setFromDate] = useState(thirtyDaysAgo);
-  const [toDate, setToDate] = useState(today);
-  const [showFrom, setShowFrom] = useState(false);
-  const [showTo, setShowTo] = useState(false);
+
+  const [fromDate, setFromDate] = useState(thirtyDaysAgo.toISOString().split("T")[0]);
+  const [toDate, setToDate] = useState(today.toISOString().split("T")[0]);
   const [showTipIndex, setShowTipIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [location, setLocation] = useState(null);
   const [loadingItemId, setLoadingItemId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
   // New states for remarks modal
   const [showRemarksModal, setShowRemarksModal] = useState(false);
   const [remarks, setRemarks] = useState("");
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentReportItem, setCurrentReportItem] = useState(null);
-  const [pendingReportedThcId, setPendingReportedThcId] = useState(null); // NEW
+  const [pendingReportedThcId, setPendingReportedThcId] = useState(null);
+
   const isFocused = useIsFocused();
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
   const branchName = sessionData?.branchName;
-  const modifiedFromDate = formatDate(fromDate);
-  const modifiedToDate = formatDate(toDate);
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useGetInward(branchCode, modifiedFromDate, modifiedToDate, {
-    enabled: isFocused && !!branchCode && !!modifiedFromDate && !!modifiedToDate,
+  const { data, isLoading, isError, error, refetch, isFetching } = useGetInward(branchCode, fromDate, toDate, {
+    enabled: isFocused && !!branchCode && !!fromDate && !!toDate,
   });
 
-  // Add the mutation hook
   const submitReportMutation = useSubmitInwardsReport();
-
   const isInitialLoading = isLoading || (isFetching && !data);
 
-  // compute filteredData as a hook so hook order stays stable
   const filteredData = useMemo(() => {
     if (!data) return [];
     if (!searchQuery.trim()) return data;
@@ -83,10 +79,9 @@ export default function InwadesScreen() {
       if (branchCode) {
         refetch();
       }
-    }, [branchCode, modifiedFromDate, modifiedToDate, refetch])
+    }, [branchCode, fromDate, toDate, refetch])
   );
 
-  // Keep hooks call order stable: show branch-loading or query-loading after hooks are defined
   if (isInitialLoading || !branchCode) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: insets.bottom }}>
@@ -95,6 +90,7 @@ export default function InwadesScreen() {
       </View>
     );
   }
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: insets.bottom }}>
@@ -104,17 +100,6 @@ export default function InwadesScreen() {
     );
   }
 
-  const onChangeFrom = (event, selectedDate) => {
-    setShowFrom(false);
-    if (selectedDate) setFromDate(selectedDate);
-  };
-  const onChangeTo = (event, selectedDate) => {
-    setShowTo(false);
-    if (selectedDate) setToDate(selectedDate);
-  };
-  function formatDate(date) {
-    return date.toISOString().slice(0, 10);
-  }
   const handleViewDetails = (thcId) => {
     navigation.navigate("InwardesDetails", {
       inwardId: "25",
@@ -123,12 +108,11 @@ export default function InwadesScreen() {
       reportedType: "beforeReport",
     });
   };
+
   const handleYes = () => {
     setShowDialog(false);
-    // Perform your parent logic here
   };
 
-  // Handle cancel in remarks modal
   const handleCancelRemarks = () => {
     setShowRemarksModal(false);
     setRemarks("");
@@ -138,10 +122,9 @@ export default function InwadesScreen() {
     setIsCapturingLocation(false);
   };
 
-  // Handle submit report
   const handleSubmitReport = async () => {
     if (!currentReportItem || !location) return;
-    const reportedThcId = currentReportItem.thcId; // capture before clearing
+    const reportedThcId = currentReportItem.thcId;
     const payload = {
       tR_THCID: currentReportItem.thcId,
       tR_Tuck: currentReportItem.truckNo,
@@ -163,8 +146,7 @@ export default function InwadesScreen() {
       setPendingReportedThcId(reportedThcId);
       const successMessage = "Report submitted successfully!";
       showSuccessToast(successMessage, "Success");
-      await refetch(); // ensure fresh data replaces old list
-      // reset modal state
+      await refetch();
       setShowRemarksModal(false);
       setRemarks("");
       setLocation(null);
@@ -195,7 +177,6 @@ export default function InwadesScreen() {
     setShowRemarksModal(true);
 
     try {
-      // Request location permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setShowRemarksModal(false);
@@ -224,7 +205,6 @@ export default function InwadesScreen() {
         return;
       }
 
-      // Get current location
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
@@ -247,15 +227,16 @@ export default function InwadesScreen() {
       Alert.alert("Location Error", errorMessage, [{ text: "OK" }]);
     }
   }
+
   function handleTruckArrival(thcId, thcNo) {
     navigation.navigate("TruckArrivalSheetScreen", {
       thcId: thcId,
       thcNo: thcNo,
     });
   }
+
   const renderCard = ({ item, index }) => {
     const reportDisabled = !!loadingItemId || item.isReportedByBranch || isSubmitting || pendingReportedThcId === item.thcId;
-
     const arrivalDisabled = !!loadingItemId || (!item.isReportedByBranch && !item.isReportedByDriver && pendingReportedThcId !== item.thcId);
 
     return (
@@ -403,6 +384,7 @@ export default function InwadesScreen() {
       </View>
     );
   };
+
   return (
     <View
       style={{
@@ -415,10 +397,11 @@ export default function InwadesScreen() {
       }}
     >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">
         <View
-          className="flex-row items-center  rounded-xl px-4 py-3 border shadow-sm"
+          className="flex-row items-center rounded-xl px-4 py-3 border shadow-sm"
           style={{ backgroundColor: theme.colors.inputBg, borderColor: theme.colors.inputBorder }}
         >
           <Ionicons name="search-outline" size={20} color="#64748B" />
@@ -441,27 +424,18 @@ export default function InwadesScreen() {
           </Text>
         )}
       </View>
+
+      {/* Date Range Pickers */}
       <View className="mx-4 mt-2 mb-2 flex-row items-center gap-2">
-        <TouchableOpacity
-          onPress={() => setShowFrom(true)}
-          className="flex-1 flex-row items-center justify-start bg-white border border-gray-200 rounded-lg px-3 py-2.5"
-        >
-          <Text className="text-textSecondary text-sm">From : </Text>
-          <Text className="text-textPrimary font-medium">{fromDate.toLocaleDateString("en-GB")}</Text>
-        </TouchableOpacity>
+        <View className="flex-1">
+          <CalendarInput label="From Date" value={fromDate} onChange={setFromDate} maxDate={toDate} />
+        </View>
         <Ionicons name="arrow-forward" size={16} color={theme.colors.inputText} />
-        <TouchableOpacity
-          onPress={() => setShowTo(true)}
-          className="flex-1 flex-row items-center justify-start bg-white border border-gray-200 rounded-lg px-3 py-2.5"
-        >
-          <Text className="text-textSecondary text-sm">To : </Text>
-          <Text className="text-textPrimary font-medium">{toDate.toLocaleDateString("en-GB")}</Text>
-        </TouchableOpacity>
+        <View className="flex-1">
+          <CalendarInput label="To Date" value={toDate} onChange={setToDate} minDate={fromDate} maxDate={today.toISOString().split("T")[0]} />
+        </View>
       </View>
-      {showFrom && <DateTimePicker value={fromDate} mode="date" display="calendar" onChange={onChangeFrom} maximumDate={toDate} />}
-      {showTo && (
-        <DateTimePicker value={toDate} mode="date" display="calendar" onChange={onChangeTo} minimumDate={fromDate} maximumDate={new Date()} />
-      )}
+
       <View className="flex-1 mt-3">
         <FlatList
           data={filteredData}
@@ -472,10 +446,10 @@ export default function InwadesScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[theme.colors.buttonPrimaryBg]} // Android
-              tintColor={theme.colors.buttonPrimaryBg} // iOS
-              title="Pull to refresh" // iOS
-              titleColor={theme.colors.textSecondary} // iOS
+              colors={[theme.colors.buttonPrimaryBg]}
+              tintColor={theme.colors.buttonPrimaryBg}
+              title="Pull to refresh"
+              titleColor={theme.colors.textSecondary}
             />
           }
           ListEmptyComponent={
@@ -490,7 +464,6 @@ export default function InwadesScreen() {
       <Modal transparent visible={showRemarksModal} animationType="fade">
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
           <View className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            {/* Header */}
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-xl font-bold text-textPrimary">Submit Report</Text>
               {isCapturingLocation && (
@@ -501,7 +474,6 @@ export default function InwadesScreen() {
               )}
             </View>
 
-            {/* Truck Info */}
             {currentReportItem && (
               <View className="bg-gray-50 rounded-lg p-3 mb-4">
                 <Text className="text-sm text-textSecondary">Truck Number</Text>
@@ -509,7 +481,6 @@ export default function InwadesScreen() {
               </View>
             )}
 
-            {/* Remarks Input */}
             <View className="mb-4">
               <View className="flex-row items-center justify-between mb-2">
                 <Text className="text-sm font-semibold text-textPrimary">Remarks (Optional)</Text>
@@ -533,7 +504,6 @@ export default function InwadesScreen() {
               />
             </View>
 
-            {/* Buttons */}
             <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={handleCancelRemarks}
@@ -568,9 +538,3 @@ export default function InwadesScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: "700", marginBottom: 6 },
-  dateRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
-  label: { marginRight: 10, fontSize: 16, fontWeight: "500" },
-});

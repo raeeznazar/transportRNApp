@@ -3,7 +3,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, RefreshControl, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, RefreshControl, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetTruckArrivalListAfterReport } from "../../hooks/useApiQueries";
 import { useAuthStore } from "../../stores/authStore";
@@ -14,6 +14,7 @@ export default function TruckArivalScreeAfterReport() {
   const theme = useCurrentTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const DATE_PICKER_DISPLAY = Platform.OS === "ios" ? "default" : "calendar";
 
   const today = new Date();
   const thirtyDaysAgo = new Date();
@@ -253,10 +254,17 @@ export default function TruckArivalScreeAfterReport() {
         </TouchableOpacity>
       </View>
 
-      {showFrom && <DateTimePicker value={fromDate} mode="date" display="calendar" onChange={onChangeFrom} maximumDate={toDate} />}
+      {showFrom && <DateTimePicker value={fromDate} mode="date" display={DATE_PICKER_DISPLAY} onChange={onChangeFrom} maximumDate={toDate} />}
 
       {showTo && (
-        <DateTimePicker value={toDate} mode="date" display="calendar" onChange={onChangeTo} minimumDate={fromDate} maximumDate={new Date()} />
+        <DateTimePicker
+          value={toDate}
+          mode="date"
+          display={DATE_PICKER_DISPLAY}
+          onChange={onChangeTo}
+          minimumDate={fromDate}
+          maximumDate={new Date()}
+        />
       )}
 
       {/* Truck List */}
