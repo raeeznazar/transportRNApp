@@ -1,8 +1,8 @@
 const config = {
   development: {
     // API_BASE_URL: "http://13.250.76.147:8083/api",
-    API_BASE_URL: "http://13.250.76.147:8082/api",
-    // API_TIMEOUT: 10000,
+    API_BASE_URL: "http://13.250.76.147:8083/api",
+    API_TIMEOUT: 10000,
   },
   production: {
     // API_BASE_URL: "http://13.250.76.147:8083/api",

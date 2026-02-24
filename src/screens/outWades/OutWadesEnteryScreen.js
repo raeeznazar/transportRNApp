@@ -2,7 +2,7 @@ import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/n
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetPreloadingList } from "../../../hooks/useApiQueries";
+import { useGetOutwadesDirectALSList, useGetPreloadingList } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import BottomButtonContainer from "../../components/ButtomTwoButtonContainer";
@@ -15,9 +15,10 @@ export default function OutWadesEnteryScreen() {
   const finCode = sessionData?.finCode;
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const [selectedCardId, setSelectedCardId] = useState(null);
+  const [activeTab, setActiveTab] = useState("preloading");
+  const [selectedPreloadingCardId, setSelectedPreloadingCardId] = useState(null);
+  const [selectedDirectALSAltId, setSelectedDirectALSAltId] = useState(null);
   const navigation = useNavigation();
-  const resumeKey = true;
   const [refreshing, setRefreshing] = useState(false);
   const [toastConfig, setToastConfig] = useState({
     visible: false,
@@ -26,31 +27,47 @@ export default function OutWadesEnteryScreen() {
     message: "",
   });
 
-  const { data, isLoading, refetch, isError, error } = useGetPreloadingList(branchCode, finCode, false, {
+  const { data, isLoading, refetch, error } = useGetPreloadingList(branchCode, finCode, false, {
     enabled: isFocused && !!branchCode && !!finCode,
   });
+  const {
+    data: directALSData,
+    isLoading: isDirectALSLoading,
+    refetch: refetchDirectALS,
+    error: directALSError,
+  } = useGetOutwadesDirectALSList(branchCode, {
+    enabled: isFocused && !!branchCode,
+  });
+
+  console.log("Preloading List Data:", data);
+  console.log("Direct ALS List Data:", directALSData);
 
   // Filter out items with totalDockets === 0
   const filteredPreloadingData = data?.filter((item) => item.totalDockets > 0) || [];
+  const normalizedDirectALSData = Array.isArray(directALSData) ? directALSData : directALSData ? [directALSData] : [];
 
   useFocusEffect(
     useCallback(() => {
       if (isFocused && sessionData?.branchCode && finCode) {
         refetch();
       }
-    }, [isFocused, sessionData?.branchCode, finCode, refetch])
+      if (isFocused && sessionData?.branchCode) {
+        refetchDirectALS();
+      }
+    }, [isFocused, sessionData?.branchCode, finCode, refetch, refetchDirectALS])
   );
 
   // Reset selectedCardId when page loses focus
   useEffect(() => {
     if (!isFocused) {
-      setSelectedCardId(null);
+      setSelectedPreloadingCardId(null);
+      setSelectedDirectALSAltId(null);
       setToastConfig((prev) => ({ ...prev, visible: false }));
     }
   }, [isFocused]);
 
   function onHandleProceedToALS() {
-    if (!selectedCardId) {
+    if (!selectedPreloadingCardId) {
       setToastConfig({
         visible: true,
         type: "warning",
@@ -59,12 +76,12 @@ export default function OutWadesEnteryScreen() {
       });
       return;
     }
-    const selectedItem = filteredPreloadingData.find((item) => item.id === selectedCardId);
+    const selectedItem = filteredPreloadingData.find((item) => item.id === selectedPreloadingCardId);
     setToastConfig({
       visible: true,
       type: "success",
       title: "Card Selected",
-      message: `Processing preloading card ${selectedCardId}`,
+      message: `Processing preloading card ${selectedPreloadingCardId}`,
     });
     setTimeout(() => {
       navigation.navigate("OutWadesALSscreen", {
@@ -79,23 +96,14 @@ export default function OutWadesEnteryScreen() {
       });
     }, 600);
   }
-  function onHandleDirectALS() {
-    setSelectedCardId(null);
-    setToastConfig({
-      visible: true,
-      type: "success",
-      title: "Direct ALS Selected",
-      message: `Processing direct ALS`,
-    });
-    setTimeout(() => {
-      navigation.navigate("OutWadesDirectALS");
-    }, 600);
-  }
-
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await refetch();
+      if (activeTab === "preloading") {
+        await refetch();
+      } else {
+        await refetchDirectALS();
+      }
     } catch (error) {
       console.error("Refresh error:", error);
     } finally {
@@ -103,7 +111,7 @@ export default function OutWadesEnteryScreen() {
     }
   };
 
-  if (isLoading) {
+  if ((activeTab === "preloading" && isLoading) || (activeTab === "directALS" && isDirectALSLoading)) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color={theme.colors.alertColor} />
@@ -112,7 +120,7 @@ export default function OutWadesEnteryScreen() {
     );
   }
 
-  if (error) {
+  if ((activeTab === "preloading" && error) || (activeTab === "directALS" && directALSError)) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color={theme.colors.alertColor} />
@@ -126,14 +134,14 @@ export default function OutWadesEnteryScreen() {
       <View
         className="rounded-2xl mb-2 overflow-hidden"
         style={{
-          backgroundColor: selectedCardId === item.id ? "#F0F4FF" : theme.colors.cardBg,
-          borderWidth: selectedCardId === item.id ? 2 : 1,
-          borderColor: selectedCardId === item.id ? theme.colors.primary : "#f7fafc",
-          shadowColor: selectedCardId === item.id ? theme.colors.primary : "#000",
-          shadowOffset: { width: 0, height: selectedCardId === item.id ? 6 : 2 },
-          shadowOpacity: selectedCardId === item.id ? 0.12 : 0.06,
-          shadowRadius: selectedCardId === item.id ? 12 : 6,
-          elevation: selectedCardId === item.id ? 6 : 2,
+          backgroundColor: selectedPreloadingCardId === item.id ? "#F0F4FF" : theme.colors.cardBg,
+          borderWidth: selectedPreloadingCardId === item.id ? 2 : 1,
+          borderColor: selectedPreloadingCardId === item.id ? theme.colors.primary : "#f7fafc",
+          shadowColor: selectedPreloadingCardId === item.id ? theme.colors.primary : "#000",
+          shadowOffset: { width: 0, height: selectedPreloadingCardId === item.id ? 6 : 2 },
+          shadowOpacity: selectedPreloadingCardId === item.id ? 0.12 : 0.06,
+          shadowRadius: selectedPreloadingCardId === item.id ? 12 : 6,
+          elevation: selectedPreloadingCardId === item.id ? 6 : 2,
         }}
       >
         <TouchableOpacity
@@ -143,7 +151,7 @@ export default function OutWadesEnteryScreen() {
             if (item.alT_ID !== 0) {
               return; // Do nothing if alT_ID is not 0
             }
-            setSelectedCardId(selectedCardId === item.id ? null : item.id);
+            setSelectedPreloadingCardId(selectedPreloadingCardId === item.id ? null : item.id);
           }}
         >
           <View className="px-4 py-3">
@@ -257,6 +265,84 @@ export default function OutWadesEnteryScreen() {
     );
   };
 
+  const renderDirectALSCard = ({ item }) => {
+    const isSelected = selectedDirectALSAltId === item.alT_ID;
+    return (
+      <View
+        className="rounded-2xl mb-2 overflow-hidden"
+        style={{
+          backgroundColor: isSelected ? "#F0F4FF" : theme.colors.cardBg,
+          borderWidth: isSelected ? 2 : 1,
+          borderColor: isSelected ? theme.colors.primary : "#f7fafc",
+          shadowColor: isSelected ? theme.colors.primary : "#000",
+          shadowOffset: { width: 0, height: isSelected ? 6 : 2 },
+          shadowOpacity: isSelected ? 0.12 : 0.06,
+          shadowRadius: isSelected ? 12 : 6,
+          elevation: isSelected ? 6 : 2,
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            setSelectedDirectALSAltId(isSelected ? null : item.alT_ID);
+          }}
+        >
+          <View className="px-4 py-3">
+            <View className="flex-row justify-between mb-3 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: "#E8EBF0" }}>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  ALT ID
+                </Text>
+                <Text className="text-lg font-semibold" style={{ color: theme.colors.primary }}>
+                  {item.alT_ID ?? 0}
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row">
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  DOCKETS
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
+                  {item.docketCount || 0}
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
+                  PACKETS
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
+                  {item.totalPackets || 0}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {item.alT_ID !== 0 && (
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("OutWadesScanning", { altId: item.alT_ID });
+            }}
+            activeOpacity={0.6}
+          >
+            <View
+              className="items-center py-3 px-4"
+              style={{ borderTopWidth: 1, borderTopColor: "#f0efe8ff", backgroundColor: theme.colors.primary + "1A" }}
+            >
+              <Text className="font-medium text-md font-semibold" style={{ color: theme.colors.primary }}>
+                Resume
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const activeListData = activeTab === "preloading" ? filteredPreloadingData : normalizedDirectALSData;
+
   return (
     <View
       style={{
@@ -283,21 +369,65 @@ export default function OutWadesEnteryScreen() {
         message={toastConfig.message}
         onHide={() => setToastConfig({ ...toastConfig, visible: false })}
       />
+
+      <View className="px-4 pt-4 pb-2">
+        <View className="flex-row rounded-xl p-1" style={{ backgroundColor: theme.colors.cardBg }}>
+          <TouchableOpacity
+            className="flex-1 items-center py-2 rounded-lg"
+            style={{
+              backgroundColor: activeTab === "preloading" ? theme.colors.primary : "transparent",
+            }}
+            onPress={() => setActiveTab("preloading")}
+          >
+            <Text style={{ color: activeTab === "preloading" ? theme.colors.buttonPrimaryText : theme.colors.headingText, fontWeight: "600" }}>
+              Data ({filteredPreloadingData.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="flex-1 items-center py-2 rounded-lg"
+            style={{
+              backgroundColor: activeTab === "directALS" ? theme.colors.primary : "transparent",
+            }}
+            onPress={() => setActiveTab("directALS")}
+          >
+            <Text style={{ color: activeTab === "directALS" ? theme.colors.buttonPrimaryText : theme.colors.headingText, fontWeight: "600" }}>
+              Direct ALS ({normalizedDirectALSData.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <FlatList
-        data={filteredPreloadingData}
-        renderItem={renderPreloadingCard}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+        data={activeListData}
+        renderItem={activeTab === "preloading" ? renderPreloadingCard : renderDirectALSCard}
+        keyExtractor={(item, index) => {
+          if (activeTab === "preloading") {
+            return item.id?.toString() || `preloading-${index}`;
+          }
+          return item.alT_ID?.toString() || `direct-als-${index}`;
+        }}
+        ListEmptyComponent={
+          <View className="items-center py-8">
+            <Text style={{ color: theme.colors.accent }}>{activeTab === "preloading" ? "No preloading data found" : "No direct ALS data found"}</Text>
+          </View>
+        }
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         scrollEnabled={true}
         onRefresh={onRefresh}
         refreshing={refreshing}
       />
 
-      <BottomButtonContainer>
-        <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
-          Proceed to ALS
-        </Button>
-      </BottomButtonContainer>
+      {activeTab === "preloading" && (
+        <BottomButtonContainer>
+          <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
+            Direct to ALS
+          </Button>
+          <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
+            Proceed to ALS
+          </Button>
+        </BottomButtonContainer>
+      )}
     </View>
   );
 }

@@ -8,7 +8,7 @@ export default function ButtomTwoButtonContainer({ children }) {
     <View
       className="mx-4 flex-row gap-3"
       style={{
-        paddingBottom: insets.bottom + (Platform.OS === "ios" ? 20 : 0),
+        paddingBottom: insets.bottom + (Platform.OS === "ios" ? 20 : -25),
         paddingTop: insets.top,
       }}
     >

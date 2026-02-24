@@ -28,6 +28,7 @@ export const queryKeys = {
   outwardsGetMissingPackets: ["outwardsGetMissingPackets"],
   outwardsSummaryHeaderData: ["outwardsSummaryHeaderData"],
   outwardsSummaryRemainingDockets: ["outwardsSummaryRemainingDockets"],
+  getOutwadesDirectALSList: ["getOutwadesDirectALSList"],
   // Add more query keys based on your screensApiService
 };
 
@@ -878,7 +879,6 @@ export const useGetOutwardsScanningDocketListForALS = (branchCode, altId, option
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     retry: 1,
-    retry: 1,
     ...options,
   });
 };
@@ -941,7 +941,6 @@ export const useGetOutwardsGetMissingPackets = (docketId, options = {}) => {
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
-    retry: 1,
     retry: 1,
     ...options,
   });
@@ -1031,7 +1030,6 @@ export const useGetOutwardsSummaryHeaderData = (altId, options = {}) => {
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     retry: 1,
-    retry: 1,
     ...options,
   });
 };
@@ -1096,7 +1094,6 @@ export const useGetOutwardsSummaryRemainingDockets = (altId, options = {}) => {
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     retry: 1,
-    retry: 1,
     ...options,
   });
 };
@@ -1132,5 +1129,35 @@ export const useOutwadesDocketsRemovalSubmit = () => {
         );
       }
     },
+  });
+};
+
+//Get outwades Get Out wades Direct ALS List - get
+export const useGetOutwadesDirectALSList = (branchCode, options = {}) => {
+  console.log("useGetOutwadesDirectALSList Params:", { branchCode });
+  return useQuery({
+    queryKey: [...queryKeys.getOutwadesDirectALSList, branchCode],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWADES_DIRECT_ALS_LIST, {
+          params: {
+            branchCode,
+          },
+        });
+        console.log("useGetOutwadesDirectALSList Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get direct ALS list");
+      }
+    },
+    enabled: !!branchCode,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: 30000, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    ...options,
   });
 };

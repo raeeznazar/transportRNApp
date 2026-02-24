@@ -6,13 +6,6 @@ import env from "./environment";
 export const API_BASE_URL = env?.API_BASE_URL;
 export const API_TIMEOUT = env?.API_TIMEOUT;
 
-export function buildUrl(path) {
-  // Accept either a relative path or a full URL
-  if (!path) return API_BASE_URL;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${API_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
-}
-
 export const API_ENDPOINTS = {
   // Auth endpoints (relative to api base URL)
 
@@ -104,4 +97,7 @@ export const API_ENDPOINTS = {
 
   //Dockets removal submit api for outwades summary
   OUTWADES_DOCKETS_REMOVAL_SUBMIT: "/Outward/PreLoadSheet_RemoveDockets",
+
+  //Direct ALS list for outwades entry screen
+  OUTWADES_DIRECT_ALS_LIST: "/Outward/ActiveLoadsheetSummary_Get",
 };
