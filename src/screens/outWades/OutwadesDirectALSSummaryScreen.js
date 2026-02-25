@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  useGetAlsDirectSummaryModalCheck,
   useGetAlsDocketSummaryDetails,
   useGetOutwardsScanningDocketListForALS,
   useGetOutwardsSummaryHeaderData,
-  useOutwadesSummarySubmit,
+  useOutwadesDirectAlsFinalSubmit,
 } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
@@ -15,16 +16,18 @@ import BottomActionBar from "../../components/BottomActionBar";
 import { Button } from "../../components/Button";
 import CommonModal from "../../components/CommonModal";
 import { ScanToast } from "../../components/ScanToast";
-
-export default function NewSummaryScreen({ route }) {
+export default function OutwadesDirectALSSummaryScreen({ route }) {
   const theme = useCurrentTheme();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const isFocused = useIsFocused();
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
   const [showModal, setShowModal] = useState(false);
+  const [DDTSModalVisible, setDDTSModalVisible] = useState(false);
+  const [doorDeliveryDockets, setDoorDeliveryDockets] = useState([]);
   const [selectedDocket, setSelectedDocket] = useState(null);
+  const [selectedDoorDeliveryDockets, setSelectedDoorDeliveryDockets] = useState([]);
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     type: "success",
@@ -40,12 +43,23 @@ export default function NewSummaryScreen({ route }) {
 
   const { altId } = route.params || {}; // Get altId from route params
 
+  //********************* API CALLS ************************ */
   const { data, isLoading, refetch, isError, error } = useGetOutwardsSummaryHeaderData(altId, {
     enabled: isFocused && !!altId,
   });
 
   const { data: docketData, error: docketError } = useGetOutwardsScanningDocketListForALS(branchCode, altId, {
     enabled: isFocused && !!altId,
+  });
+
+  // Trigger this query only when needed
+  const {
+    data: summaryModalCheckData,
+    error: summaryModalCheckError,
+    refetch: refetchModalCheck,
+    isLoading: isModalCheckLoading,
+  } = useGetAlsDirectSummaryModalCheck(altId, branchCode, {
+    enabled: false, // Don't auto-fetch
   });
 
   const {
@@ -55,9 +69,11 @@ export default function NewSummaryScreen({ route }) {
   } = useGetAlsDocketSummaryDetails(selectedDocket?.id, {
     enabled: isFocused && !!selectedDocket?.id,
   });
+  const finalSubmit = useOutwadesDirectAlsFinalSubmit();
 
-  const summaryDataSubmit = useOutwadesSummarySubmit();
+  //********************* API CALLS END ************************ */
 
+  //********************* DOCKECT HEADER CARD ************************ */
   // Dummy data for summary header and dockets
   const summaryHeaderData = {
     vehicleNo: data?.truckNo || "",
@@ -82,6 +98,10 @@ export default function NewSummaryScreen({ route }) {
     );
   }
 
+  //********************* DOCKECT HEADER CARD END ************************ */
+
+  //********************* DOCKECT LIST CARD ************************ */
+
   // Transform API docketData to match the expected dockets array structure
   const dockets = Array.isArray(docketData)
     ? docketData.map((d) => ({
@@ -93,6 +113,7 @@ export default function NewSummaryScreen({ route }) {
       }))
     : [];
 
+  //Docket List Card Component
   const DocketCard = ({ docket }) => {
     const isShortage = docket.status === "shortage";
     const borderColor = isShortage ? "#f97316" : theme.colors.success;
@@ -189,13 +210,63 @@ export default function NewSummaryScreen({ route }) {
 
   const [filterStatus, setFilterStatus] = useState("all");
 
-  function handleSumbitSumaryData() {
+  //********************* DOCKECT LIST CARD END ************************ */
+
+  //********************* HANDLE FINAL SUBMISSION ************************ */
+
+  async function handleSumbitSumaryData() {
+    console.log("Checking for door delivery dockets with altId:", altId, "and branchCode:", branchCode);
+
+    try {
+      const response = await refetchModalCheck();
+      // Supports both shapes:
+      // 1) refetch result wrapper: { data: { dataValue: [...] } }
+      // 2) direct payload: { dataValue: [...] }
+      const payload = response?.data ?? response;
+      const ddList = Array.isArray(payload?.dataValue) ? payload.dataValue : Array.isArray(payload) ? payload : [];
+
+      if (ddList.length > 0) {
+        console.log("Door delivery dockets found:", ddList);
+        setDoorDeliveryDockets(ddList);
+        setDDTSModalVisible(true);
+        return;
+      }
+      // No door delivery dockets - proceed with submission
+      const params = {
+        branchCode,
+        alT_ID: altId,
+        ddTruckList: [{ docketID: 0, doorDelivery: false }],
+      };
+
+      finalSubmitCall(params);
+    } catch (error) {
+      console.error("Error checking modal:", error);
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Error",
+        message: "Failed to check door delivery status",
+      });
+    }
+  }
+
+  // Submit the Data after selecting dockets for DDST
+  function submitSummaryData() {
     const params = {
       branchCode: branchCode,
       alT_ID: altId,
+      ddTruckList: selectedDoorDeliveryDockets,
     };
 
-    summaryDataSubmit.mutate(params, {
+    console.log("Submitting summary data with params:", params);
+    setDDTSModalVisible(false);
+
+    finalSubmitCall(params);
+  }
+
+  //This function will make the final submit API call for summary submission with or without door delivery dockets based on user selection in modal
+  function finalSubmitCall(params) {
+    finalSubmit.mutate(params, {
       onSuccess: (response) => {
         setToastConfig({
           visible: true,
@@ -223,23 +294,50 @@ export default function NewSummaryScreen({ route }) {
     });
   }
 
+  ///------------------- FINAL SUMBISSION MODAL CHECK-------------------- */
+  const handleDoorDeliveryToggle = useCallback((docketId) => {
+    setSelectedDoorDeliveryDockets((prev) => {
+      const exists = prev.find((item) => item.docketID === docketId);
+
+      let newState;
+      if (exists) {
+        // Remove from array if unchecked
+        newState = prev.filter((item) => item.docketID !== docketId);
+      } else {
+        // Add to array if checked
+        newState = [...prev, { docketID: docketId, doorDelivery: true }];
+      }
+
+      // Log the new state that will be set
+      console.log("Updated selectedDoorDeliveryDockets:", newState);
+      return newState;
+    });
+  }, []);
+
+  // Add this function to check if a docket is selected
+  const isDocketSelected = useCallback(
+    (docketID) => {
+      return selectedDoorDeliveryDockets.some((item) => item.docketID === docketID);
+    },
+    [selectedDoorDeliveryDockets]
+  );
+  ///------------------- FINAL SUMBISSION MODAL CHECK-------------------- */
+
+  //********************* HANDLE FINAL SUBMISSION END ************************ */
+
+  //********************* DOCKET SUMMARY DETAILS MODAL ************************ */
+  //This function will handle the Summary Modal when user clicks on details button in docket card
   function handleSummaryModal(docket) {
     setSelectedDocket(docket);
     setShowModal(true);
-    const docketId = 2;
   }
 
   function closeModal() {
     setShowModal(false);
     setSelectedDocket(null);
   }
-
-  function handleSubmit() {
-    // Handle modal submit action if needed
-    closeModal();
-  }
-
   const totalItems = docketDetailData?.reduce((sum, item) => sum + (item.totalNos || 0), 0) || 0;
+  //********************* DOCKET SUMMARY DETAILS MODAL END ************************ */
 
   return (
     <View className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
@@ -256,20 +354,20 @@ export default function NewSummaryScreen({ route }) {
         {selectedDocket && docketDetailData && (
           <View className="gap-4">
             {/* Header Info */}
-            <View className="gap-3">
+            <View className="gap-2">
               <View className="flex-row justify-between items-center">
-                <Text className="text-sm" style={{ color: theme.colors.secondaryText }}>
+                <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
                   Docket ID
                 </Text>
-                <Text className="text-xl font-bold" style={{ color: theme.colors.primary }}>
+                <Text className="text-sm font-semibold" style={{ color: theme.colors.primary }}>
                   {docketDetailData[0]?.docketID || selectedDocket?.number}
                 </Text>
               </View>
-              <View className="flex-row justify-between items-center pb-4 border-b" style={{ borderBottomColor: theme.colors.cardBorder }}>
-                <Text className="text-sm" style={{ color: theme.colors.secondaryText }}>
+              <View className="flex-row justify-between items-center pb-3 border-b" style={{ borderBottomColor: theme.colors.cardBorder }}>
+                <Text className="text-xs" style={{ color: theme.colors.secondaryText }}>
                   Total Items
                 </Text>
-                <Text className="text-2xl font-bold" style={{ color: theme.colors.text }}>
+                <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
                   {totalItems}
                 </Text>
               </View>
@@ -299,7 +397,7 @@ export default function NewSummaryScreen({ route }) {
                       {/* Content */}
                       <View className="flex-1">
                         <Text className="text-base font-bold mb-1" style={{ color: theme.colors.text }}>
-                          Item {index + 1}: {item.content}
+                          Item {index + 1}
                         </Text>
                         <View className="flex-row gap-4">
                           <Text className="text-sm" style={{ color: theme.colors.secondaryText }}>
@@ -326,6 +424,90 @@ export default function NewSummaryScreen({ route }) {
           </View>
         )}
       </CommonModal>
+
+      {/* Door Delivery Modal */}
+      <CommonModal
+        visible={DDTSModalVisible}
+        title="Door Delivery Dockets"
+        onClose={() => {
+          setDDTSModalVisible(false);
+          setSelectedDoorDeliveryDockets([]);
+        }}
+        onSubmit={submitSummaryData}
+        showClose
+        showSubmit
+        closeText="Cancel"
+        submitText="Confirm"
+      >
+        <View>
+          <Text style={{ color: theme.colors.secondaryText, marginBottom: 12 }}>Select dockets for door delivery:</Text>
+
+          {/* Table Header */}
+          <View
+            style={{
+              flexDirection: "row",
+              padding: 12,
+              backgroundColor: theme.colors.primary + "15",
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.colors.cardBorder,
+            }}
+          >
+            <Text style={{ flex: 1, fontSize: 12, fontWeight: "600", color: theme.colors.text }}>Docket Number</Text>
+            <Text
+              style={{
+                width: 80,
+                fontSize: 12,
+                fontWeight: "600",
+                color: theme.colors.text,
+                textAlign: "center",
+              }}
+            >
+              DDST
+            </Text>
+          </View>
+
+          {/* Scrollable List */}
+          <ScrollView style={{ maxHeight: 300 }}>
+            {doorDeliveryDockets.map((docket, index) => (
+              <TouchableOpacity
+                key={docket.docketID}
+                onPress={() => handleDoorDeliveryToggle(docket.docketID)}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 12,
+                  backgroundColor: index % 2 === 0 ? theme.colors.background : theme.colors.cardBg,
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme.colors.cardBorder + "30",
+                }}
+              >
+                <Text style={{ flex: 1, fontSize: 15, fontWeight: "500", color: theme.colors.text }}>{docket.docketNo}</Text>
+
+                <View style={{ width: 80, alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      borderWidth: 2,
+                      borderColor: isDocketSelected(docket.docketID) ? theme.colors.primary : theme.colors.secondaryText + "60",
+                      backgroundColor: isDocketSelected(docket.docketID) ? theme.colors.primary : "transparent",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {isDocketSelected(docket.docketID) && <Ionicons name="checkmark" size={12} color="#fff" />}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </CommonModal>
+
       <ScanToast
         visible={toastConfig.visible}
         type={toastConfig.type}
@@ -364,14 +546,6 @@ export default function NewSummaryScreen({ route }) {
             </View>
             <View className="flex-row flex-wrap">
               <View className="w-full flex-row gap-3">
-                {/* <View className="flex-1">
-                  <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
-                    Total Dockets
-                  </Text>
-                  <Text className="text-base font-semibold" style={{ color: theme.colors.text }}>
-                    {summaryHeaderData.totalDockets}
-                  </Text>
-                </View> */}
                 <View className="flex-1">
                   <Text className="text-xs font-medium mb-1" style={{ color: theme.colors.secondaryText }}>
                     Total Packets
@@ -425,13 +599,6 @@ export default function NewSummaryScreen({ route }) {
                 </View>
               </View>
             </View>
-          </View>
-
-          {/* Header Shortage and Navigation */}
-          <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center" }}>
-            <TouchableOpacity onPress={() => navigation.navigate("OutwadesDocketsRemoval", { altId: altId })}>
-              <Text style={{ color: theme.colors.primary }}>Remove Docket from ALS</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Filter Buttons */}
@@ -523,27 +690,20 @@ export default function NewSummaryScreen({ route }) {
         </View>
       </ScrollView>
       {/* Footer Buttons */}
-      <View
-        className="absolute bottom-0 w-full px-4 border-t"
-        style={{
-          backgroundColor: theme.colors.cardBg,
-          borderTopColor: "#e2e8f0" + "40",
-        }}
-      >
-        {/* <ButtonContainer>
+
+      {/* <ButtonContainer>
           <Button variant="primary" size="lg" onPress={() => handleSumbitSumaryData()} fullWidth>
             Finish
           </Button>
         </ButtonContainer> */}
 
-        <BottomActionBar includeBottomInset={false}>
-          <View className="flex-row gap-3">
-            <Button variant="primary" size="lg" onPress={() => handleSumbitSumaryData()} fullWidth>
-              Finish
-            </Button>
-          </View>
-        </BottomActionBar>
-      </View>
+      <BottomActionBar includeBottomInset={false}>
+        <View className="flex-row gap-3">
+          <Button variant="primary" size="lg" onPress={() => handleSumbitSumaryData()} fullWidth>
+            Finish
+          </Button>
+        </View>
+      </BottomActionBar>
     </View>
   );
 }

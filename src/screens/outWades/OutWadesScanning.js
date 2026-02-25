@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  BackHandler,
   Image,
   ImageBackground,
   Modal,
@@ -21,6 +22,7 @@ import Toast from "react-native-toast-message";
 import { useGetOutwardsScanningDocketListForALS, useInsertOutwadesDamageScanningData, useOutwadesScanningSubmit } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
+import BottomActionBar from "../../components/BottomActionBar";
 import ScanLoader from "../../components/ScanLoader";
 import { ScanToast } from "../../components/ScanToast";
 
@@ -31,7 +33,6 @@ export default function OutWadesScanning({ route }) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
-  const isDirect = route.params?.isDirect || false;
 
   const [toastConfig, setToastConfig] = useState({
     visible: false,
@@ -44,7 +45,7 @@ export default function OutWadesScanning({ route }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const [isDamage, setIsDamage] = useState(false);
-  const { altId } = route.params;
+  const { altId, isDirect } = route.params;
 
   // Damage modal state
   const [showDamageModal, setShowDamageModal] = useState(false);
@@ -61,6 +62,16 @@ export default function OutWadesScanning({ route }) {
   const [highlightedDocketId, setHighlightedDocketId] = useState(null);
   const previousScannedRef = useRef({});
   const cardPositionsRef = useRef({});
+  const isResettingRef = useRef(false);
+
+  // Determine if camera should be active
+  const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
+
+  // Animated scanner line
+  const scanAnimation = useRef(new Animated.Value(0)).current;
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
+
+  ////***************************------API CALLS-------*************************************/
   const {
     data: scannedData,
     isLoading,
@@ -75,12 +86,32 @@ export default function OutWadesScanning({ route }) {
   const insertNormalScanningData = useOutwadesScanningSubmit();
   const insertDamageScanningData = useInsertOutwadesDamageScanningData();
 
-  // Determine if camera should be active
-  const isCameraActive = scanningEnabled && !showLoader && !toastConfig.visible;
+  //***************************------API CALLS END-------*************************************//
 
-  // Animated scanner line
-  const scanAnimation = useRef(new Animated.Value(0)).current;
-  const pulseAnimation = useRef(new Animated.Value(1)).current;
+  //***************************------USE EFFECT HOOKS-------*************************************//
+  // Block back navigation — always reset to OutwardsList
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!isResettingRef.current) {
+        isResettingRef.current = true;
+        navigation.reset({ index: 0, routes: [{ name: "OutwardsList" }] });
+      }
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (isResettingRef.current) return; // allow reset to complete, prevent infinite loop
+      e.preventDefault();
+      isResettingRef.current = true;
+      navigation.reset({ index: 0, routes: [{ name: "OutwardsList" }] });
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+      isResettingRef.current = false;
+    };
+  }, [navigation]);
 
   useEffect(() => {
     if (!isFocused) {
@@ -182,6 +213,10 @@ export default function OutWadesScanning({ route }) {
       });
     }
 
+    //***************************------USE EFFECT HOOKS END-------*************************************//
+
+    //***************************------SCAN LOGIC AND HANDLERS-------*************************************//
+
     // Update previous scanned counts
     const newScannedCounts = {};
     dockets.forEach((docket) => {
@@ -192,6 +227,9 @@ export default function OutWadesScanning({ route }) {
 
   const [scannedBarcodes, setScannedBarcodes] = useState(new Set());
 
+  //***************************------SCAN LOGIC AND HANDLERS END-------*************************************//
+
+  //***************************------CAMERA FOR DAMAGE MODAL LOGIC-------*************************************//
   // Take photo using camera
   const takePhoto = async () => {
     if (damagePhotos.length >= 4) {
@@ -245,7 +283,9 @@ export default function OutWadesScanning({ route }) {
     setDamagePhotos(damagePhotos.filter((_, i) => i !== index));
     setSelectedPhoto(null);
   };
+  //***************************------CAMERA FOR DAMAGE MODAL LOGIC-------*************************************//
 
+  //***************************------DAMAGE MODAL LOGIC-------*************************************//
   // Handle damage modal save
   const handleDamageSave = async () => {
     if (!damageReason.trim()) {
@@ -280,12 +320,16 @@ export default function OutWadesScanning({ route }) {
     try {
       // Create FormData to send actual files
       const formData = new FormData();
-      formData.append("branchCode", sessionData?.branchCode);
-      formData.append("barcode", currentScannedBarcode);
+      formData.append("BranchCode", sessionData?.branchCode);
+      formData.append("Barcode", currentScannedBarcode);
       formData.append("IsDamaged", "true"); // String boolean as per API spec
       formData.append("Remarks", damageReason.trim());
       formData.append("DocumentType", "DamagedPackage");
-
+      formData.append("isDirect", isDirect);
+      formData.append("EntryUser", sessionData?.userId);
+      formData.append("ALT_ID", altId);
+      formData.append("EntryDate", new Date().toISOString());
+      formData.append("DocumentType", "image/jpeg");
       // Append each photo file to Attachments array (same key name for List<IFormFile>)
       damagePhotos.forEach((photoUri, index) => {
         const fileName = `damage_${currentScannedBarcode}_${Date.now()}_${index}.jpg`;
@@ -298,6 +342,7 @@ export default function OutWadesScanning({ route }) {
         });
       });
 
+      console.log("Submitting damage data with FormData:", formData);
       // Call the mutation with FormData
       insertDamageScanningData.mutate(formData, {
         onSuccess: (data) => {
@@ -383,6 +428,10 @@ export default function OutWadesScanning({ route }) {
     setSelectedPhoto(null);
     setIsSubmittingDamage(false);
   };
+
+  //***************************------DAMAGE MODAL LOGIC END-------*************************************//
+
+  //***************************------SCAN LOGIC AND HANDLERS-------*************************************//
 
   // Scan handler
   const handleBarCodeScanned = useCallback(
@@ -547,6 +596,10 @@ export default function OutWadesScanning({ route }) {
     },
     [scanningEnabled, scannedBarcodes, isDamage, scannedData]
   );
+
+  //***************************------SCAN LOGIC AND HANDLERS END-------*************************************//
+
+  //***************************------DOCKET LIST LOGIC-------*************************************//
 
   // Transform scanned data directly to docket cards
   const dockets = (scannedData || []).map((item, idx) => ({
@@ -738,6 +791,8 @@ export default function OutWadesScanning({ route }) {
     );
   };
 
+  //***************************------DOCKET LIST LOGIC END-------*************************************//
+
   function handleAddMissingPackets(docketID) {
     navigation.navigate("OutWadesAddShortList", { docketID, altId });
   }
@@ -858,7 +913,7 @@ export default function OutWadesScanning({ route }) {
           </View>
 
           {/* Toggle Switch */}
-          {/* <View
+          <View
             className="flex-row rounded-full p-0.5"
             style={{
               backgroundColor: theme.colors.cardBg,
@@ -915,7 +970,7 @@ export default function OutWadesScanning({ route }) {
                 Damage
               </Text>
             </TouchableOpacity>
-          </View> */}
+          </View>
         </View>
 
         {/* Empty State */}
@@ -955,14 +1010,7 @@ export default function OutWadesScanning({ route }) {
 
         {/* Floating Finish Button */}
         {dockets.length > 0 && (
-          <View
-            className="absolute bottom-0 left-0 right-0 px-6"
-            style={{
-              paddingBottom: insets.bottom,
-              paddingTop: insets.top,
-              backgroundColor: "transparent",
-            }}
-          >
+          <BottomActionBar floating includeBottomInset>
             <TouchableOpacity
               className="w-full h-16 rounded-2xl flex-row items-center justify-center gap-3"
               style={{
@@ -974,12 +1022,14 @@ export default function OutWadesScanning({ route }) {
                 elevation: 12,
               }}
               activeOpacity={0.95}
-              onPress={() => navigation.navigate("OutwadesSummaryScreen", { altId: altId })}
+              onPress={() => {
+                navigation.navigate(isDirect ? "OutwadesDirectALSSummaryScreen" : "OutwadesSummaryScreen", { altId });
+              }}
             >
               <Ionicons name="checkmark-circle" size={22} color="#fff" />
               <Text className="text-white font-bold text-lg tracking-wide">Finish Scanning</Text>
             </TouchableOpacity>
-          </View>
+          </BottomActionBar>
         )}
       </View>
 

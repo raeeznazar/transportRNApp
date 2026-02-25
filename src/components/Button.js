@@ -1,7 +1,16 @@
 import { useRef } from "react";
 import { ActivityIndicator, Animated, Platform, Text, TouchableOpacity, Vibration } from "react-native";
 import { useThemeName } from "../../stores/themeStore";
-export const Button = ({ variant = "primary", size = "md", disabled = false, loading = false, onPress, children, className = "" }) => {
+export const Button = ({
+  variant = "primary",
+  size = "md",
+  disabled = false,
+  loading = false,
+  onPress,
+  children,
+  className = "",
+  fullWidth = false,
+}) => {
   const themeName = useThemeName(); // Returns 'steelBlue', 'modernBlue', etc.
   const isDisabled = disabled || loading;
 
@@ -11,7 +20,7 @@ export const Button = ({ variant = "primary", size = "md", disabled = false, loa
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   // Base Tailwind classes
-  const baseStyles = "flex-row items-center justify-center rounded-xl";
+  const baseStyles = `flex-row items-center justify-center rounded-xl ${fullWidth ? "w-full" : ""}`;
 
   // Size styles
   const sizeStyles = {

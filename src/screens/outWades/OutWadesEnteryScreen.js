@@ -1,11 +1,11 @@
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwadesDirectALSList, useGetPreloadingList } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
-import BottomButtonContainer from "../../components/ButtomTwoButtonContainer";
+import BottomActionBar from "../../components/BottomActionBar";
 import { Button } from "../../components/Button";
 import { ScanToast } from "../../components/ScanToast";
 export default function OutWadesEnteryScreen() {
@@ -96,6 +96,19 @@ export default function OutWadesEnteryScreen() {
       });
     }, 600);
   }
+
+  function onHandleDirectToALS() {
+    setToastConfig({
+      visible: true,
+      type: "success",
+      title: "Direct to ALS",
+      message: "Navigating to direct ALS list",
+    });
+    setTimeout(() => {
+      navigation.navigate("OutWadesDirectALS");
+    }, 600);
+  }
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -317,13 +330,42 @@ export default function OutWadesEnteryScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* ROUTE */}
+            <View className="mb-3">
+              <Text className="text-xs font-semibold mb-2" style={{ color: theme.colors.accent }}>
+                ROUTE
+              </Text>
+              <View className="flex-row items-center gap-1.5 flex-wrap">
+                {item.routeDetails.split("-").map((route, index) => (
+                  <View key={index} className="flex-row items-center">
+                    <View
+                      className="px-2.5 py-1 rounded-lg border"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderColor: theme.colors.buttonSecondaryBorder,
+                      }}
+                    >
+                      <Text className="font-medium text-xs" style={{ color: theme.colors.primary }}>
+                        {route.trim()}
+                      </Text>
+                    </View>
+                    {index < item.routeDetails.split("-").length - 1 && (
+                      <Text className="mx-0.5 font-semibold text-xs" style={{ color: theme.colors.accent }}>
+                        →
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
           </View>
         </TouchableOpacity>
 
         {item.alT_ID !== 0 && (
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate("OutWadesScanning", { altId: item.alT_ID });
+              navigation.navigate("OutWadesScanning", { altId: item.alT_ID, isDirect: true });
             }}
             activeOpacity={0.6}
           >
@@ -344,90 +386,104 @@ export default function OutWadesEnteryScreen() {
   const activeListData = activeTab === "preloading" ? filteredPreloadingData : normalizedDirectALSData;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
-        backgroundColor: theme.colors.appBg,
-      }}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      {/* Header */}
-      {/* <View className="bg-white px-4 py-4">
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.appBg }} edges={["left", "right"]}>
+      <View
+        style={{
+          flex: 1,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+          backgroundColor: theme.colors.appBg,
+        }}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        {/* Header */}
+        {/* <View className="bg-white px-4 py-4">
         <Text className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
           Pending Preloading
         </Text>
       </View> */}
 
-      {/* Content */}
-      {/* Custom Scan Toast */}
-      <ScanToast
-        visible={toastConfig.visible}
-        type={toastConfig.type}
-        title={toastConfig.title}
-        message={toastConfig.message}
-        onHide={() => setToastConfig({ ...toastConfig, visible: false })}
-      />
+        {/* Content */}
+        {/* Custom Scan Toast */}
+        <ScanToast
+          visible={toastConfig.visible}
+          type={toastConfig.type}
+          title={toastConfig.title}
+          message={toastConfig.message}
+          onHide={() => setToastConfig({ ...toastConfig, visible: false })}
+        />
 
-      <View className="px-4 pt-4 pb-2">
-        <View className="flex-row rounded-xl p-1" style={{ backgroundColor: theme.colors.cardBg }}>
-          <TouchableOpacity
-            className="flex-1 items-center py-2 rounded-lg"
-            style={{
-              backgroundColor: activeTab === "preloading" ? theme.colors.primary : "transparent",
-            }}
-            onPress={() => setActiveTab("preloading")}
-          >
-            <Text style={{ color: activeTab === "preloading" ? theme.colors.buttonPrimaryText : theme.colors.headingText, fontWeight: "600" }}>
-              Data ({filteredPreloadingData.length})
-            </Text>
-          </TouchableOpacity>
+        {normalizedDirectALSData.length > 0 && (
+          <View className="px-4 pt-4 pb-2">
+            <View className="flex-row rounded-xl p-1" style={{ backgroundColor: theme.colors.cardBg }}>
+              <TouchableOpacity
+                className="flex-1 items-center py-2 rounded-lg"
+                style={{
+                  backgroundColor: activeTab === "preloading" ? theme.colors.primary : "transparent",
+                }}
+                onPress={() => setActiveTab("preloading")}
+              >
+                <Text style={{ color: activeTab === "preloading" ? theme.colors.buttonPrimaryText : theme.colors.headingText, fontWeight: "600" }}>
+                  ALS ({filteredPreloadingData.length})
+                </Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            className="flex-1 items-center py-2 rounded-lg"
-            style={{
-              backgroundColor: activeTab === "directALS" ? theme.colors.primary : "transparent",
-            }}
-            onPress={() => setActiveTab("directALS")}
-          >
-            <Text style={{ color: activeTab === "directALS" ? theme.colors.buttonPrimaryText : theme.colors.headingText, fontWeight: "600" }}>
-              Direct ALS ({normalizedDirectALSData.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <FlatList
-        data={activeListData}
-        renderItem={activeTab === "preloading" ? renderPreloadingCard : renderDirectALSCard}
-        keyExtractor={(item, index) => {
-          if (activeTab === "preloading") {
-            return item.id?.toString() || `preloading-${index}`;
-          }
-          return item.alT_ID?.toString() || `direct-als-${index}`;
-        }}
-        ListEmptyComponent={
-          <View className="items-center py-8">
-            <Text style={{ color: theme.colors.accent }}>{activeTab === "preloading" ? "No preloading data found" : "No direct ALS data found"}</Text>
+              <TouchableOpacity
+                className="flex-1 items-center py-2 rounded-lg"
+                style={{
+                  backgroundColor: activeTab === "directALS" ? theme.colors.primary : "transparent",
+                }}
+                onPress={() => setActiveTab("directALS")}
+              >
+                <Text style={{ color: activeTab === "directALS" ? theme.colors.buttonPrimaryText : theme.colors.headingText, fontWeight: "600" }}>
+                  Direct ({normalizedDirectALSData.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        }
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
-        scrollEnabled={true}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
-      />
+        )}
 
-      {activeTab === "preloading" && (
-        <BottomButtonContainer>
-          <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
-            Direct to ALS
-          </Button>
-          <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
-            Proceed to ALS
-          </Button>
-        </BottomButtonContainer>
-      )}
-    </View>
+        <FlatList
+          data={activeListData}
+          renderItem={activeTab === "preloading" ? renderPreloadingCard : renderDirectALSCard}
+          keyExtractor={(item, index) => {
+            if (activeTab === "preloading") {
+              return item.id?.toString() || `preloading-${index}`;
+            }
+            return item.alT_ID?.toString() || `direct-als-${index}`;
+          }}
+          ListEmptyComponent={
+            <View className="items-center py-8">
+              <Text style={{ color: theme.colors.accent }}>
+                {activeTab === "preloading" ? "No preloading data found" : "No direct ALS data found"}
+              </Text>
+            </View>
+          }
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: 16,
+            paddingTop: 20,
+          }}
+          scrollEnabled={true}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
+
+        {activeTab === "preloading" && (
+          <BottomActionBar includeBottomInset={false}>
+            <View className="flex-row gap-3">
+              <Button variant="primary" size="lg" className="flex-1" onPress={onHandleDirectToALS}>
+                Direct to ALS
+              </Button>
+
+              <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProceedToALS}>
+                Proceed to ALS
+              </Button>
+            </View>
+          </BottomActionBar>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }

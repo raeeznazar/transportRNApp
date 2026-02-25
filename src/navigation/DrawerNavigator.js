@@ -86,6 +86,8 @@ export default function DrawerNavigator() {
         return "Outwards Summary";
       case "OutwardsSummaryPendingPackets":
         return "Outwards Summary Pending Packets";
+      case "OutwadesDirectALSSummaryScreen":
+        return "Outwards Summary";
       default:
         return "NeoEra Transport";
     }
