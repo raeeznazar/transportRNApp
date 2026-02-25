@@ -1,7 +1,7 @@
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useGetBaysListForALS,
   useGetDriverListForALS,
@@ -12,7 +12,7 @@ import {
 } from "../../../hooks/useApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
-import ButtomTwoButtonContainer from "../../components/ButtomTwoButtonContainer";
+import BottomActionBar from "../../components/BottomActionBar";
 import { Button } from "../../components/Button";
 import FullWidthSearchSelectInput from "../../components/FullWidthSearchSelectInput";
 import FullWidthSelectInput from "../../components/FullWidthSelectInput";
@@ -185,6 +185,7 @@ export default function OutWadesALSscreen({ route }) {
         setTimeout(() => {
           navigation.navigate("OutWadesScanning", {
             altId: data.dataValue.insertedIds[0],
+            isDirect: true,
           });
         }, 600);
       },
@@ -207,230 +208,229 @@ export default function OutWadesALSscreen({ route }) {
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        paddingBottom: insets.bottom,
-        paddingTop: 12,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
-        backgroundColor: theme.colors.appBg,
-      }}
-    >
-      <ScanToast
-        visible={toastConfig.visible}
-        type={toastConfig.type}
-        title={toastConfig.title}
-        message={toastConfig.message}
-        onHide={() => setToastConfig({ ...toastConfig, visible: false })}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.appBg }} edges={["left", "right"]}>
+      <View
+        style={{
+          flex: 1,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+          backgroundColor: theme.colors.appBg,
+        }}
       >
-        <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
-          <View className="px-4 py-3">
-            <View className="bg-white rounded-2xl p-3 shadow-lg">
-              <Text className="text-xl font-bold mb-3" style={{ color: theme.colors.headingText }}>
-                ALS Details
-              </Text>
+        <ScanToast
+          visible={toastConfig.visible}
+          type={toastConfig.type}
+          title={toastConfig.title}
+          message={toastConfig.message}
+          onHide={() => setToastConfig({ ...toastConfig, visible: false })}
+        />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+        >
+          <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
+            <View className="px-4 py-3">
+              <View className="bg-white rounded-2xl p-3 shadow-lg">
+                <Text className="text-xl font-bold mb-3" style={{ color: theme.colors.headingText }}>
+                  ALS Details
+                </Text>
 
-              <View className="flex-row mb-2">
-                <View className="flex-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    PLS NO
-                  </Text>
-                  <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
-                    {plsNo}
-                  </Text>
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    DATE
-                  </Text>
-                  <Text className="font-semibold text-sm" style={{ color: theme.colors.inputText }}>
-                    {new Date(date).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="flex-row mb-2">
-                <View className="flex-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    ROUTE
-                  </Text>
-                  <Text className="font-semibold text-sm" style={{ color: theme.colors.inputText }}>
-                    {toHierarchyLevels(routeDetails)}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="flex-row flex-wrap mb-3">
-                <View className="w-1/2 mb-2 pr-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    DOCKETS
-                  </Text>
-                  <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
-                    {dockets || 0}
-                  </Text>
-                </View>
-                <View className="w-1/2 mb-2 pl-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    PACKETS
-                  </Text>
-                  <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
-                    {packets || 0}
-                  </Text>
-                </View>
-                <View className="w-1/2 pr-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    WEIGHT
-                  </Text>
-                  <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
-                    {weight || 0} kg
-                  </Text>
-                </View>
-                <View className="w-1/2 pl-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    CFT
-                  </Text>
-                  <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
-                    {cft || 0}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Loading Overlay */}
-              {isLoadingData && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0, 0, 0, 0.3)",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: 12,
-                    zIndex: 9999,
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: "white",
-                      paddingVertical: 20,
-                      paddingHorizontal: 30,
-                      borderRadius: 10,
-                      alignItems: "center",
-                    }}
-                  >
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
-                    <Text
-                      style={{
-                        marginTop: 10,
-                        fontSize: 14,
-                        color: theme.colors.bodyText,
-                        fontWeight: "500",
-                      }}
-                    >
-                      Loading vehicles, drivers, teams, and bays...
+                <View className="flex-row mb-2">
+                  <View className="flex-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      PLS NO
+                    </Text>
+                    <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
+                      {plsNo}
+                    </Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      DATE
+                    </Text>
+                    <Text className="font-semibold text-sm" style={{ color: theme.colors.inputText }}>
+                      {new Date(date).toLocaleDateString()}
                     </Text>
                   </View>
                 </View>
-              )}
 
-              <View className="mb-1" style={{ zIndex: 2000, opacity: isLoadingData ? 0.5 : 1 }}>
-                <FullWidthSelectInput
-                  label="LOAD TYPE"
-                  value={loadType}
-                  onChange={setLoadType}
-                  items={loadTypeOptions}
-                  labelFontSize={13}
-                  labelFontWeight="400"
-                  labelLineHeight={20}
-                />
-              </View>
-
-              <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
-                <FullWidthSearchSelectInput
-                  label="VEHICLE NO"
-                  value={vehicleNo}
-                  onChange={setVehicleNo}
-                  items={vehicleItems}
-                  placeholderText="Select vehicle"
-                  labelFontSize={13}
-                  labelFontWeight="400"
-                  labelLineHeight={20}
-                />
-              </View>
-
-              <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
-                <FullWidthSearchSelectInput
-                  label="DRIVER NAME"
-                  value={driverName}
-                  onChange={setDriverName}
-                  items={driverItems}
-                  placeholderText="Select driver"
-                  labelFontSize={13}
-                  labelFontWeight="400"
-                  labelLineHeight={20}
-                />
-              </View>
-              {driverContactNo && (
-                <View className="w-1/2 pl-1 mb-1">
-                  <Text className="text-xs" style={{ color: theme.colors.inputText }}>
-                    DRIVER CONTACT NUMBER
-                  </Text>
-                  <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
-                    {driverContactNo || 0}
-                  </Text>
+                <View className="flex-row mb-2">
+                  <View className="flex-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      ROUTE
+                    </Text>
+                    <Text className="font-semibold text-sm" style={{ color: theme.colors.inputText }}>
+                      {toHierarchyLevels(routeDetails)}
+                    </Text>
+                  </View>
                 </View>
-              )}
-              <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
-                <FullWidthSearchSelectInput
-                  label="TEAM NAME"
-                  value={teamsName}
-                  onChange={setTeamsName}
-                  items={teamsItems}
-                  placeholderText="Select team"
-                  labelFontSize={13}
-                  labelFontWeight="400"
-                  labelLineHeight={20}
-                />
-              </View>
 
-              <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
-                <FullWidthSearchSelectInput
-                  label="BAY NAME"
-                  value={baysName}
-                  onChange={setBaysName}
-                  items={baysItems}
-                  placeholderText="Select bay"
-                  labelFontSize={13}
-                  labelFontWeight="400"
-                  labelLineHeight={20}
-                />
-              </View>
-              <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
-                <FullWidthSearchSelectInput
-                  label="GODOWN NAME"
-                  value={godownsName}
-                  onChange={setGodownsName}
-                  items={godownsItems}
-                  placeholderText="Select godown"
-                  labelFontSize={13}
-                  labelFontWeight="400"
-                  labelLineHeight={20}
-                />
+                <View className="flex-row flex-wrap mb-3">
+                  <View className="w-1/2 mb-2 pr-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      DOCKETS
+                    </Text>
+                    <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
+                      {dockets || 0}
+                    </Text>
+                  </View>
+                  <View className="w-1/2 mb-2 pl-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      PACKETS
+                    </Text>
+                    <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
+                      {packets || 0}
+                    </Text>
+                  </View>
+                  <View className="w-1/2 pr-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      WEIGHT
+                    </Text>
+                    <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
+                      {weight || 0} kg
+                    </Text>
+                  </View>
+                  <View className="w-1/2 pl-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      CFT
+                    </Text>
+                    <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
+                      {cft || 0}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Loading Overlay */}
+                {isLoadingData && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(0, 0, 0, 0.3)",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      zIndex: 9999,
+                    }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: "white",
+                        paddingVertical: 20,
+                        paddingHorizontal: 30,
+                        borderRadius: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <ActivityIndicator size="large" color={theme.colors.primary} />
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          fontSize: 14,
+                          color: theme.colors.bodyText,
+                          fontWeight: "500",
+                        }}
+                      >
+                        Loading vehicles, drivers, teams, and bays...
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View className="mb-1" style={{ zIndex: 2000, opacity: isLoadingData ? 0.5 : 1 }}>
+                  <FullWidthSelectInput
+                    label="LOAD TYPE"
+                    value={loadType}
+                    onChange={setLoadType}
+                    items={loadTypeOptions}
+                    labelFontSize={13}
+                    labelFontWeight="400"
+                    labelLineHeight={20}
+                  />
+                </View>
+
+                <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
+                  <FullWidthSearchSelectInput
+                    label="VEHICLE NO"
+                    value={vehicleNo}
+                    onChange={setVehicleNo}
+                    items={vehicleItems}
+                    placeholderText="Select vehicle"
+                    labelFontSize={13}
+                    labelFontWeight="400"
+                    labelLineHeight={20}
+                  />
+                </View>
+
+                <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
+                  <FullWidthSearchSelectInput
+                    label="DRIVER NAME"
+                    value={driverName}
+                    onChange={setDriverName}
+                    items={driverItems}
+                    placeholderText="Select driver"
+                    labelFontSize={13}
+                    labelFontWeight="400"
+                    labelLineHeight={20}
+                  />
+                </View>
+                {driverContactNo && (
+                  <View className="w-1/2 pl-1 mb-1">
+                    <Text className="text-xs" style={{ color: theme.colors.inputText }}>
+                      DRIVER CONTACT NUMBER
+                    </Text>
+                    <Text className="font-bold text-base" style={{ color: theme.colors.inputText }}>
+                      {driverContactNo || 0}
+                    </Text>
+                  </View>
+                )}
+                <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
+                  <FullWidthSearchSelectInput
+                    label="TEAM NAME"
+                    value={teamsName}
+                    onChange={setTeamsName}
+                    items={teamsItems}
+                    placeholderText="Select team"
+                    labelFontSize={13}
+                    labelFontWeight="400"
+                    labelLineHeight={20}
+                  />
+                </View>
+
+                <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
+                  <FullWidthSearchSelectInput
+                    label="BAY NAME"
+                    value={baysName}
+                    onChange={setBaysName}
+                    items={baysItems}
+                    placeholderText="Select bay"
+                    labelFontSize={13}
+                    labelFontWeight="400"
+                    labelLineHeight={20}
+                  />
+                </View>
+                <View className="mb-1" style={{ zIndex: 1000, opacity: isLoadingData ? 0.5 : 1 }}>
+                  <FullWidthSearchSelectInput
+                    label="GODOWN NAME"
+                    value={godownsName}
+                    onChange={setGodownsName}
+                    items={godownsItems}
+                    placeholderText="Select godown"
+                    labelFontSize={13}
+                    labelFontWeight="400"
+                    labelLineHeight={20}
+                  />
+                </View>
               </View>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
-      {/* <View className="mx-4 flex-row gap-3" style={{ paddingBottom: insets.bottom + 20, paddingTop: insets.top }}>
+        {/* <View className="mx-4 flex-row gap-3" style={{ paddingBottom: insets.bottom + 20, paddingTop: insets.top }}>
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>
@@ -439,14 +439,26 @@ export default function OutWadesALSscreen({ route }) {
         </Button>
       </View> */}
 
-      <ButtomTwoButtonContainer>
+        {/* <ButtonContainer>
         <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
           Back
         </Button>
         <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={disableProcceed}>
           Proceed
         </Button>
-      </ButtomTwoButtonContainer>
-    </View>
+      </ButtonContainer> */}
+
+        <BottomActionBar includeBottomInset={false}>
+          <View className="flex-row gap-3">
+            <Button variant="secondary" size="lg" onPress={() => navigation.goBack()} className="flex-1">
+              Back
+            </Button>
+            <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={disableProcceed}>
+              Proceed
+            </Button>
+          </View>
+        </BottomActionBar>
+      </View>
+    </SafeAreaView>
   );
 }

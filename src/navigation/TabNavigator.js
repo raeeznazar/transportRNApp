@@ -36,8 +36,8 @@ export default function TabNavigator() {
         },
         tabBarStyle: {
           backgroundColor: theme?.colors?.headerBg,
-          paddingBottom: (Platform.select({ ios: 20, android: 10 }) ?? 10) + insets.bottom,
-          height: (Platform.select({ ios: 70, android: 65 }) ?? 65) + insets.bottom,
+          // paddingBottom: (Platform.select({ ios: 20, android: 10 }) ?? 10) + insets.bottom,
+          // height: (Platform.select({ ios: 70, android: 65 }) ?? 65) + insets.bottom,
           borderTopWidth: 1,
           borderTopColor: theme?.colors?.border ?? "#e0e0e0",
           elevation: 8,
@@ -45,6 +45,14 @@ export default function TabNavigator() {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 3,
+          height: Platform.select({
+            ios: 70,
+            android: 60 + insets.bottom,
+          }),
+          paddingBottom: Platform.select({
+            ios: 10,
+            android: 6 + insets.bottom,
+          }),
         },
       }}
     >

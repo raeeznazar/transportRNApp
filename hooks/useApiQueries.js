@@ -29,6 +29,8 @@ export const queryKeys = {
   outwardsSummaryHeaderData: ["outwardsSummaryHeaderData"],
   outwardsSummaryRemainingDockets: ["outwardsSummaryRemainingDockets"],
   getOutwadesDirectALSList: ["getOutwadesDirectALSList"],
+  getAlsDocketSummaryDetails: ["getAlsDocketSummaryDetails"],
+  getAlsDirectSummaryModalCheck: ["getAlsDirectSummaryModalCheck"],
   // Add more query keys based on your screensApiService
 };
 
@@ -1159,5 +1161,89 @@ export const useGetOutwadesDirectALSList = (branchCode, options = {}) => {
     refetchOnMount: "always",
     retry: 1,
     ...options,
+  });
+};
+
+//Get outwades Als Docket Summary Details- get
+export const useGetAlsDocketSummaryDetails = (docketId, options = {}) => {
+  console.log("useGetAlsDocketSummaryDetails Params:", { docketId });
+  return useQuery({
+    queryKey: [...queryKeys.getAlsDocketSummaryDetails, docketId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWADES_ALS_DOCKETSUMMARY_DETAILS, {
+          params: {
+            docketId,
+          },
+        });
+        console.log("useGetAlsDocketSummaryDetails Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to get ALS docket summary details");
+      }
+    },
+    enabled: !!docketId,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: false, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    ...options,
+  });
+};
+
+//Get outwades Als Docket Summary modal check- get
+export const useGetAlsDirectSummaryModalCheck = (altId, branchCode, options = {}) => {
+  console.log("useGetAlsDirectSummaryModalCheck Params:", { altId, branchCode });
+  return useQuery({
+    queryKey: [...queryKeys.getAlsDirectSummaryModalCheck, altId, branchCode],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWADES_DIRECT_ALS_CHECK_MODAL, {
+          params: {
+            altId,
+            branchCode,
+          },
+        });
+        console.log("useGetAlsDirectSummaryModalCheck Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        console.log(response);
+        throw new Error(error.response?.data?.message || "Failed to get Direct ALS Summary Modal Check");
+      }
+    },
+    enabled: !!altId && !!branchCode,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: false, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    ...options,
+  });
+};
+
+// Insert outwards removal data - Use Mutation - post
+export const useOutwadesDirectAlsFinalSubmit = () => {
+  return useMutation({
+    mutationFn: async (params) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.OUTWADES_DIRECT_ALS_FINAL_SUBMIT, params);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          throw new Error(response.data?.status?.message || "Failed to submit outwades direct ALS data");
+        }
+      } catch (error) {
+        // Re-throw with the correct error message path
+        throw new Error(
+          error.response?.data?.status?.message || error.response?.data?.message || error.message || "Failed to submit outwades ALS data"
+        );
+      }
+    },
   });
 };

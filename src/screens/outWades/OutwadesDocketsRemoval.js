@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { useIsFocused, useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, BackHandler, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwardsSummaryRemainingDockets, useOutwadesDocketsRemovalSubmit } from "../../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../../stores/themeStore";
@@ -33,6 +33,28 @@ export default function OutwadesDocketsRemoval({ route }) {
 
   const { data, error, isLoading } = useGetOutwardsSummaryRemainingDockets(altId);
   const removableDocketsRemovalSubmit = useOutwadesDocketsRemovalSubmit();
+
+  // Intercept back navigation (Android hardware back + iOS gesture/header back)
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("OutwadesSummaryScreen", { altId });
+        return true;
+      };
+
+      const backSubscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+
+      const unsubscribeBeforeRemove = navigation.addListener("beforeRemove", (e) => {
+        e.preventDefault();
+        navigation.navigate("OutwadesSummaryScreen", { altId });
+      });
+
+      return () => {
+        backSubscription.remove();
+        unsubscribeBeforeRemove();
+      };
+    }, [navigation, altId])
+  );
 
   // Initialize packets from API data
   useEffect(() => {

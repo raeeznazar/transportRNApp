@@ -100,4 +100,13 @@ export const API_ENDPOINTS = {
 
   //Direct ALS list for outwades entry screen
   OUTWADES_DIRECT_ALS_LIST: "/Outward/ActiveLoadsheetSummary_Get",
+
+  //Outwades Direct ALS or ALS summary screen docket details
+  OUTWADES_ALS_DOCKETSUMMARY_DETAILS: "/Outward/DocketPacketSummary_Get",
+
+  //outwades direct ALS summary screen submit to check modal
+  OUTWADES_DIRECT_ALS_CHECK_MODAL: "/Outward/DoorDeliveryDockets_Get",
+
+  //Outwades direct ALS summary screen final submit
+  OUTWADES_DIRECT_ALS_FINAL_SUBMIT: "/Outward/finish-submit-no-pls",
 };

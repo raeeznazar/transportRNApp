@@ -10,6 +10,7 @@ import DashboardHomeScreen from "../screens/DashboardHomeScreen";
 import RevenueScreen from "../screens/RevenueScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import CustomDrawerContent from "./CustomDrawerContent";
+import DeliveryNavigator from "./DeliveryNavigator";
 import InwardsNavigator from "./InwardsNavigator";
 import OutwardsNavigator from "./OutwardsNavigator";
 import TrackingNavigator from "./TrackingNavigator";
@@ -86,6 +87,11 @@ export default function DrawerNavigator() {
         return "Outwards Summary";
       case "OutwardsSummaryPendingPackets":
         return "Outwards Summary Pending Packets";
+      case "OutwadesDirectALSSummaryScreen":
+        return "Outwards Summary";
+
+      case "DeliveryReciptEntryScreen":
+        return "Receipt List";
       default:
         return "NeoEra Transport";
     }
@@ -103,6 +109,7 @@ export default function DrawerNavigator() {
       "OutwardsList",
       "Outwards",
       "Tracking",
+      "DeliveryReciptEntryScreen",
     ];
     // If routeName is not in mainScreens and exists, hide drawer header
     // This allows nested/detail screens to show their own headers with back buttons
@@ -142,6 +149,15 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="Outwards"
         component={OutwardsNavigator}
+        options={({ route }) => ({
+          title: getHeaderTitle(route),
+          drawerItemStyle: { display: "none" },
+          headerShown: !shouldHideDrawerHeader(route),
+        })}
+      />
+      <Drawer.Screen
+        name="Delivery"
+        component={DeliveryNavigator}
         options={({ route }) => ({
           title: getHeaderTitle(route),
           drawerItemStyle: { display: "none" },

@@ -4,7 +4,7 @@ import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-nativ
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOutwardsGetMissingPackets } from "../../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../../stores/themeStore";
-import BottomButtonContainer from "../../components/ButtomTwoButtonContainer";
+import ButtonContainer from "../../components/ButtomTwoButtonContainer";
 import { Button } from "../../components/Button";
 export default function OutwardsSummaryPendingPackets({ route }) {
   const theme = useCurrentTheme();
@@ -148,7 +148,7 @@ export default function OutwardsSummaryPendingPackets({ route }) {
           Confirm Short List
         </Button>
       </View> */}
-      <BottomButtonContainer>
+      <ButtonContainer>
         <Button
           variant="primary"
           size="lg"
@@ -158,7 +158,7 @@ export default function OutwardsSummaryPendingPackets({ route }) {
         >
           Confirm Short List
         </Button>
-      </BottomButtonContainer>
+      </ButtonContainer>
     </View>
   );
 }

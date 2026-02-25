@@ -3,6 +3,7 @@ import { useCurrentTheme } from "../../stores/themeStore";
 import OutWadesAddShortList from "../screens/outWades/OutWadesAddShortList";
 import OutWadesALSscreen from "../screens/outWades/OutWadesALSscreen";
 import OutWadesDirectALS from "../screens/outWades/OutWadesDirectALS";
+import OutwadesDirectALSSummaryScreen from "../screens/outWades/OutwadesDirectALSSummaryScreen";
 import OutwadesDocketsRemoval from "../screens/outWades/OutwadesDocketsRemoval";
 import OutWadesEnteryScreen from "../screens/outWades/OutWadesEnteryScreen";
 import OutWadesScanning from "../screens/outWades/OutWadesScanning";
@@ -93,6 +94,15 @@ export default function OutwardsNavigator() {
         options={{
           headerShown: true,
           title: "Outwards Summary Pending Packets",
+          unmountOnBlur: true,
+        }}
+      />
+      <Stack.Screen
+        name="OutwadesDirectALSSummaryScreen"
+        component={OutwadesDirectALSSummaryScreen}
+        options={{
+          headerShown: true,
+          title: "Outwards Summary",
           unmountOnBlur: true,
         }}
       />

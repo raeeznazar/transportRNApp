@@ -1,7 +1,7 @@
+import * as ScreenOrientation from "expo-screen-orientation";
 import { memo, useCallback, useMemo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
-import Orientation from "react-native-orientation-locker";
 import { useCurrentTheme } from "../../stores/themeStore";
 
 const CommonModal = ({
@@ -18,6 +18,8 @@ const CommonModal = ({
 
   closeText = "Close",
   submitText = "Submit",
+  isLoading = false,
+  loadingText = "Loading...",
 }) => {
   const theme = useCurrentTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -26,7 +28,7 @@ const CommonModal = ({
     onClose?.();
 
     setTimeout(() => {
-      Orientation.unlockAllOrientations();
+      ScreenOrientation.unlockAsync();
     }, 300);
   }, [onClose]);
 
@@ -51,7 +53,16 @@ const CommonModal = ({
         {title && <Text style={styles.title}>{title}</Text>}
 
         {/* BODY */}
-        <View style={styles.body}>{children}</View>
+        <View style={styles.body}>
+          {isLoading ? (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="large" color={theme.colors.alertColor} />
+              <Text style={styles.loadingText}>{loadingText}</Text>
+            </View>
+          ) : (
+            children
+          )}
+        </View>
 
         {/* FOOTER BUTTONS */}
         {(showClose || showSubmit) && (
@@ -93,6 +104,16 @@ const createStyles = (theme) =>
     },
     body: {
       marginBottom: theme.spacing.md,
+    },
+    loadingWrap: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: theme.spacing.md,
+    },
+    loadingText: {
+      marginTop: theme.spacing.sm,
+      color: theme.colors.inputText,
+      fontWeight: "500",
     },
     footer: {
       flexDirection: "row",
@@ -141,6 +162,8 @@ const createStyles = (theme) =>
 
 //       closeText="Cancel"
 //       submitText="Save"
+// isLoading={isFetching}
+// loadingText="Fetching details..."
 //     >
 //       <Text>
 //         Are you sure you want to update profile details?

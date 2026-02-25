@@ -53,6 +53,26 @@ export default function CustomDrawerContent(props) {
       route: "Outwards",
     },
     {
+      name: "Delivery",
+      label: "Delivery",
+      icon: "cube-outline",
+      route: "Delivery",
+      submenus: [
+        {
+          name: "Generate Receipt",
+          label: "Generate Receipt",
+          route: "Delivery",
+          params: { screen: "DeliveryReciptEntryScreen" },
+        },
+        // {
+        //   name: "Truck Arrival Sheet",
+        //   label: "Truck Arrival Sheet",
+        //   route: "Delivery",
+        //   params: { screen: "TruckArivalAfterReportScreen" },
+        // },
+      ],
+    },
+    {
       name: "Tracking",
       label: "Tracking",
       icon: "cash-outline",
