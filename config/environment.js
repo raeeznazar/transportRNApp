@@ -6,9 +6,9 @@ const config = {
   },
   production: {
     // live uat
-    API_BASE_URL: "http://13.250.76.147:8082/api",
+    // API_BASE_URL: "http://13.250.76.147:8082/api",
     // live url
-    // API_BASE_URL: "http://13.250.76.147:8085/api",
+    API_BASE_URL: "http://13.250.76.147:8085/api",
     API_TIMEOUT: 15000,
   },
 };

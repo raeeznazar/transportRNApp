@@ -1,3 +1,4 @@
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
@@ -255,25 +256,28 @@ export default function OutWadesEnteryScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* REMOVE PACKETS Button */}
-        {item.alT_ID !== 0 && (
+        <View className="flex-row items-center gap-3 px-4 py-1" style={{ borderTopWidth: 1, borderTopColor: theme.colors.buttonSecondaryBorder }}>
           <TouchableOpacity
+            className={item.alT_ID !== 0 ? "flex-1 flex-row items-center gap-2 py-2" : "w-full flex-row items-center justify-center gap-2 py-2"}
+            activeOpacity={0.7}
             onPress={() => {
-              // Handle remove packets action
-              navigation.navigate("OutWadesScanning", { altId: item.alT_ID });
+              navigation.navigate("OutwadesEntryDetailsScreen", { plsId: item.plsNo });
             }}
-            activeOpacity={0.6}
           >
-            <View
-              className="items-center py-3 px-4"
-              style={{ borderTopWidth: 1, borderTopColor: "#f0efe8ff", backgroundColor: theme.colors.primary + "1A" }}
-            >
-              <Text className="font-medium text-md font-semibold" style={{ color: theme.colors.primary }}>
-                Resume
-              </Text>
-            </View>
+            <Ionicons name="information-circle-outline" size={18} color={theme.colors.headingText} />
+            <Text className="text-sm font-semibold" style={{ color: theme.colors.headingText }}>
+              View Detail
+            </Text>
           </TouchableOpacity>
-        )}
+
+          {item.alT_ID !== 0 && (
+            <View style={{ width: 170 }}>
+              <Button variant="primary" size="sm" className="w-full" onPress={() => navigation.navigate("OutWadesScanning", { altId: item.alT_ID })}>
+                Resume
+              </Button>
+            </View>
+          )}
+        </View>
       </View>
     );
   };
@@ -294,84 +298,61 @@ export default function OutWadesEnteryScreen() {
           elevation: isSelected ? 6 : 2,
         }}
       >
-        <View className="px-4 py-3">
-          <View className="flex-row justify-between mb-3 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: "#E8EBF0" }}>
-            <View className="flex-1">
-              <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
-                ALT ID
+        <View className="px-4 py-4">
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center gap-2">
+              <FontAwesome name="truck" size={20} color={theme.colors.primary} />
+
+              <Text className="text-sm font-bold" style={{ color: theme.colors.headingText }}>
+                ALT ID {item.alT_ID ?? 0}
               </Text>
-              <Text className="text-lg font-semibold" style={{ color: theme.colors.primary }}>
-                {item.alT_ID ?? 0}
+            </View>
+            <View className="px-3 py-1.5 rounded-full" style={{ backgroundColor: `${theme.colors.primary}1A` }}>
+              <Text className="text-sm  tracking-wide" style={{ color: theme.colors.primary }}>
+                {(item.status || "IN TRANSIT").toUpperCase()}
               </Text>
             </View>
           </View>
 
-          <View className="flex-row">
-            <View className="flex-1">
-              <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
-                DOCKETS
-              </Text>
-              <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
-                {item.docketCount || 0}
+          <View className="flex-row items-center gap-6">
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="document-text-outline" size={18} color={theme.colors.accent} />
+              <Text className="text-sm " style={{ color: theme.colors.headingText }}>
+                Dockets: {item.docketCount || 0}
               </Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-xs font-semibold mb-1" style={{ color: theme.colors.accent }}>
-                PACKETS
-              </Text>
-              <Text className="text-base font-semibold" style={{ color: theme.colors.headingText }}>
-                {item.totalPackets || 0}
-              </Text>
-            </View>
-          </View>
 
-          {/* ROUTE */}
-          <View className="mb-3">
-            <Text className="text-xs font-semibold mb-2" style={{ color: theme.colors.accent }}>
-              ROUTE
-            </Text>
-            <View className="flex-row items-center gap-1.5 flex-wrap">
-              {item.routeDetails.split("-").map((route, index) => (
-                <View key={index} className="flex-row items-center">
-                  <View
-                    className="px-2.5 py-1 rounded-lg border"
-                    style={{
-                      backgroundColor: "#F9FAFB",
-                      borderColor: theme.colors.buttonSecondaryBorder,
-                    }}
-                  >
-                    <Text className="font-medium text-xs" style={{ color: theme.colors.primary }}>
-                      {route.trim()}
-                    </Text>
-                  </View>
-                  {index < item.routeDetails.split("-").length - 1 && (
-                    <Text className="mx-0.5 font-semibold text-xs" style={{ color: theme.colors.accent }}>
-                      →
-                    </Text>
-                  )}
-                </View>
-              ))}
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="cube-outline" size={18} color={theme.colors.accent} />
+              <Text className="text-sm " style={{ color: theme.colors.headingText }}>
+                Packets: {item.totalPackets || 0}
+              </Text>
             </View>
           </View>
         </View>
 
-        {item.alT_ID !== 0 && (
-          <TouchableOpacity
+        <View className="flex-row items-center gap-3 px-4 py-2" style={{ borderTopWidth: 1, borderTopColor: theme.colors.buttonSecondaryBorder }}>
+          {/* <TouchableOpacity
+            className={item.alT_ID !== 0 ? "flex-1 flex-row items-center gap-2 py-2" : "w-full flex-row items-center justify-center gap-2 py-2"}
+            activeOpacity={0.7}
             onPress={() => {
-              navigation.navigate("OutWadesScanning", { altId: item.alT_ID, isDirect: true });
+              navigation.navigate("OutwadesEntryDetailsScreen");
             }}
-            activeOpacity={0.6}
           >
-            <View
-              className="items-center py-3 px-4"
-              style={{ borderTopWidth: 1, borderTopColor: "#f0efe8ff", backgroundColor: theme.colors.primary + "1A" }}
-            >
-              <Text className="font-medium text-md font-semibold" style={{ color: theme.colors.primary }}>
+            <Ionicons name="information-circle-outline" size={18} color={theme.colors.headingText} />
+            <Text className="text-sm font-semibold" style={{ color: theme.colors.headingText }}>
+              View Detail
+            </Text>
+          </TouchableOpacity> */}
+
+          {item.alT_ID !== 0 && (
+            <View style={{ flex: 1, alignItems: "flex-end" }}>
+              <Button variant="primary" size="sm" onPress={() => navigation.navigate("OutWadesScanning", { altId: item.alT_ID, isDirect: true })}>
                 Resume
-              </Text>
+              </Button>
             </View>
-          </TouchableOpacity>
-        )}
+          )}
+        </View>
       </View>
     );
   };

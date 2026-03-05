@@ -11,9 +11,9 @@ export default function FullWidthSearchSelectInput({
   style,
   placeholderText,
   autoOpen = false,
-  labelFontSize = 16,
+  labelFontSize = 12,
   labelFontWeight = "500",
-  labelLineHeight = 24,
+  labelLineHeight = 18,
   ...rest
 }) {
   const theme = useCurrentTheme();
@@ -117,25 +117,25 @@ export default function FullWidthSearchSelectInput({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   label: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   pickerWrap: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: "hidden",
-    minHeight: 56,
+    minHeight: 44,
     justifyContent: "center",
   },
   inputButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     justifyContent: "center",
   },
   inputText: {
-    fontSize: 16,
+    fontSize: 14,
   },
   searchInput: {
     height: 40,
@@ -179,3 +179,70 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
 });
+
+/**
+ * FullWidthSearchSelectInput
+ * ------------------------------------------------------------
+ * Reusable full-width searchable select input with modal picker.
+ *
+ * ✅ What it does
+ * - Shows a touchable input field
+ * - Opens modal with search box + list of options
+ * - Filters options by typed search text
+ * - Returns selected value via `onChange(value)`
+ *
+ * ✅ Expected `items` format
+ * [
+ *   { label: "John Doe", value: "1" },
+ *   { label: "Jane Smith", value: "2" }
+ * ]
+ *
+ * ✅ Props
+ * - label?: string
+ *   Label shown above the input.
+ *
+ * - value?: string | number
+ *   Currently selected value.
+ *
+ * - onChange?: (value) => void
+ *   Called when user selects an item.
+ *
+ * - items?: Array<{label: string, value: string | number}>
+ *   Options to display in modal.
+ *
+ * - placeholderText?: string
+ *   Placeholder when no value is selected.
+ *
+ * - autoOpen?: boolean (default: false)
+ *   Opens modal automatically when items are available.
+ *
+ * - className?: string
+ *   NativeWind classes for wrapper View.
+ *
+ * - style?: ViewStyle
+ *   Extra inline style for wrapper View.
+ *
+ * - labelFontSize?: number (default: 12)
+ * - labelFontWeight?: string (default: "500")
+ * - labelLineHeight?: number (default: 18)
+ *
+ * ✅ Notes
+ * - If `items` is empty, tapping input will not open modal.
+ * - Search is case-insensitive.
+ * - On modal close, search text resets.
+ *
+ * ✅ Example
+ * const [customerId, setCustomerId] = useState(null);
+ *
+ * <FullWidthSearchSelectInput
+ *   label="Customer"
+ *   value={customerId}
+ *   onChange={setCustomerId}
+ *   placeholderText="Search customer..."
+ *   items={[
+ *     { label: "John Doe", value: "1" },
+ *     { label: "Jane Smith", value: "2" },
+ *   ]}
+ *   className="mb-3"
+ * />
+ */

@@ -1,6 +1,64 @@
 import { useRef } from "react";
 import { ActivityIndicator, Animated, Platform, Text, TouchableOpacity, Vibration } from "react-native";
 import { useThemeName } from "../../stores/themeStore";
+
+/**
+ * Button Component Usage Guide
+ *
+ * A theme-aware, animated button used across the app.
+ *
+ * Props:
+ * - variant: "primary" | "secondary" | "danger"
+ *   - default: "primary"
+ *   - controls button background/border/text style based on active theme
+ *
+ * - size: "sm" | "md" | "lg"
+ *   - default: "md"
+ *   - controls internal padding and text size
+ *
+ * - disabled: boolean
+ *   - default: false
+ *   - disables press interactions and applies disabled styles
+ *
+ * - loading: boolean
+ *   - default: false
+ *   - shows ActivityIndicator instead of button text and disables presses
+ *
+ * - onPress: () => void
+ *   - callback fired on button press
+ *
+ * - children: ReactNode
+ *   - button label/content shown when not loading (typically a short text label)
+ *
+ * - className: string
+ *   - default: ""
+ *   - optional NativeWind utility classes appended to base styles
+ *
+ * - fullWidth: boolean
+ *   - default: false
+ *   - when true, applies `w-full`
+ *
+ * Behavior notes:
+ * - Theme is picked from `useThemeName()` and falls back to `steelBlue`.
+ * - `loading` and `disabled` both make the button non-interactive.
+ * - Press feedback includes scale, opacity, pulse animation, and subtle vibration.
+ *
+ * Quick examples:
+ *
+ * <Button onPress={handleSubmit}>Save</Button>
+ *
+ * <Button variant="secondary" size="sm" onPress={handleFilter}>
+ *   Filter
+ * </Button>
+ *
+ * <Button variant="danger" loading={isDeleting} onPress={handleDelete}>
+ *   Delete
+ * </Button>
+ *
+ * <Button fullWidth disabled>
+ *   Continue
+ * </Button>
+ */
 export const Button = ({
   variant = "primary",
   size = "md",

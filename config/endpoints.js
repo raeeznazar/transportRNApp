@@ -109,4 +109,7 @@ export const API_ENDPOINTS = {
 
   //Outwades direct ALS summary screen final submit
   OUTWADES_DIRECT_ALS_FINAL_SUBMIT: "/Outward/finish-submit-no-pls",
+
+  //Outwards entry screen ALS destails for the selected ALS
+  OUTWADES_ENTRY_SCREEN_ALS_DETAILS: "/Outward/PreLoadSheetDetailsByPlsId_Get",
 };

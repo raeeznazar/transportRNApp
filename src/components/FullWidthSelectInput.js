@@ -11,9 +11,9 @@ export default function FullWidthSelectInput({
   style,
   placeholderText,
   autoOpen = false,
-  labelFontSize = 16,
+  labelFontSize = 12,
   labelFontWeight = "500",
-  labelLineHeight = 24,
+  labelLineHeight = 18,
   ...rest
 }) {
   const theme = useCurrentTheme();
@@ -91,27 +91,93 @@ export default function FullWidthSelectInput({
   );
 }
 
+/**
+ * FullWidthSelectInput
+ * ------------------------------------------------------------
+ * Reusable full-width select input using a modal list picker.
+ *
+ * ✅ What it does
+ * - Shows a touchable input-style field
+ * - Opens a modal with selectable options
+ * - Returns selected value with `onChange(value)`
+ * - Supports auto-open when options are loaded
+ *
+ * ✅ Expected `items` format
+ * [
+ *   { label: "John Doe", value: "1" },
+ *   { label: "Jane Smith", value: "2" }
+ * ]
+ *
+ * ✅ Props
+ * - label?: string
+ *   Label shown above the input.
+ *
+ * - value?: string | number
+ *   Currently selected value.
+ *
+ * - onChange?: (value) => void
+ *   Called when user selects an option.
+ *
+ * - items?: Array<{ label: string, value: string | number }>
+ *   Options displayed in modal.
+ *
+ * - placeholderText?: string
+ *   Placeholder text when no value is selected.
+ *
+ * - autoOpen?: boolean (default: false)
+ *   Auto-opens picker modal when items exist.
+ *
+ * - className?: string
+ *   NativeWind classes for wrapper View.
+ *
+ * - style?: ViewStyle
+ *   Extra wrapper style.
+ *
+ * - labelFontSize?: number (default: 16)
+ * - labelFontWeight?: string (default: "400")
+ * - labelLineHeight?: number (default: 24)
+ *
+ * ✅ Notes
+ * - If `items` is empty, input tap will not open modal.
+ * - If selected `value` is not in `items`, raw `value` is shown.
+ *
+ * ✅ Example
+ * const [ledgerType, setLedgerType] = useState(null);
+ *
+ * <FullWidthSelectInput
+ *   label="Ledger"
+ *   placeholderText="Search ledger..."
+ *   items={[
+ *     { label: "John Doe", value: "1" },
+ *     { label: "Jane Smith", value: "2" },
+ *   ]}
+ *   value={ledgerType}
+ *   onChange={setLedgerType}
+ *   className="pb-4"
+ * />
+ */
+
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   label: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   pickerWrap: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: "hidden",
-    minHeight: 56,
+    minHeight: 44,
     justifyContent: "center",
   },
   inputButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     justifyContent: "center",
   },
   inputText: {
-    fontSize: 16,
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,

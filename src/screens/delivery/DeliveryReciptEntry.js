@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { useMemo, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import DateRange from "../../components/DateRange";
 import ModalList from "../../components/ModalList";
@@ -128,7 +130,8 @@ function ShipmentCard({ item, theme, onPress }) {
 
 export default function DeliveryReciptEntry() {
   const theme = useCurrentTheme();
-
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -162,7 +165,7 @@ export default function DeliveryReciptEntry() {
 
   return (
     <View className="flex-1 px-4 pt-3.5" style={{ backgroundColor: theme.colors.appBg }}>
-      <SearchFilter value={query} onChangeText={setQuery} placeholder={`Search ${selectedFilterLabel}`} onFilterPress={() => setOpen(true)} />
+      <SearchFilter value={query} onChangeText={setQuery} placeholder={`Search Dockets...`} showFilterButton={false} />
 
       <ModalList
         visible={open}
@@ -196,17 +199,51 @@ export default function DeliveryReciptEntry() {
         data={filteredShipments}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 16, paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: 90 + insets.bottom, paddingTop: 16 }}
         renderItem={({ item }) => (
           <ShipmentCard
             item={item}
             theme={theme}
             onPress={() => {
-              // place navigation or details action here
+              navigation.navigate("CreateDeliveryReciptEntryScreen");
             }}
           />
         )}
       />
+
+      {/* FAB */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate("CreateDeliveryReciptEntryScreen")}
+        style={[
+          fabStyles.fab,
+          {
+            bottom: 20 + insets.bottom,
+            backgroundColor: theme.colors.primary,
+          },
+        ]}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Create delivery receipt"
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
+
+const fabStyles = StyleSheet.create({
+  fab: {
+    position: "absolute",
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+});

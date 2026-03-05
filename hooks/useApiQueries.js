@@ -31,6 +31,7 @@ export const queryKeys = {
   getOutwadesDirectALSList: ["getOutwadesDirectALSList"],
   getAlsDocketSummaryDetails: ["getAlsDocketSummaryDetails"],
   getAlsDirectSummaryModalCheck: ["getAlsDirectSummaryModalCheck"],
+  getAlsDetailsForSelected: ["getAlsDetailsForSelected"],
   // Add more query keys based on your screensApiService
 };
 
@@ -630,7 +631,7 @@ export const useGetTrackingDocketDetails = (docketNo) => {
     staleTime: 0, // Override global - always stale
     gcTime: 0, // Override global - no cache
     refetchInterval: 2 * 60 * 1000, // 2 minutes
-    refetchIntervalInBackground: false,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     retry: 1,
@@ -1245,5 +1246,36 @@ export const useOutwadesDirectAlsFinalSubmit = () => {
         );
       }
     },
+  });
+};
+
+//Get outwades Als Details for select ALS- get
+export const useGetAlsDetailsForSelectALS = (plsId, options = {}) => {
+  console.log("useGetAlsDetailsForSelectALS Params:", { plsId });
+  return useQuery({
+    queryKey: [...queryKeys.getAlsDetailsForSelected, plsId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.OUTWADES_ENTRY_SCREEN_ALS_DETAILS, {
+          params: {
+            plsId,
+          },
+        });
+        console.log("useGetAlsDetailsForSelectALS Response:", response.data);
+        return response.data.dataValue;
+      } catch (error) {
+        console.log(response);
+        throw new Error(error.response?.data?.message || "Failed to get Direct ALS Summary Modal Check");
+      }
+    },
+    enabled: !!plsId,
+    staleTime: 0, // Override global - always stale
+    gcTime: 0, // Override global - no cache
+    refetchInterval: false, // 2 minutes
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    ...options,
   });
 };

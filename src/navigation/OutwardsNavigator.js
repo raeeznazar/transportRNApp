@@ -6,6 +6,7 @@ import OutWadesDirectALS from "../screens/outWades/OutWadesDirectALS";
 import OutwadesDirectALSSummaryScreen from "../screens/outWades/OutwadesDirectALSSummaryScreen";
 import OutwadesDocketsRemoval from "../screens/outWades/OutwadesDocketsRemoval";
 import OutWadesEnteryScreen from "../screens/outWades/OutWadesEnteryScreen";
+import OutwadesEntryDetailsScreen from "../screens/outWades/OutwadesEntryDetailsScreen";
 import OutWadesScanning from "../screens/outWades/OutWadesScanning";
 import OutwadesSummaryScreen from "../screens/outWades/OutwadesSummaryScreen";
 import OutwardsSummaryPendingPackets from "../screens/outWades/OutwardsSummaryPendingPackets";
@@ -103,6 +104,15 @@ export default function OutwardsNavigator() {
         options={{
           headerShown: true,
           title: "Outwards Summary",
+          unmountOnBlur: true,
+        }}
+      />
+      <Stack.Screen
+        name="OutwadesEntryDetailsScreen"
+        component={OutwadesEntryDetailsScreen}
+        options={{
+          headerShown: true,
+          title: "Outwards Entry Details",
           unmountOnBlur: true,
         }}
       />

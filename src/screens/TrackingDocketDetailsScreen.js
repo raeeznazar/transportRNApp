@@ -1,24 +1,33 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetTrackingDocketDetails } from "../../hooks/useApiQueries";
 import { useCurrentTheme } from "../../stores/themeStore";
+import Loader from "../components/Loader";
+import { formatDate } from "../utils/dateUtility";
 export default function TrackingDocketDetailsScreen({ route }) {
   const { params = {} } = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const theme = useCurrentTheme();
   const [showAlert, setShowAlert] = useState(false);
-
+  const [statusHistory, setStatusHistory] = useState([]);
   const { docket_Number } = route.params;
+
+  ////---- API CALL to fetch docket details using docket number ----////
   const { data, isLoading, isError, error, refetch } = useGetTrackingDocketDetails(docket_Number);
   console.log("TrackingDocketDetailsScreen params:", data);
+
+  ////---- API CALL to fetch docket details using docket number END ----////
   // Handle error - show alert
+
+  ////---- useEffect to check the docket number existence ----////
   useEffect(() => {
     if (isError) {
+      setShowAlert(true);
       Alert.alert(
         "Not Found",
         `Docket ${docket_Number} not found`,
@@ -30,8 +39,38 @@ export default function TrackingDocketDetailsScreen({ route }) {
         ],
         { cancelable: false }
       );
+    } else {
+      setShowAlert(false);
     }
   }, [isError, navigation, docket_Number]);
+
+  ////---- useEffect to check the docket number existence end ----////
+
+  ////---- useEffect to handle API response for delivery status ----////
+  const handleApiResponse = useCallback((apiData) => {
+    if (!apiData) return;
+
+    const newItem = {
+      actStatus: apiData.actStatus,
+      currentGodown: apiData.currentGodown,
+      delDate: apiData.delDate,
+      done: "done",
+    };
+
+    setStatusHistory((prev) => {
+      const exists = prev.some((item) => item.actStatus === newItem.actStatus);
+      if (exists) return prev;
+      return [...prev, newItem];
+    });
+  }, []);
+
+  useEffect(() => {
+    if (data) {
+      handleApiResponse(data);
+    }
+  }, [data, handleApiResponse]);
+
+  ////---- useEffect to handle API response for delivery status End ----////
 
   const {
     docketNumber = data?.docketNo,
@@ -41,35 +80,18 @@ export default function TrackingDocketDetailsScreen({ route }) {
     receiver = { name: data?.consigneeName, address: `${data?.consigneeAddress1}\n${data?.consigneeAddress2}, ${data?.consigneeAddress3}` },
     packageDetails = { qty: `${data?.totalPackets}`, weight: `${data?.docketWeight}`, type: `${data?.bookingType}` },
     charges = {
-      freight: "$1,240.00",
-      handling: "$45.00",
-      insurance: "$12.50",
-      total: "$1,297.50",
-      status: "Paid",
+      freight: data?.freight ?? "0.00",
+      seviceTaxPercentage: data?.serviceTaxPercentage ?? "0.00",
+      rate: data?.rate ?? "0.00",
+      total: data?.totalAmount ?? "0.00",
+      status: data?.paymentMode ?? "N/A",
     },
-    timeline = [
-      { title: "Delivered", time: "10:45 AM", place: "Warehouse B - Receiving Dock 4", date: "Oct 25, 2023", done: true },
-      { title: "Out for Delivery", time: "08:15 AM", place: "Transit Terminal Hub", date: "Oct 25, 2023", done: true },
-      { title: "Dispatched", time: "04:30 PM", place: "North-East Hub", date: "Oct 24, 2023", done: true },
-      { title: "Docket Created", time: "09:00 AM", place: "Central Logistics Office", date: "Oct 24, 2023", done: true },
-    ],
   } = params;
 
-  const headerBg = theme.colors.card ?? "#fff";
   const textPrimary = theme.colors.text ?? "#0f172a";
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background }}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <View className="items-center gap-3">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text className="text-sm font-semibold" style={{ color: theme.colors.text }}>
-            Loading docket details…
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <Loader visible={true} text="Loading details..." />;
   }
 
   if (isError) {
@@ -86,7 +108,7 @@ export default function TrackingDocketDetailsScreen({ route }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.appBg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.appBg }} edges={["left", "right"]}>
       {showAlert && <BlurView intensity={100} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} />}
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }} scrollEnabled={!showAlert} pointerEvents={showAlert ? "none" : "auto"}>
@@ -189,24 +211,24 @@ export default function TrackingDocketDetailsScreen({ route }) {
           <View className="p-4 space-y-3">
             <View className="flex-row justify-between">
               <Text className="text-sm text-slate-500">Freight Charges</Text>
-              <Text className="text-sm font-semibold text-slate-900">{charges.freight}</Text>
+              <Text className="text-sm font-semibold text-slate-900">₹ {charges.freight}</Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-slate-500">Handling Fee</Text>
-              <Text className="text-sm font-semibold text-slate-900">{charges.handling}</Text>
+              <Text className="text-sm text-slate-500">Service Tax Percentage Fee</Text>
+              <Text className="text-sm font-semibold text-slate-900">₹ {charges.seviceTaxPercentage}</Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-slate-500">Insurance</Text>
-              <Text className="text-sm font-semibold text-slate-900">{charges.insurance}</Text>
+              <Text className="text-sm text-slate-500">Rate</Text>
+              <Text className="text-sm font-semibold text-slate-900">₹ {charges.rate}</Text>
             </View>
             <View className="pt-3 border-top border-slate-100 flex-row justify-between items-center">
-              <View>
-                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Amount</Text>
-                <Text className="text-lg font-bold text-slate-900">{charges.total}</Text>
-              </View>
               <Text className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold uppercase tracking-wide">
                 {charges.status}
               </Text>
+              <View className="items-end flex-row justify-between items-center gap-4">
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Amount</Text>
+                <Text className="text-lg font-bold text-slate-900">₹ {charges.total}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -218,8 +240,8 @@ export default function TrackingDocketDetailsScreen({ route }) {
             <Ionicons name="swap-vertical-outline" size={18} color="#cbd5e1" />
           </View>
           <View className="p-5 space-y-8">
-            {timeline.map((item, idx) => (
-              <View key={`{item.title}-${idx}`} className="relative flex-row gap-4">
+            {statusHistory.map((item, idx) => (
+              <View key={`{item.actStatus}-${idx}`} className="relative flex-row gap-4">
                 <View className="items-center">
                   <View className="relative">
                     <View
@@ -230,16 +252,15 @@ export default function TrackingDocketDetailsScreen({ route }) {
                         borderColor: item.done ? "rgba(16,185,129,0.2)" : "transparent",
                       }}
                     />
-                    {idx < timeline.length - 1 && <View className="absolute left-[7px] top-4 bottom-[-28px] w-[2px] bg-slate-200" />}
+                    <View className="absolute left-[7px] top-4 bottom-[-28px] w-[2px] bg-slate-200" />
                   </View>
                 </View>
                 <View className="space-y-1 flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-sm font-bold text-slate-900">{item.title}</Text>
-                    <Text className="text-[10px] text-slate-400 font-medium">{item.time}</Text>
+                    <Text className="text-sm font-bold text-slate-900">{item.actStatus}</Text>
                   </View>
-                  <Text className="text-xs text-slate-500">{item.place}</Text>
-                  <Text className="text-[10px] text-slate-400">{item.date}</Text>
+                  <Text className="text-xs text-slate-500">{item.currentGodown}</Text>
+                  <Text className="text-[10px] text-slate-400">{formatDate(item.delDate)}</Text>
                 </View>
               </View>
             ))}
@@ -249,7 +270,7 @@ export default function TrackingDocketDetailsScreen({ route }) {
         {/* Back Button */}
         <View className="pt-6">
           <TouchableOpacity onPress={() => navigation.goBack()} className="w-full bg-slate-200 py-4 rounded-xl items-center">
-            <Text className="text-slate-700 font-bold tracking-tight">Back to Dashboard</Text>
+            <Text className="text-slate-700 font-bold tracking-tight">Back to Search</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

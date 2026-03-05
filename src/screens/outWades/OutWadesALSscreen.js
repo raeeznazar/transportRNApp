@@ -436,7 +436,7 @@ export default function OutWadesALSscreen({ route }) {
         </Button>
         <Button variant="primary" size="lg" className="flex-1" onPress={onHandleProcceed} disabled={disableProcceed}>
           Proceed
-        </Button>
+        </Button> 
       </View> */}
 
         {/* <ButtonContainer>

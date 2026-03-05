@@ -141,11 +141,11 @@ const styles = (theme) =>
 
     inputContainer: {
       width: "100%",
-      height: 50,
-      borderRadius: 12,
+      height: 44,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: theme.colors.inputBorder,
-      paddingHorizontal: 16,
+      paddingHorizontal: 14,
       backgroundColor: theme.colors.inputBg,
       flexDirection: "row",
       alignItems: "center",
@@ -156,12 +156,12 @@ const styles = (theme) =>
 
     placeholder: {
       color: "#9CA3AF",
-      fontSize: 16,
+      fontSize: 14,
     },
 
     valueText: {
       color: "#8C939D",
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: "Figtree-Regular",
     },
 

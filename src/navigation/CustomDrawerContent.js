@@ -57,25 +57,31 @@ export default function CustomDrawerContent(props) {
       label: "Delivery",
       icon: "cube-outline",
       route: "Delivery",
-      submenus: [
-        {
-          name: "Generate Receipt",
-          label: "Generate Receipt",
-          route: "Delivery",
-          params: { screen: "DeliveryReciptEntryScreen" },
-        },
-        // {
-        //   name: "Truck Arrival Sheet",
-        //   label: "Truck Arrival Sheet",
-        //   route: "Delivery",
-        //   params: { screen: "TruckArivalAfterReportScreen" },
-        // },
-      ],
+      // submenus: [
+      //   {
+      //     name: "Generate Receipt",
+      //     label: "Generate Receipt",
+      //     route: "Delivery",
+      //     params: { screen: "DeliveryReciptEntryScreen" },
+      //   },
+      //   // {
+      //   //   name: "Create Delivery ReciptEntry",
+      //   //   label: "Create Delivery ReciptEntry",
+      //   //   route: "Delivery",
+      //   //   params: { screen: "CreateDeliveryReciptEntryScreen" },
+      //   // },
+      // ],
+    },
+    {
+      name: "Collection",
+      label: "Collection",
+      icon: "cash-outline",
+      route: "Collection",
     },
     {
       name: "Tracking",
       label: "Tracking",
-      icon: "cash-outline",
+      icon: "locate-outline",
       route: "Tracking",
     },
     {
