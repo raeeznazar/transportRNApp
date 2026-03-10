@@ -1,12 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useGetDeliveryReceiptList } from "../../../hooks/useDeliveryApiQueries";
+import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import DateRange from "../../components/DateRange";
+import InputSearch from "../../components/InputSearch";
 import ModalList from "../../components/ModalList";
-import SearchFilter from "../../components/SearchFilter";
 
 const SHIPMENTS = [
   {
@@ -65,6 +68,8 @@ const money = (amount) =>
     currency: "USD",
     minimumFractionDigits: 2,
   }).format(amount);
+
+// --------------------------------------- Design component card ---------------------------------------//
 
 function ShipmentCard({ item, theme, onPress }) {
   return (
@@ -128,6 +133,8 @@ function ShipmentCard({ item, theme, onPress }) {
   );
 }
 
+// --------------------------------------- Design component card END ---------------------------------------//
+
 export default function DeliveryReciptEntry() {
   const theme = useCurrentTheme();
   const navigation = useNavigation();
@@ -138,7 +145,45 @@ export default function DeliveryReciptEntry() {
   const [fromDate, setFromDate] = useState(null); // "YYYY-MM-DD"
   const [toDate, setToDate] = useState(null);
   const now = new Date();
+  const { sessionData } = useAuthStore();
+  const isFocused = useIsFocused();
+  const branchCode = sessionData?.branchCode;
+  const finCode = sessionData?.finCode;
+  const entryUser = sessionData?.userName;
+  const [search, setSearch] = useState("");
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
+  const rcptType = "DOOR";
+  const pageSize = 10;
+  const sortColumn = "";
+  const sortDirection = "";
+
+  // Debounce the search input by 500ms
+  const debouncedSearch = useDebounce(search, 600);
+
+  ///-------------------------------- API CALLS -----------------------------///
+  const { data, isLoading, isFetching, refetch, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetDeliveryReceiptList(
+    finCode,
+    branchCode,
+    rcptType,
+    fromDate,
+    toDate,
+    pageSize,
+    sortColumn,
+    sortDirection,
+    {
+      enabled: isFocused && !!finCode && !!branchCode && !!pageSize, // only fetch when screen is focused and required params are available
+      searchText: debouncedSearch, // pass debounced search value
+    }
+  );
+  console.log("Delivery Receipt List Data:", data);
+
+  ///-------------------------------- API CALLS END -----------------------------///
   const today = useMemo(() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -147,6 +192,7 @@ export default function DeliveryReciptEntry() {
     return `${yyyy}-${mm}-${dd}`;
   }, []);
 
+  //////-------------DEMI DATA & UTILS------------------//////
   const filteredShipments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return SHIPMENTS.filter((shipment) => {
@@ -163,10 +209,11 @@ export default function DeliveryReciptEntry() {
 
   const selectedFilterLabel = FILTER_OPTIONS.find((it) => it.value === selectedFilter)?.label || "ALL";
 
+  // ---------------------------------------
+
   return (
     <View className="flex-1 px-4 pt-3.5" style={{ backgroundColor: theme.colors.appBg }}>
-      <SearchFilter value={query} onChangeText={setQuery} placeholder={`Search Dockets...`} showFilterButton={false} />
-
+      <InputSearch value={search} onChangeText={setSearch} placeholder="Search by Docket number..." />
       <ModalList
         visible={open}
         onClose={() => setOpen(false)}
@@ -176,7 +223,6 @@ export default function DeliveryReciptEntry() {
         searchable={false}
         title="Select Search Filter"
       />
-
       <View style={{ marginTop: 12 }}>
         <DateRange
           label="Select date range"
@@ -194,7 +240,6 @@ export default function DeliveryReciptEntry() {
           }}
         />
       </View>
-
       <FlatList
         data={filteredShipments}
         keyExtractor={(item) => item.id}
@@ -210,7 +255,6 @@ export default function DeliveryReciptEntry() {
           />
         )}
       />
-
       {/* FAB */}
       <TouchableOpacity
         onPress={() => navigation.navigate("CreateDeliveryReciptEntryScreen")}

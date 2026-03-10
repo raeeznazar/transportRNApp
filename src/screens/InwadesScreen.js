@@ -25,6 +25,7 @@ import { useCurrentTheme } from "../../stores/themeStore";
 import { showErrorToast, showSuccessToast } from "../../utilityfunctions/toastHelper";
 import { Button } from "../components/Button";
 import CalendarInput from "../components/CalendarInput";
+import InputSearch from "../components/InputSearch";
 
 export default function InwadesScreen() {
   const theme = useCurrentTheme();
@@ -400,24 +401,13 @@ export default function InwadesScreen() {
 
       {/* Search Input */}
       <View className="mx-4 mt-4 mb-2">
-        <View
-          className="flex-row items-center rounded-xl px-4 py-3 border shadow-sm"
-          style={{ backgroundColor: theme.colors.inputBg, borderColor: theme.colors.inputBorder }}
-        >
-          <Ionicons name="search-outline" size={20} color="#64748B" />
-          <TextInput
-            className="flex-1 ml-3 text-base text-inputText"
-            placeholder="Search by truck number..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#94A3B8"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")} className="ml-2 active:opacity-60">
-              <Ionicons name="close-circle" size={22} color="#64748B" />
-            </TouchableOpacity>
-          )}
-        </View>
+        <InputSearch
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search by truck number..."
+          containerClassName="rounded-xl shadow-sm"
+          inputClassName="text-base"
+        />
         {searchQuery.length > 0 && (
           <Text className="mt-2 text-sm text-bodyText ml-1">
             Found {filteredData.length} result{filteredData.length !== 1 ? "s" : ""}

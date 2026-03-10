@@ -32,16 +32,22 @@ export const API_ENDPOINTS = {
 
   //SCAN LIST ENDPOINTS
   DOCKET_SCAN_LIST: "/Inward/FetchTruckArrivalDetails_ScanningList",
+
   //Insert the scanned data of packets single barcode entry
   INSERT_SCANNING_DATA: "/Inward/InsertScanningDetails",
+
   //Insert the scanned barcode of damage packets in formdata
   INSERT_DAMAGE_BARCODE_PACKETS: "/Inward/InsertDamagedScanningDetails",
+
   //Get the shortage missing packets
   GET_SHORTAGE_PACKETS: "/Inward/GetShortageScanningDetails",
+
   //Enter the shortage missing packets in batch [barcode, reason]
   ENTER_BATCH_SHORTAGE_PACKETS: "/Inward/InsertScanningDetailsBatch",
+
   //inwards dockets scanning summary header data
   SUMMARY_HEADER_DATA: "/Inward/GetScanningDetailsSummary",
+
   //inwards dockets scanning summary submit
   SUBMIT_DOCKET_SCAN_SUMMARY: "/Inward/InsertTruckUnloadingDetails",
 
@@ -112,4 +118,16 @@ export const API_ENDPOINTS = {
 
   //Outwards entry screen ALS destails for the selected ALS
   OUTWADES_ENTRY_SCREEN_ALS_DETAILS: "/Outward/PreLoadSheetDetailsByPlsId_Get",
+
+  //Collection list API
+  COLLECTION_LIST_API: "/Collection/Ledgers_Get",
+
+  //Collection pay API
+  COLLECTION_PAY_API: "/Collection/Collection_Save",
+
+  //Delivery receipt list API
+  DELIVERY_RECEIPT_LIST_API: "/DeliveryReceipt/list",
+
+  //Delivery receipt creation page auto binding data api
+  DELIVERY_RECEIPT_CREATION_AUTO_BINDING: "/DeliveryReceipt/next-number",
 };

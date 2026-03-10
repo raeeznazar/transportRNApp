@@ -30,6 +30,8 @@ export default function OutWadesEnteryScreen() {
 
   const { data, isLoading, refetch, error } = useGetPreloadingList(branchCode, finCode, false, {
     enabled: isFocused && !!branchCode && !!finCode,
+    LedgerFilter: "",
+    CustomerFilter: "",
   });
   const {
     data: directALSData,

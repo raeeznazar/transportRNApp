@@ -9,7 +9,7 @@ module.exports = {
     name: "neoERA-app",
     slug: "neoERA-app",
     version: "1.0.0",
-    orientation: "default",
+    orientation: "portrait",
     icon: "./assets/images/android-icon-foreground.png",
     scheme: "neoeraapp",
     userInterfaceStyle: "automatic",
