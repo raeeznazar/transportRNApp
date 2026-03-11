@@ -1,79 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
-import { useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useGetDeliveryReceiptList } from "../../../hooks/useDeliveryApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import DateRange from "../../components/DateRange";
+import ErrorScreen from "../../components/ErrorScreen";
 import InputSearch from "../../components/InputSearch";
-import ModalList from "../../components/ModalList";
-
-const SHIPMENTS = [
-  {
-    id: "1",
-    docketCode: "DR-7890",
-    docketNo: "2520710",
-    customer: "Global Textiles Ltd.",
-    service: "Premium Delivery",
-    itemsCount: 4,
-    amount: 1250.0,
-    date: "Oct 24, 2023",
-  },
-  {
-    id: "2",
-    docketCode: "DR-7891",
-    docketNo: "2520715",
-    customer: "Loom & Thread Co.",
-    service: "Express Freight",
-    itemsCount: 12,
-    amount: 4820.5,
-    date: "Oct 23, 2023",
-  },
-  {
-    id: "3",
-    docketCode: "DR-7885",
-    docketNo: "2520698",
-    customer: "Vertex Logistics",
-    service: "Standard Delivery",
-    itemsCount: 2,
-    amount: 920.0,
-    date: "Oct 22, 2023",
-  },
-  {
-    id: "4",
-    docketCode: "DR-7882",
-    docketNo: "2520650",
-    customer: "Swift Cargo Hub",
-    service: "Bulk Shipment",
-    itemsCount: 85,
-    amount: 12400.0,
-    date: "Oct 20, 2023",
-  },
-];
-
-const FILTER_OPTIONS = [
-  { value: "all", label: "ALL" },
-  { value: "premium", label: "Premium Delivery" },
-  { value: "express", label: "Express Freight" },
-  { value: "standard", label: "Standard Delivery" },
-  { value: "bulk", label: "Bulk Shipment" },
-];
-
-const money = (amount) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
+import { formatDate } from "../../utils/dateUtility";
+import { money } from "../../utils/moneyUtility";
 
 // --------------------------------------- Design component card ---------------------------------------//
-
 function ShipmentCard({ item, theme, onPress }) {
   return (
-    <TouchableOpacity
+    <View
       className="mb-3.5 rounded-2xl border p-4"
       style={{
         backgroundColor: theme.colors.cardBg,
@@ -85,54 +28,54 @@ function ShipmentCard({ item, theme, onPress }) {
         elevation: 2,
       }}
       activeOpacity={0.85}
-      onPress={onPress}
     >
-      <View className="flex-row items-start justify-between">
-        <View>
-          <Text className="mb-0.5 text-[16px] font-bold" style={{ color: theme.colors.primary }}>
-            {item.docketCode}
-          </Text>
-          <Text className="text-[10px] font-medium" style={{ color: theme.colors.inputPlaceholder }}>
-            Docket: {item.docketNo}
-          </Text>
-        </View>
-
-        <View className="items-end">
-          <Text className="mb-0.5 text-[18px] font-bold" style={{ color: theme.colors.headingText }}>
-            {money(item.amount)}
-          </Text>
-          <View className="flex-row items-center gap-1.5">
-            <Ionicons name="time-outline" size={12} color={theme.colors.inputPlaceholder} />
-            <Text className="text-[10px] font-medium" style={{ color: theme.colors.inputPlaceholder }}>
-              {item.date}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View className="my-3 h-px" style={{ backgroundColor: theme.colors.cardBorder }} />
-
-      <View className="flex-row items-center justify-between">
-        <View className="mr-2 flex-1 flex-row items-center">
-          <View className="mr-3 h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: theme.colors.buttonSecondaryBg }}>
-            <Ionicons name="business-outline" size={18} color={theme.colors.bodyText} />
-          </View>
+      <TouchableOpacity onPress={onPress}>
+        <View className="flex-row items-start justify-between">
           <View>
-            <Text className="mb-0.5 text-[12px] font-semibold" style={{ color: theme.colors.headingText }}>
-              {item.customer}
+            <Text className="mb-0.5 text-[16px] font-bold" style={{ color: theme.colors.primary }}>
+              Receipt No : {item.rcptNo}
             </Text>
             <Text className="text-[10px] font-medium" style={{ color: theme.colors.inputPlaceholder }}>
-              {item.service} • {item.itemsCount} items
+              Docket : {item.docketNo}
             </Text>
+          </View>
+
+          <View className="items-end">
+            <Text className="mb-0.5 text-[18px] font-bold" style={{ color: theme.colors.headingText }}>
+              {money(item.totalAmount)}
+            </Text>
+            <View className="flex-row items-center gap-1.5">
+              <Ionicons name="time-outline" size={12} color={theme.colors.inputPlaceholder} />
+              <Text className="text-[10px] font-medium" style={{ color: theme.colors.inputPlaceholder }}>
+                {formatDate(item.rcptDate)}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={18} color={theme.colors.inputBorder} />
-      </View>
-    </TouchableOpacity>
+        <View className="my-3 h-px" style={{ backgroundColor: theme.colors.cardBorder }} />
+
+        <View className="flex-row items-center justify-between">
+          <View className="mr-2 flex-1 flex-row items-center">
+            <View className="mr-3 h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: theme.colors.buttonSecondaryBg }}>
+              <Ionicons name="business-outline" size={18} color={theme.colors.bodyText} />
+            </View>
+            <View>
+              <Text className="mb-0.5 text-[12px] font-semibold" style={{ color: theme.colors.headingText }}>
+                {item.customer}
+              </Text>
+              <Text className="text-[10px] font-medium" style={{ color: theme.colors.inputPlaceholder }}>
+                {item.rcptType} Delivery
+              </Text>
+            </View>
+          </View>
+
+          <Ionicons name="chevron-forward" size={18} color={theme.colors.inputBorder} />
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
-
 // --------------------------------------- Design component card END ---------------------------------------//
 
 export default function DeliveryReciptEntry() {
@@ -151,6 +94,7 @@ export default function DeliveryReciptEntry() {
   const finCode = sessionData?.finCode;
   const entryUser = sessionData?.userName;
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     type: "success",
@@ -169,7 +113,6 @@ export default function DeliveryReciptEntry() {
   ///-------------------------------- API CALLS -----------------------------///
   const { data, isLoading, isFetching, refetch, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetDeliveryReceiptList(
     finCode,
-    branchCode,
     rcptType,
     fromDate,
     toDate,
@@ -177,52 +120,65 @@ export default function DeliveryReciptEntry() {
     sortColumn,
     sortDirection,
     {
-      enabled: isFocused && !!finCode && !!branchCode && !!pageSize, // only fetch when screen is focused and required params are available
+      enabled: isFocused && !!finCode && !!pageSize, // only fetch when screen is focused and required params are available
       searchText: debouncedSearch, // pass debounced search value
     }
   );
-  console.log("Delivery Receipt List Data:", data);
+  const DeliveryReceiptList = data?.pages?.flatMap((page) => page) || [];
+  console.log("Delivery Receipt List:", DeliveryReceiptList);
 
   ///-------------------------------- API CALLS END -----------------------------///
-  const today = useMemo(() => {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  }, []);
 
-  //////-------------DEMI DATA & UTILS------------------//////
-  const filteredShipments = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return SHIPMENTS.filter((shipment) => {
-      const matchesFilter = selectedFilter === "all" || shipment.service.toLowerCase().includes(selectedFilter);
-      const matchesSearch =
-        !normalizedQuery ||
-        shipment.docketCode.toLowerCase().includes(normalizedQuery) ||
-        shipment.docketNo.toLowerCase().includes(normalizedQuery) ||
-        shipment.customer.toLowerCase().includes(normalizedQuery);
+  ///-----------------ERROR HANDLING-----------------------------///
+  if (error) {
+    return <ErrorScreen error={error} onRetry={refetch} />;
+  }
+  ///-----------------ERROR HANDLING END-----------------------------///
 
-      return matchesFilter && matchesSearch;
-    });
-  }, [query, selectedFilter]);
+  ///--------------------------------PAGINATION LOGIC-----------------------------///
 
-  const selectedFilterLabel = FILTER_OPTIONS.find((it) => it.value === selectedFilter)?.label || "ALL";
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-  // ---------------------------------------
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  ///--------------------------------PAGINATION LOGIC END-----------------------------///
+
+  ////-------------------------------- RENDER FOOTER -----------------------------///
+
+  const renderFooter = () => {
+    if (isFetchingNextPage) {
+      return (
+        <View style={{ paddingVertical: 20, alignItems: "center" }}>
+          <ActivityIndicator size="small" color={theme.colors.accent} />
+          <Text style={{ color: theme.colors.bodyText, fontSize: 12, marginTop: 6 }}>Loading more...</Text>
+        </View>
+      );
+    }
+    if (!hasNextPage && DeliveryReceiptList.length > 0) {
+      return <Text style={{ textAlign: "center", paddingVertical: 12, color: theme.colors.bodyText, fontSize: 12 }}>No more data</Text>;
+    }
+    return null;
+  };
+
+  //-------------------------------- RENDER FOOTER END -----------------------------///
 
   return (
     <View className="flex-1 px-4 pt-3.5" style={{ backgroundColor: theme.colors.appBg }}>
       <InputSearch value={search} onChangeText={setSearch} placeholder="Search by Docket number..." />
-      <ModalList
-        visible={open}
-        onClose={() => setOpen(false)}
-        onSelect={(item) => setSelectedFilter(item.value)}
-        items={FILTER_OPTIONS}
-        selectedValue={selectedFilter}
-        searchable={false}
-        title="Select Search Filter"
-      />
+
       <View style={{ marginTop: 12 }}>
         <DateRange
           label="Select date range"
@@ -241,8 +197,8 @@ export default function DeliveryReciptEntry() {
         />
       </View>
       <FlatList
-        data={filteredShipments}
-        keyExtractor={(item) => item.id}
+        data={DeliveryReceiptList}
+        keyExtractor={(item, index) => `${item.rcptID}-${index}`}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 90 + insets.bottom, paddingTop: 16 }}
         renderItem={({ item }) => (
@@ -250,10 +206,25 @@ export default function DeliveryReciptEntry() {
             item={item}
             theme={theme}
             onPress={() => {
-              navigation.navigate("CreateDeliveryReciptEntryScreen");
+              navigation.navigate("DeliveryEntryDetailsPage", { receipt: item });
             }}
           />
         )}
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={{ alignItems: "center", paddingVertical: 32, gap: 10 }}>
+              <ActivityIndicator size="large" color={theme.colors.accent} />
+              <Text style={{ color: theme.colors.bodyText, fontSize: 13 }}>Loading data...</Text>
+            </View>
+          ) : (
+            <Text className="text-center justify-center py-2">No Data Found</Text>
+          )
+        }
+        ListFooterComponent={renderFooter}
+        scrollEnabled={true}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        onEndReached={handleLoadMore}
       />
       {/* FAB */}
       <TouchableOpacity
@@ -261,7 +232,7 @@ export default function DeliveryReciptEntry() {
         style={[
           fabStyles.fab,
           {
-            bottom: 20 + insets.bottom,
+            bottom: 5 + insets.bottom,
             backgroundColor: theme.colors.primary,
           },
         ]}

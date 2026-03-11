@@ -92,8 +92,12 @@ export default function DrawerNavigator() {
         return "Outwards Summary";
       case "OutwadesEntryDetailsScreen":
         return "ALS Details";
+      case "Delivery":
+        return "Receipt List";
       case "DeliveryReciptEntryScreen":
         return "Receipt List";
+      case "DeliveryEntryDetailsPage":
+        return "Receipt Detail";
       case "CollectionEntry":
         return "Collection List";
       case "Collection":

@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useCurrentTheme } from "../../stores/themeStore";
 import CreateDeliveryReciptEntry from "../screens/delivery/CreateDeliveryReciptEntry";
+import DeliveryEntryDetailsPage from "../screens/delivery/DeliveryEntryDetailsPage";
 import DeliveryReciptEntry from "../screens/delivery/DeliveryReciptEntry";
 const Stack = createNativeStackNavigator();
 export default function DeliveryNavigator() {
@@ -29,6 +30,15 @@ export default function DeliveryNavigator() {
         options={{
           headerShown: true,
           title: "Create Delivery Recipt",
+          unmountOnBlur: true,
+        }}
+      />
+      <Stack.Screen
+        name="DeliveryEntryDetailsPage"
+        component={DeliveryEntryDetailsPage}
+        options={{
+          headerShown: true,
+          title: "Receipt Detail",
           unmountOnBlur: true,
         }}
       />

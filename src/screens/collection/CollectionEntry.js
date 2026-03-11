@@ -7,6 +7,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { useAuthStore } from "../../../stores/authStore";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import { Button } from "../../components/Button";
+import ErrorScreen from "../../components/ErrorScreen";
 import FullWidthSelectInput from "../../components/FullWidthSelectInput";
 import Input from "../../components/Input";
 import InputSearch from "../../components/InputSearch";
@@ -57,6 +58,12 @@ export default function CollectionEntry() {
   const { mutate: submitPayment, isLoading: isSubmittingPayment } = useOutwadesDirectAlsFinalSubmit();
 
   ///-------------------------------- API CALLS END -----------------------------///
+
+  ///-----------------ERROR HANDLING-----------------------------///
+  if (error) {
+    return <ErrorScreen error={error} onRetry={refetch} />;
+  }
+  ///-----------------ERROR HANDLING END-----------------------------///
 
   ////-------------------------------- SEARCH FILTER DATA PROCESSING -----------------------------///
 

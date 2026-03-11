@@ -7,7 +7,81 @@ import { Calendar } from "react-native-calendars";
 
 import { useCurrentTheme } from "../../stores/themeStore";
 
-const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat = "DD/MM/YYYY" }) => {
+/**
+ * CalendarInput Component
+ *
+ * @param {Object} props - Component props
+ * @param {string} [props.label] - Placeholder text to show when no date is selected
+ * @param {string} [props.value] - Current selected date in YYYY-MM-DD format
+ * @param {Function} props.onChange - Callback function called when date is selected. Receives dateString as parameter
+ * @param {string} [props.minDate] - Minimum selectable date in YYYY-MM-DD format
+ * @param {string} [props.maxDate] - Maximum selectable date in YYYY-MM-DD format
+ * @param {string} [props.displayFormat="DD/MM/YYYY"] - Format to display the selected date
+ *   Available formats: "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "DD-MM-YYYY",
+ *   "DD MMM YYYY", "DD MMMM YYYY", "MMM DD, YYYY", "MMMM DD, YYYY"
+ * @param {boolean} [props.restrictToPast=false] - If true, restricts selection to dates within the past 7 days (including today)
+ * @param {number} [props.pastDaysLimit=7] - Number of days in the past to allow selection when restrictToPast is true
+ * @param {boolean} [props.disableFuture=false] - If true, disables selection of future dates
+ * @param {boolean} [props.disabled=false] - If true, disables the entire input
+ * @param {Object} [props.containerStyle] - Style object for the outer container
+ * @param {Object} [props.inputStyle] - Style object for the input container
+ * @param {string} [props.placeholderColor] - Color for placeholder text
+ * @param {string} [props.iconColor] - Color for the calendar icon
+ *
+ * @example
+ * // Basic usage
+ * <CalendarInput
+ *   label="Select Date"
+ *   value={date}
+ *   onChange={setDate}
+ * />
+ *
+ * @example
+ * // Restrict to past 7 days only
+ * <CalendarInput
+ *   label="Select Date"
+ *   value={date}
+ *   onChange={setDate}
+ *   restrictToPast={true}
+ *   pastDaysLimit={7}
+ * />
+ *
+ * @example
+ * // Block future dates
+ * <CalendarInput
+ *   label="Select Date"
+ *   value={date}
+ *   onChange={setDate}
+ *   disableFuture={true}
+ * />
+ *
+ * @example
+ * // Custom date range
+ * <CalendarInput
+ *   label="Select Date"
+ *   value={date}
+ *   onChange={setDate}
+ *   minDate="2023-01-01"
+ *   maxDate="2023-12-31"
+ *   displayFormat="MMM DD, YYYY"
+ * />
+ */
+const CalendarInput = ({
+  label,
+  value,
+  onChange,
+  minDate,
+  maxDate,
+  displayFormat = "DD/MM/YYYY",
+  restrictToPast = false,
+  pastDaysLimit = 7,
+  disableFuture = false,
+  disabled = false,
+  containerStyle,
+  inputStyle,
+  placeholderColor,
+  iconColor,
+}) => {
   const [visible, setVisible] = useState(false);
   const theme = useCurrentTheme();
   const s = useMemo(() => styles(theme), [theme]);
@@ -17,6 +91,29 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
 
   const today = new Date().toISOString().split("T")[0];
 
+  // Calculate date restrictions
+  const calculatedMinDate = useMemo(() => {
+    if (restrictToPast) {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - pastDaysLimit);
+      return pastDate.toISOString().split("T")[0];
+    }
+    return minDate;
+  }, [restrictToPast, pastDaysLimit, minDate]);
+
+  const calculatedMaxDate = useMemo(() => {
+    if (disableFuture || restrictToPast) {
+      return today;
+    }
+    return maxDate;
+  }, [disableFuture, restrictToPast, today, maxDate]);
+
+  /**
+   * Formats a date string according to the specified format
+   * @param {string} dateString - Date in YYYY-MM-DD format
+   * @param {string} format - Display format
+   * @returns {string} Formatted date string
+   */
   const formatDisplayDate = (dateString, format) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -57,6 +154,8 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
   }, []);
 
   const openCalendar = useCallback(() => {
+    if (disabled) return;
+
     setVisible(true);
 
     Animated.parallel([
@@ -71,7 +170,7 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [disabled]);
 
   const closeCalendar = useCallback(() => {
     Animated.parallel([
@@ -98,10 +197,12 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
 
   return (
     <>
-      <View style={s.row}>
-        <TouchableOpacity style={s.inputContainer} onPress={openCalendar}>
-          <Text style={value ? s.valueText : s.placeholder}>{value ? formatDisplayDate(value, displayFormat) : label}</Text>
-          <Ionicons name="calendar-outline" size={22} color="#9CA3AF" />
+      <View style={[s.row, containerStyle]}>
+        <TouchableOpacity style={[s.inputContainer, disabled && s.disabledInput, inputStyle]} onPress={openCalendar} disabled={disabled}>
+          <Text style={[value ? s.valueText : s.placeholder, { color: placeholderColor && !value ? placeholderColor : undefined }]}>
+            {value ? formatDisplayDate(value, displayFormat) : label}
+          </Text>
+          <Ionicons name="calendar-outline" size={22} color={iconColor || (disabled ? theme.colors.inputPlaceholder : "#9CA3AF")} />
         </TouchableOpacity>
       </View>
 
@@ -119,11 +220,13 @@ const CalendarInput = ({ label, value, onChange, minDate, maxDate, displayFormat
           >
             <Calendar
               current={value || today}
-              minDate={minDate}
-              maxDate={maxDate}
+              minDate={calculatedMinDate}
+              maxDate={calculatedMaxDate}
               onDayPress={handleDayPress}
               theme={s.calendarStyle}
               markedDates={value ? { [value]: { selected: true } } : {}}
+              enableSwipeMonths={true}
+              hideExtraDays={true}
             />
           </Animated.View>
         </TouchableOpacity>
@@ -152,6 +255,11 @@ const styles = (theme) =>
       justifyContent: "space-between",
     },
 
+    disabledInput: {
+      backgroundColor: theme.colors.inputDisabledBg || theme.colors.inputBg,
+      opacity: 0.6,
+    },
+
     inputBg: "#FFFFFF",
 
     placeholder: {
@@ -160,7 +268,7 @@ const styles = (theme) =>
     },
 
     valueText: {
-      color: "#8C939D",
+      color: theme.colors.inputText,
       fontSize: 14,
       fontFamily: "Figtree-Regular",
     },

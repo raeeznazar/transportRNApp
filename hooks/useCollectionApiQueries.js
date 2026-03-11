@@ -15,16 +15,16 @@ export const useGetCollectionList = (branchCode, PageSize, options = {}) => {
     queryKey: [...queryKeys.collectionList, branchCode, LedgerFilter || "", CustomerFilter || "", Number(PageSize)],
     queryFn: async ({ pageParam }) => {
       try {
-        const response = await apiClient.get(API_ENDPOINTS.COLLECTION_LIST_API, {
-          params: {
-            BranchCode: branchCode, // API expects BranchCode
-            ...(LedgerFilter ? { LedgerFilter } : {}),
-            ...(CustomerFilter ? { CustomerFilter } : {}),
-            PageNumber: pageParam,
-            PageSize: Number(PageSize),
-          },
-        });
-        console.log("Collection List API response:", params);
+        const params = {
+          BranchCode: branchCode, // API expects BranchCode
+          LedgerFilter,
+          CustomerFilter,
+          PageNumber: pageParam,
+          PageSize: Number(PageSize),
+        };
+        console.log("collectiion paranms:", params);
+        const response = await apiClient.post(API_ENDPOINTS.COLLECTION_LIST_API, params);
+
         return response?.data?.data || [];
       } catch (error) {
         console.error("getCollectionList ERROR:", {
@@ -58,7 +58,7 @@ export const useGetCollectionList = (branchCode, PageSize, options = {}) => {
 //Collection pay API. -- Post method
 
 // Insert outwards removal data - Use Mutation - post
-export const useOutwadesDirectAlsFinalSubmit = (params) => {
+export const useOutwadesDirectAlsFinalSubmit = () => {
   return useMutation({
     mutationFn: async (params) => {
       try {

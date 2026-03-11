@@ -431,6 +431,7 @@ export default function InwadesScreen() {
           data={filteredData}
           keyExtractor={(item, idx) => `${item?.truckNo ?? ""}${idx}`}
           renderItem={renderCard}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
           refreshControl={
             <RefreshControl
