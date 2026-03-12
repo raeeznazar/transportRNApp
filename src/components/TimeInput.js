@@ -6,7 +6,7 @@ import { useThemeStore } from "../../stores/themeStore";
 
 /* ---------------- HELPERS ---------------- */
 const formatTime = (date) => {
-  if (!date) return null;
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) return null;
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? "PM" : "AM";
@@ -20,7 +20,7 @@ const formatTime = (date) => {
  * comparing minTime / maxTime so the day portion stays consistent.
  */
 const todayAt = (source) => {
-  if (!source) return null;
+  if (!source || !(source instanceof Date) || isNaN(source.getTime())) return null;
   const d = new Date();
   d.setHours(source.getHours(), source.getMinutes(), 0, 0);
   return d;
@@ -88,7 +88,7 @@ const TimeInput = ({
   // since the picker uses full Date objects.
   const pickerBase = (() => {
     const base = new Date();
-    if (value) {
+    if (value && value instanceof Date) {
       base.setHours(value.getHours(), value.getMinutes(), 0, 0);
     }
     return base;
@@ -97,35 +97,73 @@ const TimeInput = ({
   /* ---------- handlers ---------- */
   const openPicker = useCallback(() => {
     if (disabled) return;
-    setDraft(pickerBase);
+    const initialDate = value instanceof Date ? value : new Date();
+    console.log("TimeInput opening with value:", initialDate);
+    setDraft(initialDate);
     setError(null);
     setVisible(true);
-  }, [disabled, pickerBase]);
+  }, [disabled, value]);
 
   const handleAndroidChange = useCallback(
     (event, selected) => {
-      setVisible(false);
-      if (event.type === "dismissed" || !selected) return;
+      console.log("TimeInput Android - event:", event);
+      console.log("TimeInput Android - event.nativeEvent:", event.nativeEvent);
+      console.log("TimeInput Android - selected:", selected);
 
-      const validated = validate(selected, effectiveMin, effectiveMax);
-      if (validated.ok) {
-        onChange?.(selected);
+      setVisible(false);
+      if (event.type === "dismissed") {
+        console.log("TimeInput Android - dismissed");
+        return;
+      }
+
+      // Extract timestamp from event.nativeEvent if selected is empty
+      let dateToValidate;
+
+      if (selected instanceof Date && !isNaN(selected.getTime())) {
+        dateToValidate = selected;
+      } else if (event.nativeEvent?.timestamp) {
+        // Use timestamp from nativeEvent
+        dateToValidate = new Date(event.nativeEvent.timestamp);
+        console.log("TimeInput Android - using nativeEvent.timestamp:", dateToValidate);
+      } else if (typeof selected === "number") {
+        dateToValidate = new Date(selected);
       } else {
+        console.log("TimeInput Android - using draft as fallback");
+        dateToValidate = draft;
+      }
+
+      console.log("TimeInput Android - final dateToValidate:", dateToValidate);
+      console.log("TimeInput Android - hours:", dateToValidate.getHours());
+      console.log("TimeInput Android - minutes:", dateToValidate.getMinutes());
+
+      const validated = validate(dateToValidate, effectiveMin, effectiveMax);
+      if (validated.ok) {
+        console.log("TimeInput onChange - Android final:", dateToValidate);
+        onChange?.(dateToValidate);
+      } else {
+        console.log("TimeInput Android - validation failed:", validated.message);
         setError(validated.message);
       }
     },
-    [effectiveMin, effectiveMax, onChange]
+    [effectiveMin, effectiveMax, onChange, draft]
   );
 
-  const handleIOSChange = useCallback((_, selected) => {
-    if (selected) setDraft(selected);
+  const handleIOSChange = useCallback((event, selected) => {
+    if (selected && selected instanceof Date) {
+      console.log("TimeInput iOS picker change:", selected);
+      setDraft(selected);
+    }
   }, []);
 
   const confirmIOS = useCallback(() => {
-    const validated = validate(draft, effectiveMin, effectiveMax);
+    // Ensure draft is a valid Date object
+    const dateToValidate = draft instanceof Date ? draft : new Date();
+
+    const validated = validate(dateToValidate, effectiveMin, effectiveMax);
     if (validated.ok) {
       setError(null);
-      onChange?.(draft);
+      console.log("TimeInput onChange - iOS:", dateToValidate);
+      onChange?.(dateToValidate);
       setVisible(false);
     } else {
       setError(validated.message);
@@ -168,7 +206,7 @@ const TimeInput = ({
       {/* ---- Android: native dialog ---- */}
       {Platform.OS === "android" && visible && (
         <DateTimePicker
-          value={draft}
+          value={draft instanceof Date ? draft : new Date()}
           mode="time"
           is24Hour={false}
           display="default"
@@ -207,7 +245,7 @@ const TimeInput = ({
 
             {/* Picker */}
             <DateTimePicker
-              value={draft}
+              value={draft instanceof Date ? draft : new Date()}
               mode="time"
               display="spinner"
               is24Hour={false}

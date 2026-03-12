@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { Printer } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Platform, StatusBar, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDebounce } from "../../../hooks/useDebounce";
 import {
@@ -278,12 +279,14 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   const [creditLimit, setCreditLimit] = useState(0);
   const [customerId, setCustomerId] = useState("");
   const [customerBranch, setCustomerBranch] = useState("");
+  const [customerCode, setCustomerCode] = useState("");
   const [deliveryReceiptDetailsLoading, setDeliveryReceiptDetailsLoading] = useState(false);
   const [cashLedger, setCashLedger] = useState("");
   const [cashLedgerCode, setCashLedgerCode] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [freightCharge, setFreightCharge] = useState("0.00");
   const [aCCCodeFOREcredit, setACCCodeFOREcredit] = useState("");
+  const [isSubmittingSaveData, setIsSubmittingSaveData] = useState(false);
   const pageSize = 20;
   const isFocused = useIsFocused();
   const { sessionData } = useAuthStore();
@@ -324,7 +327,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   };
 
   //------------------DELIVERY RECEIPT SUBMISSION-------------------//
-  const { mutate: submitDeliveryRecipt, isLoading: isSubmitting } = useSubmitDeliveryRecipt();
+  const { mutate: submitDeliveryRecipt, isPending: isSubmitting } = useSubmitDeliveryRecipt();
 
   ///----------------------API CALL FOR AUTO GENERATION OF DELIVERY RECEIPT NUMBER-------------------------///
 
@@ -463,7 +466,8 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       setCustomerAddress(customer?.address || "");
       setFreightCharge(customer?.freight || 0);
       setACCCodeFOREcredit(customer?.accCode || "");
-      setDate(customer?.entryDate ? customer.entryDate.split("T")[0] : new Date().toISOString().split("T")[0]);
+      // setDate(customer?.entryDate ? customer.entryDate.split("T")[0] : new Date().toISOString().split("T")[0]);
+      setCustomerCode(customer?.consigneeID);
 
       // setDeliveryCharge(receipt?.stnryCharge ? String(receipt.stnryCharge.toFixed(2)) : "0.00");
       // setHamaly(receipt?.hamali ? String(receipt.hamali.toFixed(2)) : "0.00");
@@ -621,15 +625,15 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       rcptId: 0,
       rcptSeries: series,
       rcptStatus: rcptStatus,
-      rcptNo: `${branchCode}${rptNo}`,
+      rcptNo: Number(rptNo),
       rcptDate: date,
       rcptTime: time,
       finCode,
       firmCode,
-      docketId: docketId,
-      docketNo: docketNo,
-      customerCode: "5555",
-      customerId: "444",
+      docketId: Number(docketId),
+      docketNo: Number(docketNo),
+      customerCode: customerCode.toString(),
+      customerId: Number(customerId),
       customerName: customer,
       freightCharge: gcCharge,
       hamali: hamaly,
@@ -637,8 +641,8 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       otherCharge: otherCharges,
       totalAmount: totalAmount,
       payMode: payMode,
-      payModeCode: payModeCode,
-      payModeHead: allowedCredit == true ? aCCCodeFOREcredit : cashLedgerCode,
+      payModeCode: allowedCredit == true ? aCCCodeFOREcredit : cashLedgerCode,
+      payModeHead: allowedCredit == true ? aCCCodeFOREcredit : cashLedger,
       chequeNo: chequeNo,
       chequeDate: chequeNo !== "" ? todayISO : null,
       chequeBank: "",
@@ -652,8 +656,9 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       finCode: finCode,
       coFinCode: coFinCode,
       userId: userId,
-      impFrom: null,
-      impId: null,
+      impFrom: "",
+      impId: 0,
+      OtherChargeDesc: "Loading Charge",
     };
 
     console.log("Payload for Submission:", payload);
@@ -673,7 +678,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
             index: 0,
             routes: [{ name: "DeliveryReciptEntryScreen" }],
           });
-        }, 5000);
+        }, 1500);
       },
       onError: (error) => {
         setToastConfig({
@@ -688,34 +693,35 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
 
   const handleSaveAndPrint = () => {
     const payload = {
-      rcptType: receiptType,
-      isNew: true,
-      rcptId: 0,
-      rcptSeries: series,
-      rcptStatus: rcptStatus,
-      rcptNo: `${branchCode}${rptNo}`,
-      rcptDate: date,
-      rcptTime: time,
-      finCode,
-      firmCode,
-      docketId,
-      docketNo: docketNo,
-      receiptType,
-      customerId,
-      customerBranch,
-      customerMobileNumber,
-      payMode,
-      cashLedger: payMode === "CASH" ? cashLedger : "",
-      toAccount: payMode === "CREDIT" ? creditAccount : "",
-      chequeNo: payMode === "CHEQUE" ? chequeNo : "",
-      narration,
-      deliveredTo,
-      identityType,
-      idNumber,
-      contactNo,
-      remarks,
-      gcCharge,
-      deliveryCharge,
+      // rcptType: receiptType,
+      // isNew: true,
+      // rcptId: 0,
+      // rcptSeries: series,
+      // rcptStatus: rcptStatus,
+      // rcptNo: Number(rptNo),
+      // rcptDate: date,
+      // rcptTime: time,
+      // finCode,
+      // firmCode,
+      // docketId: Number(docketId),
+      // docketNo: Number(docketNo),
+      // receiptType,
+      // customerId: Number(customerId),
+
+      // customerBranch,
+      // customerMobileNumber,
+      // payMode,
+      // cashLedger: payMode === "CASH" ? cashLedger : "",
+      // toAccount: payMode === "CREDIT" ? creditAccount : "",
+      // chequeNo: payMode === "CHEQUE" ? chequeNo : "",
+      // narration,
+      // deliveredTo,
+      // identityType,
+      // idNumber,
+      // contactNo,
+      // remarks,
+      // gcCharge,
+      // deliveryCharge,
       hamaly,
       otherCharges,
       totalAmount,
@@ -739,7 +745,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
             index: 0,
             routes: [{ name: "DeliveryReciptEntryScreen" }],
           });
-        }, 5000);
+        }, 2000);
       },
       onError: (error) => {
         setToastConfig({
@@ -803,10 +809,16 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
         onSearchChange={setPayHeadSearch}
       />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: 20 + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={Platform.OS === "ios" ? 100 : 80}
+        extraHeight={Platform.OS === "ios" ? 100 : 80}
+        enableAutomaticScroll={true}
         showsVerticalScrollIndicator={false}
+        keyboardOpeningTime={0}
+        enableResetScrollToCoords={false}
       >
         {/* ======================== BASIC INFORMATION ======================== */}
         <View style={styles.card}>
@@ -859,7 +871,16 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
               containerStyle={styles.flex1}
               minDate={getSevenDaysAgo()}
             />
-            <TimeInput label="Pickup Time" value={time} onChange={setTime} containerStyle={styles.flex1} />
+            <TimeInput
+              label="Pickup Time"
+              value={time}
+              onChange={(value) => {
+                if (value instanceof Date) {
+                  setTime(value.toISOString());
+                }
+              }}
+              containerStyle={styles.flex1}
+            />
           </View>
 
           <View style={styles.mt16}>
@@ -980,7 +1001,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
         </View>
 
         {/* ======================== DELIVERY DETAILS ======================== */}
-        <View style={styles.card}>
+        <View style={[styles.card, styles.DeliveryCard]}>
           <SectionHeader iconName="location-outline" title="Delivery Details" colors={colors} />
 
           <Input
@@ -1016,16 +1037,16 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
             inputStyle={styles.textarea}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* ======================== BOTTOM ACTION BAR ======================== */}
       <BottomActionBar includeBottomInset={false}>
         <View className="flex-row gap-3">
-          <Button variant="secondary" size="lg" onPress={handleSave} className="flex-1">
+          <Button variant="secondary" size="lg" onPress={handleSave} className="flex-1" disabled={isSubmitting} loading={isSubmitting}>
             Save
           </Button>
 
-          <Button variant="primary" size="lg" onPress={handleSaveAndPrint} className="flex-1">
+          <Button variant="primary" size="lg" onPress={handleSaveAndPrint} className="flex-1" disabled={isSubmitting} loading={isSubmitting}>
             <View style={styles.printRow}>
               <Printer size={16} color="#fff" style={{ marginRight: 6 }} />
               <Text style={styles.printText}>Save &amp; Print</Text>
@@ -1087,6 +1108,9 @@ const makeStyles = (colors) =>
       shadowOpacity: 0.07,
       shadowRadius: 6,
       elevation: 3,
+    },
+    DeliveryCard: {
+      marginBottom: 12,
     },
     /* Layout helpers */
     twoCol: {
