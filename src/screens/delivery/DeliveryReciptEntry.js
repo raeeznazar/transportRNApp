@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useGetDeliveryReceiptList } from "../../../hooks/useDeliveryApiQueries";
@@ -177,6 +177,7 @@ export default function DeliveryReciptEntry() {
 
   return (
     <View className="flex-1 px-4 pt-3.5" style={{ backgroundColor: theme.colors.appBg }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <InputSearch value={search} onChangeText={setSearch} placeholder="Search by Docket number..." />
 
       <View style={{ marginTop: 12 }}>

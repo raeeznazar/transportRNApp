@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StatusBar, Text, View } from "react-native";
 import { useCurrentTheme } from "../../../stores/themeStore";
 import { formatDate } from "../../utils/dateUtility";
 import { money } from "../../utils/moneyUtility";
@@ -21,6 +21,7 @@ export default function DeliveryEntryDetailsPage() {
 
   return (
     <ScrollView className="flex-1" style={{ backgroundColor: theme.colors.appBg }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <View className="p-4">
         {/* Main Card */}
         <View

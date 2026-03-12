@@ -3,7 +3,7 @@ import { useIsFocused } from "@react-navigation/native";
 import * as Print from "expo-print";
 import { Printer } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Platform, StatusBar, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, InteractionManager, Platform, StatusBar, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDebounce } from "../../../hooks/useDebounce";
@@ -363,13 +363,14 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
 
   ///----------------------API CALLS FOR DOCKET FOR BINDING DATA-------------------------///
   const handleDocketSelect = useCallback((item) => {
-    console.log("Selected Docket:", item);
-    // Set the docket ID for API calls
-    setDocketId(String(item.docketID || ""));
-    // Set the docket number for display
+    // Close modal and clear search immediately so animation starts
     setDocketNo(String(item.docketNo || ""));
     setModalVisible(false);
-    setDocketSearch(""); // Clear search on select
+    setDocketSearch("");
+    // Defer the API-triggering state update until after the modal close animation
+    InteractionManager.runAfterInteractions(() => {
+      setDocketId(String(item.docketID || ""));
+    });
   }, []);
 
   // DELIVERY RECEIPT DETAILS API Call when docketId changes
@@ -385,18 +386,18 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     refetchOnMount: false,
     retry: 1,
   });
-  // Update loading state for the auto-populate form
+  // Sync loading state
   useEffect(() => {
     setDeliveryReceiptDetailsLoading(deliveryReceiptDetailsLoadingData);
   }, [deliveryReceiptDetailsLoadingData]);
   // Auto-populate form when delivery receipt details are loaded
-  console.log("Delivery Receipt Details by Docket ID:", deliveryReceiptDetails);
   useEffect(() => {
     if (deliveryReceiptDetails) {
       console.log("Customer Details:", deliveryReceiptDetails);
       // Update form fields with the API response data
       const customer = deliveryReceiptDetails;
 
+      // Batch all state updates together to avoid multiple re-renders
       setCustomer(customer?.custName || "");
       setCustomerMobileNumber(customer?.mobile || customer?.phone || "");
       setCreditLimit(customer?.creditLimit || 0);
@@ -454,8 +455,6 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     return apiOptions.length > 0 ? apiOptions : PAY_MODE_OPTIONS;
   }, [paymentModes]);
 
-  console.log("Payment Modes Data:", toPayModeOptions);
-
   ///----------------------API CALLS FOR PAYMENT MODES END-------------------------///
 
   ///----------------------PAYMENT HEADES API CALLS------------------------///
@@ -475,8 +474,6 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     retry: 1,
   });
 
-  console.log("Payment Heads Data:", payHeadsData);
-
   const payHeadsDataFlat =
     payHeadsData?.pages?.flatMap((page, pageIndex) =>
       (Array.isArray(page) ? page : [])
@@ -494,8 +491,6 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
           return item.head.length > 0;
         })
     ) || [];
-
-  console.log("Flattened Pay Heads Data:", payHeadsDataFlat);
 
   ///----PAGINATION LOGIC FOR CASH LEDGERS FOR MODAL FLATLIST -----//
   const onHeadRefresh = useCallback(async () => {
@@ -776,33 +771,69 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       await Print.printAsync({
         uri: `data:application/pdf;base64,${base64}`,
       });
+      if (Platform.OS === "android") {
+        // Android: print screen closed — navigate away
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "DeliveryReciptEntryScreen" }],
+          });
+        }, 1500);
+      } else {
+        // iOS: DO NOT navigate here — it forcefully tears down the native
+        // print sheet. Let the user tap back manually instead.
+        setToastConfig({
+          visible: true,
+          type: "success",
+          title: "Print Sent",
+          message: "Document sent to printer. Tap back to continue.",
+        });
+      }
     } catch (error) {
-      console.error("Print error:", error);
-      setToastConfig({
-        visible: true,
-        type: "error",
-        title: "Print Error",
-        message: "Failed to open print dialog.",
-      });
+      const message = error?.message || "";
+      // iOS throws "Printing did not complete" when the user cancels/dismisses
+      // the print dialog — this is not a real error, treat as cancel.
+      const isCancelled =
+        message.toLowerCase().includes("did not complete") ||
+        message.toLowerCase().includes("cancelled") ||
+        message.toLowerCase().includes("canceled") ||
+        error?.code === "E_PRINT_FAILED";
+
+      if (isCancelled) {
+        if (Platform.OS === "android") {
+          // Android: user closed/cancelled print screen — navigate away
+          setTimeout(() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "DeliveryReciptEntryScreen" }],
+            });
+          }, 1500);
+        } else {
+          // iOS: stay on screen so user can retry
+          setToastConfig({
+            visible: true,
+            type: "warning",
+            title: "Print Cancelled",
+            message: "Print was cancelled. You can retry or tap back to continue.",
+          });
+        }
+      } else {
+        console.error("Print error:", error);
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Print Error",
+          message: "Failed to open print dialog.",
+        });
+      }
     } finally {
       setShouldPrint(false);
       setSavedReceiptId(null);
-      // Navigate after print dialog is closed
-      setTimeout(() => {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "DeliveryReciptEntryScreen" }],
-        });
-      }, 1500);
+      setPrintBtnLoading(false);
     }
   };
 
   ////---------------PRINT API CALL USING RECEIPT ID END-------------------//
-
-  // Handle loading state after all hooks are declared
-  if (deliveryReceiptDetailsLoading) {
-    return <Loader title="Loading delivery receipt details..." />;
-  }
 
   if (isPdfLoading && shouldPrint) {
     return <Loader title="Preparing PDF for printing..." />;
@@ -819,6 +850,13 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
         message={toastConfig.message}
         onHide={() => setToastConfig({ ...toastConfig, visible: false })}
       />
+      {/* Inline overlay shown while fetching docket details — avoids full remount */}
+      {deliveryReceiptDetailsLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingOverlayText, { color: colors.primary }]}>Loading docket details...</Text>
+        </View>
+      )}
       {/* Modal for docket selection */}
       <DocketModal
         visible={modalVisible}
@@ -1266,5 +1304,20 @@ const makeStyles = (colors) =>
       fontSize: 14,
 
       fontWeight: "600",
+    },
+
+    /* Docket loading overlay */
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 999,
+      gap: 12,
+    },
+    loadingOverlayText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#fff",
     },
   });

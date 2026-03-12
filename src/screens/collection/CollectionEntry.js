@@ -1,6 +1,7 @@
 import { useIsFocused } from "@react-navigation/native";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetCollectionList, useOutwadesDirectAlsFinalSubmit } from "../../../hooks/useCollectionApiQueries";
 import { useDebounce } from "../../../hooks/useDebounce";
@@ -307,67 +308,85 @@ export default function CollectionEntry() {
         </View>
 
         <SlideModal visible={open} onClose={onhandleModalClose} maxHeight="86%">
-          <View className="flex-1 px-4 pt-4">
-            <Text className="text-lg font-bold mb-4" style={{ color: theme.colors.headingText }}>
-              Pay Balance
-            </Text>
-            <Input disabled={true} label="Customer Name" value={selectedCustomer} onChangeText={setSelectedCustomer} containerStyle={[styles.mt0]} />
+          <KeyboardAwareScrollView
+            contentContainerStyle={[styles.scroll, { paddingBottom: 20 + insets.bottom }]}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid={true}
+            extraScrollHeight={Platform.OS === "ios" ? 100 : 80}
+            extraHeight={Platform.OS === "ios" ? 100 : 80}
+            enableAutomaticScroll={true}
+            showsVerticalScrollIndicator={false}
+            keyboardOpeningTime={0}
+            enableResetScrollToCoords={false}
+          >
+            <View className="px-4 pt-4">
+              <Text className="text-lg font-bold mb-4" style={{ color: theme.colors.headingText }}>
+                Pay Balance
+              </Text>
+              <Input
+                disabled={true}
+                label="Customer Name"
+                value={selectedCustomer}
+                onChangeText={setSelectedCustomer}
+                containerStyle={[styles.mt0]}
+              />
 
-            <Input
-              label="Balance Charge"
-              value={collectedCharge}
-              onChangeText={(text) => {
-                setcollectedCharge(text);
-                if (errors.collectedCharge) setErrors((prev) => ({ ...prev, collectedCharge: "" }));
-              }}
-              keyboardType="numeric"
-              containerStyle={[styles.mt2]}
-            />
-            {errors.collectedCharge ? <Text style={{ color: "red", fontSize: 12, marginTop: 2 }}>{errors.collectedCharge}</Text> : null}
+              <Input
+                label="Balance Charge"
+                value={collectedCharge}
+                onChangeText={(text) => {
+                  setcollectedCharge(text);
+                  if (errors.collectedCharge) setErrors((prev) => ({ ...prev, collectedCharge: "" }));
+                }}
+                keyboardType="numeric"
+                containerStyle={[styles.mt2]}
+              />
+              {errors.collectedCharge ? <Text style={{ color: "red", fontSize: 12, marginTop: 2 }}>{errors.collectedCharge}</Text> : null}
 
-            <FullWidthSelectInput
-              label="Payment Mode"
-              placeholderText="Select Payment Mode..."
-              items={[
-                { label: "Cash", value: "1" },
-                { label: "Cheque", value: "2" },
-              ]}
-              value={paymentMode}
-              onChange={(value) => {
-                setPaymentMode(value);
-                setErrors((prev) => ({ ...prev, paymentMode: "" }));
-              }}
-              className="pb-1 pt-2"
-            />
-            {errors.paymentMode ? <Text style={{ color: "red", fontSize: 12, marginTop: 2 }}>{errors.paymentMode}</Text> : null}
+              <FullWidthSelectInput
+                label="Payment Mode"
+                placeholderText="Select Payment Mode..."
+                items={[
+                  { label: "Cash", value: "1" },
+                  { label: "Cheque", value: "2" },
+                ]}
+                value={paymentMode}
+                onChange={(value) => {
+                  setPaymentMode(value);
+                  setErrors((prev) => ({ ...prev, paymentMode: "" }));
+                }}
+                className="pb-1 pt-2"
+              />
+              {errors.paymentMode ? <Text style={{ color: "red", fontSize: 12, marginTop: 2 }}>{errors.paymentMode}</Text> : null}
 
-            {paymentMode === "2" && (
-              <>
-                <Input
-                  label="Cheque Number"
-                  value={ChequeNumber}
-                  onChangeText={(text) => {
-                    setChequeNumber(text);
-                    if (errors.ChequeNumber) setErrors((prev) => ({ ...prev, ChequeNumber: "" }));
-                  }}
-                />
-                {errors.ChequeNumber ? <Text style={{ color: "red", fontSize: 12, marginTop: 2 }}>{errors.ChequeNumber}</Text> : null}
-                <Input label="Account Details" value={accountDetails} onChangeText={setAccountDetails} />
-              </>
-            )}
-            <TextArea
-              label="Description"
-              value={description}
-              onChangeText={setDescription}
-              numberOfLines={6}
-              containerStyle={{ marginTop: 8 }}
-              inputStyle={{ minHeight: 70 }}
-            />
+              {paymentMode === "2" && (
+                <>
+                  <Input
+                    label="Cheque Number"
+                    value={ChequeNumber}
+                    onChangeText={(text) => {
+                      setChequeNumber(text);
+                      if (errors.ChequeNumber) setErrors((prev) => ({ ...prev, ChequeNumber: "" }));
+                    }}
+                  />
+                  {errors.ChequeNumber ? <Text style={{ color: "red", fontSize: 12, marginTop: 2 }}>{errors.ChequeNumber}</Text> : null}
+                  <Input label="Account Details" value={accountDetails} onChangeText={setAccountDetails} />
+                </>
+              )}
+              <TextArea
+                label="Description"
+                value={description}
+                onChangeText={setDescription}
+                numberOfLines={6}
+                containerStyle={{ marginTop: 8 }}
+                inputStyle={{ minHeight: 70 }}
+              />
 
-            <Button variant="primary" size="sm" fullWidth className="mt-4" onPress={onSubmitPayment} loading={isSubmittingPayment}>
-              Submit
-            </Button>
-          </View>
+              <Button variant="primary" size="sm" fullWidth className="mt-4" onPress={onSubmitPayment} loading={isSubmittingPayment}>
+                Submit
+              </Button>
+            </View>
+          </KeyboardAwareScrollView>
         </SlideModal>
       </View>
     </>
@@ -389,5 +408,8 @@ const styles = StyleSheet.create({
 
   mt4: {
     marginTop: 16,
+  },
+  scroll: {
+    flexGrow: 1,
   },
 });
