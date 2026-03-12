@@ -148,4 +148,7 @@ export const API_ENDPOINTS = {
 
   //Delivery receipt creation  delivery receipt submission API
   RECEIPT_SUBMISSION: "/DeliveryReceipt/save",
+
+  //PRINT-GET_PDF_AFTER_SUMBITTING
+  DELIVERY_RECEIPT_PDF: "/DeliveryReceipt",
 };

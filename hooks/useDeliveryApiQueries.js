@@ -10,6 +10,7 @@ export const queryKeys = {
   deliveryReciptPayMode: ["deliveryReciptPayMode"],
   deliveryReciptPayHeads: ["deliveryReciptPayHeads"],
   deliveryReciptNoCreation: ["deliveryReciptNoCreation"],
+  deliveryReciptPdf: ["deliveryReciptPdf"], // ✅ Add this
 };
 
 // Delivery Receipt list API -- Get method
@@ -292,6 +293,7 @@ export const useSubmitDeliveryRecipt = () => {
         const response = await apiClient.post(API_ENDPOINTS.RECEIPT_SUBMISSION, payload);
         // Check if the API returned success
         if (response.data?.status?.isSuccess) {
+          console.log("submitDeliveryRecipt API response:", response);
           return response.data;
         } else {
           // API returned a failure status
@@ -318,5 +320,59 @@ export const useSubmitDeliveryRecipt = () => {
         throw new Error(error.message || "Failed to submit delivery receipt");
       }
     },
+  });
+};
+
+// Delivery receipt pdf download -- Get method
+export const useGetDeliveryReceiptPdf = (receiptId, firmCode, finCode, options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.deliveryReciptPdf, receiptId, firmCode, finCode],
+    queryFn: async () => {
+      try {
+        const params = {
+          firmCode: firmCode,
+          finCode: finCode,
+        };
+
+        console.log("API Payload:", params);
+
+        const response = await apiClient.get(
+          `${API_ENDPOINTS.DELIVERY_RECEIPT_PDF}/${receiptId}/print-pdf?${new URLSearchParams(params).toString()}`,
+          {
+            responseType: "arraybuffer", // ✅ Required for binary PDF
+          }
+        );
+
+        console.log("DELIVERY_RECEIPT_PDF API response headers:", response.headers);
+
+        // ✅ Convert arraybuffer to base64 using React Native compatible method
+        const uint8Array = new Uint8Array(response.data);
+        const chunkSize = 8192;
+        let binary = "";
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.subarray(i, i + chunkSize);
+          binary += String.fromCharCode(...chunk);
+        }
+        const base64 = btoa(binary);
+
+        return base64;
+      } catch (error) {
+        console.error("useGetDeliveryReceiptPdf ERROR:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+        });
+        throw new Error(error.response?.data?.message || "Failed to get delivery receipt PDF");
+      }
+    },
+
+    enabled: !!receiptId && !!firmCode && !!finCode,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    retry: 1,
+    ...options,
   });
 };

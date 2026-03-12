@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
+import * as Print from "expo-print";
 import { Printer } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, StatusBar, StyleSheet, Text, View } from "react-native";
@@ -9,6 +10,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import {
   useGetDeliveryPayHeads,
   useGetDeliveryPayMode,
+  useGetDeliveryReceiptPdf,
   useGetDeliveryReciptDetailsByDocketId,
   useGetDeliveryReciptNoCreation,
   useGetDocketNumberLookup,
@@ -29,19 +31,6 @@ import TimeInput from "../../components/TimeInput";
 /* ------------------------------------------------------------------ */
 /*  Static option lists                                               */
 /* ------------------------------------------------------------------ */
-const DELIVERY_TYPE_OPTIONS = [
-  { label: "Home Delivery", value: "home" },
-  { label: "Branch Pickup", value: "branch" },
-  { label: "Door Delivery", value: "door" },
-];
-
-const DOCKET_OPTIONS = [
-  { label: "Customer A", value: "cust_a" },
-  { label: "Customer B", value: "cust_b" },
-  { label: "Customer C", value: "cust_c" },
-];
-
-const STATUS_OPTIONS = ["Pending", "Delivered", "Cancelled"];
 
 const PAY_MODE_OPTIONS = [
   { label: "CASH", value: "CASH" },
@@ -55,60 +44,11 @@ const RECEIPT_TYPE_OPTIONS = [
   { label: "Door Delivery", value: "door" },
 ];
 
-const TO_ACCOUNT_OPTIONS = [
-  { label: "Main Branch A", value: "main_a" },
-  { label: "Main Branch B", value: "main_b" },
-];
-
-const BANK_ACCOUNT_OPTIONS = [
-  { label: "HDFC Bank - 501002...", value: "hdfc_501" },
-  { label: "SBI Bank - 301001...", value: "sbi_301" },
-];
-
 const IDENTITY_TYPE_OPTIONS = [
   { label: "Aadhaar Card", value: "aadhaar" },
   { label: "PAN Card", value: "pan" },
   { label: "Passport", value: "passport" },
   { label: "Driving Licence", value: "driving" },
-];
-
-const heads = [
-  {
-    head: "(abul Hassan,)bismi Bag  & Shoes",
-    address: "Ernakulam",
-    place: "Ernakulam",
-    code: "209041",
-  },
-  {
-    head: "Al Noor Footwear & Bags",
-    address: "MG Road, Ernakulam",
-    place: "Ernakulam",
-    code: "209042",
-  },
-  {
-    head: "City Walk Shoes",
-    address: "Kaloor Junction",
-    place: "Kochi",
-    code: "209043",
-  },
-  {
-    head: "Green Mart Traders",
-    address: "Broadway Market",
-    place: "Kochi",
-    code: "209044",
-  },
-  {
-    head: "Royal Bag House",
-    address: "Marine Drive",
-    place: "Ernakulam",
-    code: "209045",
-  },
-  {
-    head: "Fashion Footwear",
-    address: "Palarivattom",
-    place: "Kochi",
-    code: "209046",
-  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -286,7 +226,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   const [customerAddress, setCustomerAddress] = useState("");
   const [freightCharge, setFreightCharge] = useState("0.00");
   const [aCCCodeFOREcredit, setACCCodeFOREcredit] = useState("");
-  const [isSubmittingSaveData, setIsSubmittingSaveData] = useState(false);
+  const [printBtnLoading, setPrintBtnLoading] = useState(false);
   const pageSize = 20;
   const isFocused = useIsFocused();
   const { sessionData } = useAuthStore();
@@ -303,6 +243,8 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   const [creditAccount, setCreditAccount] = useState("");
   const [rcptStatus, setRcptStatus] = useState("DELIVERED");
   const [rptNo, setRcptNo] = useState("0");
+  const [savedReceiptId, setSavedReceiptId] = useState(null);
+  const [shouldPrint, setShouldPrint] = useState(false);
   const series = branchCode;
   const [payModeCode, setPayModeCode] = useState("1"); // Add this line
   const [toastConfig, setToastConfig] = useState({
@@ -596,6 +538,9 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
 
   ///----------------------PAYMENT HEADES API CALLS END----------------------------
 
+  ///------Other functions and handlers-------///
+
+  // Handle change in payment mode selection
   const handlePayModeChange = useCallback((value) => {
     console.log("Selected Pay Mode:", value);
     const selectedPayMode = toPayModeOptions.find((option) => option.value === value);
@@ -604,6 +549,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     if (value !== "CASH") setCashLedger("");
   }, []);
 
+  // Handle selection of cash ledger from modal
   const setHandleLedgerData = useCallback((item) => {
     console.log("Selected Pay Head:", item);
     setCashLedger(item?.head || item?.label || "");
@@ -612,12 +558,97 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     setPayHeadSearch(""); // Clear search on select
   }, []);
 
+  //total amount auto-calculation based on the individual charge fields
   const totalAmount = useMemo(() => {
     const nums = [gcCharge, deliveryCharge, hamaly, otherCharges, doorDelivery, freightCharge].map((v) => parseFloat(v) || 0);
     return nums.reduce((a, b) => a + b, 0).toFixed(2);
   }, [gcCharge, deliveryCharge, hamaly, otherCharges, doorDelivery, freightCharge]);
 
-  const handleSave = () => {
+  ///------Other functions and handlers-------///
+
+  ////------------------FORM VALIDATION For sumbit api call-------------------//
+  const validateForm = () => {
+    // Required fields validation
+    if (!docketNo || docketNo === "") {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "Please select a docket number",
+      });
+      return false;
+    }
+
+    if (!customer || customer.trim() === "") {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "Customer name is required",
+      });
+      return false;
+    }
+
+    if (!deliveredTo || deliveredTo.trim() === "") {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "Please enter who received the delivery",
+      });
+      return false;
+    }
+
+    if (!contactNo || contactNo.trim() === "") {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "Contact number is required",
+      });
+      return false;
+    }
+
+    if (!idNumber || idNumber.trim() === "") {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "ID number is required",
+      });
+      return false;
+    }
+
+    // Payment mode specific validations
+    if (payMode === "CASH" && !allowedCredit && (!cashLedger || cashLedger.trim() === "")) {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "Please select a cash ledger",
+      });
+      return false;
+    }
+
+    if (payMode === "CHEQUE" && (!chequeNo || chequeNo.trim() === "")) {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Validation Error",
+        message: "Cheque number is required for cheque payments",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  ////------------------FORM VALIDATION END-------------------//
+
+  //////------------------HANDLER FOR SAVE BUTTON CLICK-------------------//
+  const handleSave = (print = false) => {
+    if (!validateForm()) return;
+    if (print) setPrintBtnLoading(true);
     const todayISO = new Date().toISOString();
     const payload = {
       rcptType: receiptType,
@@ -627,7 +658,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       rcptStatus: rcptStatus,
       rcptNo: Number(rptNo),
       rcptDate: date,
-      rcptTime: time,
+      rcptTime: time.toISOString(), // Convert Date to ISO string
       finCode,
       firmCode,
       docketId: Number(docketId),
@@ -660,25 +691,31 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       impId: 0,
       OtherChargeDesc: "Loading Charge",
     };
-
     console.log("Payload for Submission:", payload);
 
     submitDeliveryRecipt(payload, {
       onSuccess: (data) => {
+        console.log("Submission Response: from the API screen page", data);
         setToastConfig({
           visible: true,
           type: "success",
           title: "Payment Successful",
           message: data?.message || "The payment has been submitted successfully.",
         });
-
-        // Navigate to DeliveryReciptEntryScreen after 5 seconds and reset navigation
-        setTimeout(() => {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "DeliveryReciptEntryScreen" }],
-          });
-        }, 1500);
+        if (print && data?.dataValue) {
+          // ✅ Set receipt ID to trigger PDF query
+          setSavedReceiptId(data.dataValue);
+          setShouldPrint(true);
+        } else {
+          setPrintBtnLoading(false);
+          // ✅ Just navigate if no print
+          setTimeout(() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "DeliveryReciptEntryScreen" }],
+            });
+          }, 1500);
+        }
       },
       onError: (error) => {
         setToastConfig({
@@ -691,76 +728,84 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     });
   };
 
-  const handleSaveAndPrint = () => {
-    const payload = {
-      // rcptType: receiptType,
-      // isNew: true,
-      // rcptId: 0,
-      // rcptSeries: series,
-      // rcptStatus: rcptStatus,
-      // rcptNo: Number(rptNo),
-      // rcptDate: date,
-      // rcptTime: time,
-      // finCode,
-      // firmCode,
-      // docketId: Number(docketId),
-      // docketNo: Number(docketNo),
-      // receiptType,
-      // customerId: Number(customerId),
+  //////------------------HANDLER FOR SAVE BUTTON CLICK END-------------------//
 
-      // customerBranch,
-      // customerMobileNumber,
-      // payMode,
-      // cashLedger: payMode === "CASH" ? cashLedger : "",
-      // toAccount: payMode === "CREDIT" ? creditAccount : "",
-      // chequeNo: payMode === "CHEQUE" ? chequeNo : "",
-      // narration,
-      // deliveredTo,
-      // identityType,
-      // idNumber,
-      // contactNo,
-      // remarks,
-      // gcCharge,
-      // deliveryCharge,
-      hamaly,
-      otherCharges,
-      totalAmount,
-    };
+  ////---------------PRINT API CALL USING RECEIPT ID-------------------//
+  // PDF query - only triggers when savedReceiptId is set and shouldPrint is true
+  const {
+    data: pdfBase64,
+    isLoading: isPdfLoading,
+    isError: isPdfError,
+    error: pdfError,
+    isPending: isPendingPrint,
+  } = useGetDeliveryReceiptPdf(savedReceiptId, firmCode, finCode, {
+    enabled: !!savedReceiptId && !!firmCode && !!finCode && shouldPrint,
+  });
 
-    submitDeliveryRecipt(payload, {
-      onSuccess: (data) => {
-        setToastConfig({
-          visible: true,
-          type: "success",
-          title: "Payment Successful",
-          message: data?.message || "The payment has been submitted successfully.",
+  // Trigger print when PDF data is ready
+  useEffect(() => {
+    if (pdfBase64 && shouldPrint && savedReceiptId) {
+      handlePrintPdf(pdfBase64);
+    }
+  }, [pdfBase64, shouldPrint, savedReceiptId]);
+
+  // Handle PDF errors
+  useEffect(() => {
+    if (isPdfError && shouldPrint) {
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Print Failed",
+        message: pdfError?.message || "Failed to load PDF for printing.",
+      });
+      setShouldPrint(false);
+      setPrintBtnLoading(false);
+      setSavedReceiptId(null);
+      // Navigate even if print fails
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "DeliveryReciptEntryScreen" }],
         });
+      }, 1500);
+    }
+  }, [isPdfError, shouldPrint]);
 
-        // TODO: Implement print functionality
-        // navigation.navigate('PrintReceipt', { receiptId: data?.receiptId });
-
-        // Navigate to DeliveryReciptEntryScreen after 5 seconds and reset navigation
-        setTimeout(() => {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "DeliveryReciptEntryScreen" }],
-          });
-        }, 2000);
-      },
-      onError: (error) => {
-        setToastConfig({
-          visible: true,
-          type: "error",
-          title: "Submission Failed",
-          message: error?.message || "Failed to submit the payment. Please try again.",
+  const handlePrintPdf = async (base64) => {
+    try {
+      await Print.printAsync({
+        uri: `data:application/pdf;base64,${base64}`,
+      });
+    } catch (error) {
+      console.error("Print error:", error);
+      setToastConfig({
+        visible: true,
+        type: "error",
+        title: "Print Error",
+        message: "Failed to open print dialog.",
+      });
+    } finally {
+      setShouldPrint(false);
+      setSavedReceiptId(null);
+      // Navigate after print dialog is closed
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "DeliveryReciptEntryScreen" }],
         });
-      },
-    });
+      }, 1500);
+    }
   };
+
+  ////---------------PRINT API CALL USING RECEIPT ID END-------------------//
 
   // Handle loading state after all hooks are declared
   if (deliveryReceiptDetailsLoading) {
     return <Loader title="Loading delivery receipt details..." />;
+  }
+
+  if (isPdfLoading && shouldPrint) {
+    return <Loader title="Preparing PDF for printing..." />;
   }
 
   /* ---------------------------------------------------------------- */
@@ -876,7 +921,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
               value={time}
               onChange={(value) => {
                 if (value instanceof Date) {
-                  setTime(value.toISOString());
+                  setTime(value); // Keep as Date object
                 }
               }}
               containerStyle={styles.flex1}
@@ -1042,11 +1087,25 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       {/* ======================== BOTTOM ACTION BAR ======================== */}
       <BottomActionBar includeBottomInset={false}>
         <View className="flex-row gap-3">
-          <Button variant="secondary" size="lg" onPress={handleSave} className="flex-1" disabled={isSubmitting} loading={isSubmitting}>
+          <Button
+            variant="secondary"
+            size="lg"
+            onPress={() => handleSave(false)}
+            className="flex-1"
+            disabled={isSubmitting}
+            loading={isSubmitting && !shouldPrint}
+          >
             Save
           </Button>
 
-          <Button variant="primary" size="lg" onPress={handleSaveAndPrint} className="flex-1" disabled={isSubmitting} loading={isSubmitting}>
+          <Button
+            variant="primary"
+            size="lg"
+            onPress={() => handleSave(true)}
+            className="flex-1"
+            disabled={printBtnLoading}
+            loading={printBtnLoading}
+          >
             <View style={styles.printRow}>
               <Printer size={16} color="#fff" style={{ marginRight: 6 }} />
               <Text style={styles.printText}>Save &amp; Print</Text>
