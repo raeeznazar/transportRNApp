@@ -2,23 +2,28 @@ import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { Printer } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDebounce } from "../../../hooks/useDebounce";
 import {
   useGetDeliveryPayHeads,
   useGetDeliveryPayMode,
   useGetDeliveryReciptDetailsByDocketId,
+  useGetDeliveryReciptNoCreation,
   useGetDocketNumberLookup,
+  useSubmitDeliveryRecipt,
 } from "../../../hooks/useDeliveryApiQueries";
 import { useAuthStore } from "../../../stores/authStore";
 import { useThemeStore } from "../../../stores/themeStore";
 import BottomActionBar from "../../components/BottomActionBar";
 import { Button } from "../../components/Button";
+import CalendarInput from "../../components/CalendarInput";
 import FullWidthSelectInput from "../../components/FullWidthSelectInput";
 import Input from "../../components/Input";
 import Loader from "../../components/Loader";
+import { ScanToast } from "../../components/ScanToast";
 import ScrollSearchFlatlist from "../../components/ScrollSearchFlatlist";
+import TimeInput from "../../components/TimeInput";
 
 /* ------------------------------------------------------------------ */
 /*  Static option lists                                               */
@@ -246,13 +251,13 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   const [docketNo, setDocketNo] = useState(""); // This is the number for display
   const [customer, setCustomer] = useState("");
 
-  const [freightCharge, setFreightCharge] = useState("1250.00");
-  const [deliveryCharge, setDeliveryCharge] = useState("150.00");
-  const [hamaly, setHamaly] = useState("50.00");
+  const [gcCharge, setGcCharge] = useState("00.00");
+  const [deliveryCharge, setDeliveryCharge] = useState("00.00");
+  const [hamaly, setHamaly] = useState("00.00");
   const [otherCharges, setOtherCharges] = useState("25.00");
 
   const [payMode, setPayMode] = useState("CASH");
-  const [receiptType, setReceiptType] = useState("cash");
+  const [receiptType, setReceiptType] = useState("DOOR");
   const [toAccount, setToAccount] = useState("main_a");
   const [chequeNo, setChequeNo] = useState("");
   const [narration, setNarration] = useState("");
@@ -275,15 +280,34 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   const [customerBranch, setCustomerBranch] = useState("");
   const [deliveryReceiptDetailsLoading, setDeliveryReceiptDetailsLoading] = useState(false);
   const [cashLedger, setCashLedger] = useState("");
+  const [cashLedgerCode, setCashLedgerCode] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [freightCharge, setFreightCharge] = useState("0.00");
+  const [aCCCodeFOREcredit, setACCCodeFOREcredit] = useState("");
   const pageSize = 20;
   const isFocused = useIsFocused();
   const { sessionData } = useAuthStore();
   const branchCode = sessionData?.branchCode;
   const finCode = sessionData?.finCode;
+  const coFinCode = sessionData?.coFinCode;
+  const userId = sessionData?.userName;
+
   const firmCode = "0001";
   const rcptType = "DOOR";
   const entryDate = date;
   const [payHeadModalVisible, setPayHeadModalVisible] = useState(false);
+  const [allowedCreditLimit, setAllowedCreditLimit] = useState(0);
+  const [creditAccount, setCreditAccount] = useState("");
+  const [rcptStatus, setRcptStatus] = useState("DELIVERED");
+  const [rptNo, setRcptNo] = useState("0");
+  const series = branchCode;
+  const [payModeCode, setPayModeCode] = useState("1"); // Add this line
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   // Search states for server-side filtering
   const [docketSearch, setDocketSearch] = useState("");
@@ -292,6 +316,37 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   // Debounced search values
   const debouncedDocketSearch = useDebounce(docketSearch, 500);
   const debouncedPayHeadSearch = useDebounce(payHeadSearch, 500);
+  const getSevenDaysAgo = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    return sevenDaysAgo.toISOString().split("T")[0];
+  };
+
+  //------------------DELIVERY RECEIPT SUBMISSION-------------------//
+  const { mutate: submitDeliveryRecipt, isLoading: isSubmitting } = useSubmitDeliveryRecipt();
+
+  ///----------------------API CALL FOR AUTO GENERATION OF DELIVERY RECEIPT NUMBER-------------------------///
+
+  const {
+    data: autoReceiptNumber,
+    isLoading: autoReceiptNumberLoading,
+    refetch: autoReceiptNumberRefetch,
+  } = useGetDeliveryReciptNoCreation(series, firmCode, branchCode, {
+    enabled: isFocused && !!series && !!branchCode && !!firmCode,
+    docketNoFilter: debouncedDocketSearch,
+    staleTime: 0,
+    cacheTime: 30 * 60 * 1000,
+  });
+
+  // Store auto-generated receipt number in state
+  useEffect(() => {
+    if (autoReceiptNumber) {
+      setRcptNo(autoReceiptNumber);
+    }
+  }, [autoReceiptNumber]);
+
+  ///----------------------API CALL FOR AUTO GENERATION OF DELIVERY RECEIPT NUMBER-------------------------///
 
   ///----------------------API CALLS FOR DOCKET NUMBER LOOKUP-------------------------///
   const {
@@ -308,19 +363,21 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
     docketNoFilter: debouncedDocketSearch,
     staleTime: 0,
     cacheTime: 10 * 60 * 1000,
-    keepPreviousData: true,
   });
 
   const docketDataFlat = useMemo(() => {
     if (!docketData?.pages) return [];
 
-    return docketData.pages.flatMap((page, pageIndex) =>
-      page.items.map((item, itemIndex) => ({
+    const flattened = docketData.pages.flatMap((page, pageIndex) => {
+      // Handle both array and object with items property
+      const items = page?.items || (Array.isArray(page) ? page : []);
+      return items.map((item, itemIndex) => ({
         ...item,
-        // Fix: Use consistent property names
         uniqueKey: `${pageIndex}-${itemIndex}-${item.docketID}-${item.docketNo}`,
-      }))
-    );
+      }));
+    });
+
+    return flattened;
   }, [docketData]);
 
   ///----PAGINATION LOGIC FOR DOCKET NUMBER LOOKUP FLATLIST---
@@ -336,10 +393,10 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   }, [docketRefetch]);
 
   const handleLoadMore = useCallback(() => {
-    if (docketHasNextPage && !docketIsFetchingNextPage) {
+    if (docketHasNextPage && !docketIsFetchingNextPage && !docketisLoading) {
       docketFetchNextPage();
     }
-  }, [docketHasNextPage, docketIsFetchingNextPage, docketFetchNextPage]);
+  }, [docketHasNextPage, docketIsFetchingNextPage, docketFetchNextPage, docketisLoading]);
 
   const handleModalClose = useCallback(() => {
     setModalVisible(false);
@@ -347,6 +404,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   }, []);
 
   const handleOpenModal = useCallback(() => {
+    setDocketSearch(""); // Clear search when opening
     setModalVisible(true);
   }, []);
 
@@ -390,13 +448,31 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   console.log("Delivery Receipt Details by Docket ID:", deliveryReceiptDetails);
   useEffect(() => {
     if (deliveryReceiptDetails) {
+      console.log("Customer Details:", deliveryReceiptDetails);
       // Update form fields with the API response data
-      setCustomer(deliveryReceiptDetails.custName || "");
-      setCustomerMobileNumber(deliveryReceiptDetails.mobile || deliveryReceiptDetails.phone || "");
-      setAllowedCredit(deliveryReceiptDetails.allowedCredit || false);
-      setCreditLimit(deliveryReceiptDetails.creditLimit || 0);
-      setCustomerId(deliveryReceiptDetails.custId || "");
-      setCustomerBranch(deliveryReceiptDetails.branchCode || "");
+      const customer = deliveryReceiptDetails;
+
+      setCustomer(customer?.custName || "");
+      setCustomerMobileNumber(customer?.mobile || customer?.phone || "");
+      setCreditLimit(customer?.creditLimit || 0);
+      setCustomerId(customer?.custId || "");
+      setCustomerBranch(customer?.branchCode || "");
+      setAllowedCredit(customer?.allowCredit || false);
+      setAllowedCreditLimit(customer?.creditLimit || 0);
+      setCreditAccount(customer?.accName || "");
+      setCustomerAddress(customer?.address || "");
+      setFreightCharge(customer?.freight || 0);
+      setACCCodeFOREcredit(customer?.accCode || "");
+      setDate(customer?.entryDate ? customer.entryDate.split("T")[0] : new Date().toISOString().split("T")[0]);
+
+      // setDeliveryCharge(receipt?.stnryCharge ? String(receipt.stnryCharge.toFixed(2)) : "0.00");
+      // setHamaly(receipt?.hamali ? String(receipt.hamali.toFixed(2)) : "0.00");
+      // setGcCharge(receipt?.totalAmount ? String(receipt.totalAmount.toFixed(2)) : "0.00");
+
+      // Set pay mode to CREDIT if credit is allowed
+      if (customer?.allowCredit) {
+        setPayMode("CREDIT");
+      }
     }
   }, [deliveryReceiptDetails]);
 
@@ -424,12 +500,15 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       .map((item) => ({
         label: item?.head?.trim?.() || "",
         value: item?.head?.trim?.() || "",
+        code: item?.code || "",
       }))
       .filter((x) => x.label && x.value);
 
     // fallback to static options if API has nothing
     return apiOptions.length > 0 ? apiOptions : PAY_MODE_OPTIONS;
   }, [paymentModes]);
+
+  console.log("Payment Modes Data:", toPayModeOptions);
 
   ///----------------------API CALLS FOR PAYMENT MODES END-------------------------///
 
@@ -485,10 +564,10 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   }, [payHeadsRefetch]);
 
   const handlePayHeadsLoadMore = useCallback(() => {
-    if (payHeadsHasNextPage && !payHeadsIsFetchingNextPage) {
+    if (payHeadsHasNextPage && !payHeadsIsFetchingNextPage && !payHeadsLoading) {
       payHeadsFetchNextPage();
     }
-  }, [payHeadsHasNextPage, payHeadsIsFetchingNextPage, payHeadsFetchNextPage]);
+  }, [payHeadsHasNextPage, payHeadsIsFetchingNextPage, payHeadsFetchNextPage, payHeadsLoading]);
 
   const handlePayHeadsModalClose = useCallback(() => {
     setPayHeadModalVisible(false);
@@ -496,6 +575,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   }, []);
 
   const handlePayHeadsOpenModal = useCallback(() => {
+    setPayHeadSearch(""); // Clear search when opening
     setPayHeadModalVisible(true);
   }, []);
 
@@ -513,28 +593,163 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   ///----------------------PAYMENT HEADES API CALLS END----------------------------
 
   const handlePayModeChange = useCallback((value) => {
+    console.log("Selected Pay Mode:", value);
+    const selectedPayMode = toPayModeOptions.find((option) => option.value === value);
     setPayMode(value);
+    setPayModeCode(selectedPayMode?.code || ""); // Set the code
     if (value !== "CASH") setCashLedger("");
   }, []);
 
   const setHandleLedgerData = useCallback((item) => {
     console.log("Selected Pay Head:", item);
     setCashLedger(item?.head || item?.label || "");
+    setCashLedgerCode(item?.code || ""); // Store the code for submission
     setPayHeadModalVisible(false);
     setPayHeadSearch(""); // Clear search on select
   }, []);
 
   const totalAmount = useMemo(() => {
-    const nums = [freightCharge, deliveryCharge, hamaly, otherCharges, doorDelivery].map((v) => parseFloat(v) || 0);
+    const nums = [gcCharge, deliveryCharge, hamaly, otherCharges, doorDelivery, freightCharge].map((v) => parseFloat(v) || 0);
     return nums.reduce((a, b) => a + b, 0).toFixed(2);
-  }, [freightCharge, deliveryCharge, hamaly, otherCharges, doorDelivery]);
+  }, [gcCharge, deliveryCharge, hamaly, otherCharges, doorDelivery, freightCharge]);
 
   const handleSave = () => {
-    // TODO: submit form
+    const todayISO = new Date().toISOString();
+    const payload = {
+      rcptType: receiptType,
+      isNew: true,
+      rcptId: 0,
+      rcptSeries: series,
+      rcptStatus: rcptStatus,
+      rcptNo: `${branchCode}${rptNo}`,
+      rcptDate: date,
+      rcptTime: time,
+      finCode,
+      firmCode,
+      docketId: docketId,
+      docketNo: docketNo,
+      customerCode: "5555",
+      customerId: "444",
+      customerName: customer,
+      freightCharge: gcCharge,
+      hamali: hamaly,
+      stnryCharge: totalAmount,
+      otherCharge: otherCharges,
+      totalAmount: totalAmount,
+      payMode: payMode,
+      payModeCode: payModeCode,
+      payModeHead: allowedCredit == true ? aCCCodeFOREcredit : cashLedgerCode,
+      chequeNo: chequeNo,
+      chequeDate: chequeNo !== "" ? todayISO : null,
+      chequeBank: "",
+      narration: narration,
+      deliveredTo: deliveredTo,
+      idProof: identityType,
+      deliveredPhone: contactNo,
+      remarks: remarks,
+      idProofNo: idNumber,
+      branchCode: branchCode,
+      finCode: finCode,
+      coFinCode: coFinCode,
+      userId: userId,
+      impFrom: null,
+      impId: null,
+    };
+
+    console.log("Payload for Submission:", payload);
+
+    submitDeliveryRecipt(payload, {
+      onSuccess: (data) => {
+        setToastConfig({
+          visible: true,
+          type: "success",
+          title: "Payment Successful",
+          message: data?.message || "The payment has been submitted successfully.",
+        });
+
+        // Navigate to DeliveryReciptEntryScreen after 5 seconds and reset navigation
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "DeliveryReciptEntryScreen" }],
+          });
+        }, 5000);
+      },
+      onError: (error) => {
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Submission Failed",
+          message: error?.message || "Failed to submit the payment. Please try again.",
+        });
+      },
+    });
   };
 
   const handleSaveAndPrint = () => {
-    // TODO: submit + print
+    const payload = {
+      rcptType: receiptType,
+      isNew: true,
+      rcptId: 0,
+      rcptSeries: series,
+      rcptStatus: rcptStatus,
+      rcptNo: `${branchCode}${rptNo}`,
+      rcptDate: date,
+      rcptTime: time,
+      finCode,
+      firmCode,
+      docketId,
+      docketNo: docketNo,
+      receiptType,
+      customerId,
+      customerBranch,
+      customerMobileNumber,
+      payMode,
+      cashLedger: payMode === "CASH" ? cashLedger : "",
+      toAccount: payMode === "CREDIT" ? creditAccount : "",
+      chequeNo: payMode === "CHEQUE" ? chequeNo : "",
+      narration,
+      deliveredTo,
+      identityType,
+      idNumber,
+      contactNo,
+      remarks,
+      gcCharge,
+      deliveryCharge,
+      hamaly,
+      otherCharges,
+      totalAmount,
+    };
+
+    submitDeliveryRecipt(payload, {
+      onSuccess: (data) => {
+        setToastConfig({
+          visible: true,
+          type: "success",
+          title: "Payment Successful",
+          message: data?.message || "The payment has been submitted successfully.",
+        });
+
+        // TODO: Implement print functionality
+        // navigation.navigate('PrintReceipt', { receiptId: data?.receiptId });
+
+        // Navigate to DeliveryReciptEntryScreen after 5 seconds and reset navigation
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "DeliveryReciptEntryScreen" }],
+          });
+        }, 5000);
+      },
+      onError: (error) => {
+        setToastConfig({
+          visible: true,
+          type: "error",
+          title: "Submission Failed",
+          message: error?.message || "Failed to submit the payment. Please try again.",
+        });
+      },
+    });
   };
 
   // Handle loading state after all hooks are declared
@@ -545,6 +760,14 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
   /* ---------------------------------------------------------------- */
   return (
     <View style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <ScanToast
+        visible={toastConfig.visible}
+        type={toastConfig.type}
+        title={toastConfig.title}
+        message={toastConfig.message}
+        onHide={() => setToastConfig({ ...toastConfig, visible: false })}
+      />
       {/* Modal for docket selection */}
       <DocketModal
         visible={modalVisible}
@@ -589,6 +812,12 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
         <View style={styles.card}>
           <SectionHeader iconName="information-circle-outline" title="Basic Information" colors={colors} />
 
+          <View>
+            <Text className="text-2xl mb-2" style={{ color: colors.primary, fontWeight: "500" }}>
+              Receipt No : {branchCode}
+              {autoReceiptNumber}
+            </Text>
+          </View>
           <FullWidthSelectInput
             label="Receipt Type"
             value={receiptType}
@@ -605,6 +834,15 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
 
           <Input label="Customer Name" value={customer} onChangeText={setCustomer} placeholder="Customer name" readOnly={true} />
           <Input
+            label="Customer Address"
+            multiline
+            inputStyle={styles.textareaForCustomer}
+            value={customerAddress}
+            onChangeText={setCustomerAddress}
+            placeholder="Customer address"
+            readOnly={true}
+          />
+          <Input
             label="Customer Mobile Number"
             value={customerMobileNumber}
             onChangeText={setCustomerMobileNumber}
@@ -612,12 +850,24 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
             readOnly={true}
           />
 
+          <View style={[styles.twoCol, styles.mt16]}>
+            <CalendarInput
+              label="Date"
+              value={date}
+              onChange={setDate}
+              disableFuture={true}
+              containerStyle={styles.flex1}
+              minDate={getSevenDaysAgo()}
+            />
+            <TimeInput label="Pickup Time" value={time} onChange={setTime} containerStyle={styles.flex1} />
+          </View>
+
           <View style={styles.mt16}>
             <Text style={styles.chipLabel}>Status</Text>
             <View style={styles.chipRow}>
               <View style={[styles.chip, { borderColor: colors.primary, backgroundColor: colors.primary + "18" }]}>
                 <Ionicons name="checkmark-circle" size={14} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={[styles.chipText, { color: colors.primary, fontWeight: "600" }]}>{"Pending"}</Text>
+                <Text style={[styles.chipText, { color: colors.primary, fontWeight: "600" }]}>{rcptStatus}</Text>
               </View>
             </View>
           </View>
@@ -630,16 +880,16 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
           <View style={styles.twoCol}>
             <Input
               label="GC Total Amount"
-              value={freightCharge}
-              onChangeText={setFreightCharge}
-              readOnly={true}
+              value={gcCharge}
+              onChangeText={setGcCharge}
+              keyboardType="decimal-pad"
               containerStyle={[styles.flex1, styles.mt0]}
             />
             <Input
               label="Delivery Charge"
               value={deliveryCharge}
               onChangeText={setDeliveryCharge}
-              readOnly={true}
+              keyboardType="decimal-pad"
               containerStyle={[styles.flex1, styles.mt0]}
             />
           </View>
@@ -669,24 +919,35 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
 
           <View>
             <View style={styles.flex1}>
-              <FullWidthSelectInput
-                label="Pay Mode"
-                value={payMode}
-                onChange={handlePayModeChange}
-                items={toPayModeOptions}
-                labelFontSize={12}
-                labelFontWeight="500"
-                labelLineHeight={14}
-              />
+              {allowedCredit ? (
+                <>
+                  <Input label="Pay Mode" value="CREDIT" placeholder="Credit" readOnly={true} containerStyle={styles.mt0} />
+                  <Text style={{ marginTop: 6, fontSize: 12, color: colors.primary, fontWeight: "500" }}>
+                    Credit Limit: ₹{allowedCreditLimit.toFixed(2)}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <FullWidthSelectInput
+                    label="Pay Mode"
+                    value={payMode}
+                    onChange={handlePayModeChange}
+                    items={toPayModeOptions}
+                    labelFontSize={12}
+                    labelFontWeight="500"
+                    labelLineHeight={14}
+                  />
 
-              {paymentModesLoading && <Text style={{ marginTop: 6, fontSize: 12, color: colors.bodyText }}>Loading payment modes...</Text>}
+                  {paymentModesLoading && <Text style={{ marginTop: 6, fontSize: 12, color: colors.bodyText }}>Loading payment modes...</Text>}
 
-              {!!paymentModesError && (
-                <Text style={{ marginTop: 6, fontSize: 12, color: "#EF4444" }}>Failed to load payment modes. Showing default options.</Text>
+                  {!!paymentModesError && (
+                    <Text style={{ marginTop: 6, fontSize: 12, color: "#EF4444" }}>Failed to load payment modes. Showing default options.</Text>
+                  )}
+                </>
               )}
             </View>
 
-            {payMode === "CASH" && (
+            {!allowedCredit && payMode === "CASH" && (
               <>
                 <Input
                   label="Cash Ledger"
@@ -701,22 +962,11 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
                 {!!payHeadsError && <Text style={{ marginTop: 6, fontSize: 12, color: "#EF4444" }}>Failed to load pay heads.</Text>}
               </>
             )}
-
-            {(payMode === "CHEQUE" || payMode === "UPI" || payMode === "BANK") && (
-              <FullWidthSelectInput
-                label="To Account"
-                value={toAccount}
-                onChange={setToAccount}
-                items={TO_ACCOUNT_OPTIONS}
-                labelFontSize={12}
-                labelFontWeight="500"
-                labelLineHeight={14}
-                style={styles.flex1}
-              />
-            )}
           </View>
 
-          {payMode === "CHEQUE" && <Input label="Cheque No / Date" value={chequeNo} onChangeText={setChequeNo} placeholder="Optional" />}
+          {!allowedCredit && payMode === "CHEQUE" && (
+            <Input label="Cheque No / Date" value={chequeNo} onChangeText={setChequeNo} placeholder="Optional" />
+          )}
 
           <Input
             label="Narration"
@@ -907,8 +1157,14 @@ const makeStyles = (colors) =>
 
     /* Textarea */
     textarea: {
-      height: undefined,
+      height: 90,
       minHeight: 90,
+      paddingTop: 14,
+      textAlignVertical: "top",
+    },
+    textareaForCustomer: {
+      height: 90,
+      minHeight: 50,
       paddingTop: 14,
       textAlignVertical: "top",
     },

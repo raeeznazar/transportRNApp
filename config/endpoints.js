@@ -135,11 +135,17 @@ export const API_ENDPOINTS = {
   DOCKET_NUMBER_LOOKUP: "/DeliveryReceipt/docket-lookup",
 
   //Delivery receipt creation get details by docket API
-  DELIVERY_RECEIPT_DETAILS_BY_DOCKET: "/DeliveryReceipt/receipt-detailsbyid",
+  DELIVERY_RECEIPT_DETAILS_BY_DOCKET: "/DeliveryReceipt/CustomerbyDocketid",
 
   //Delivery receipt creation pay mode
   DELIVERY_RECEIPT_PAY_MODE: "/DeliveryReceipt/paymode-heads",
 
   //Delivery receipt creation payHeads list API
   DELIVERY_RECEIPT_PAY_HEADS: "/DeliveryReceipt/payheads",
+
+  //Delivery receipt creation  delivery receipt creation
+  AUTO_RECEIPT_NUMBER: "/DeliveryReceipt/next-number",
+
+  //Delivery receipt creation  delivery receipt submission API
+  RECEIPT_SUBMISSION: "/DeliveryReceipt/save",
 };

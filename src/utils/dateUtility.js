@@ -29,3 +29,15 @@ export function formatDate(dateString) {
 
   return `${day}/${month}/${year}`;
 }
+
+// Full date object
+const today = new Date();
+
+// ISO format: "2026-03-12T00:00:00.000Z"
+const todayISO = new Date().toISOString();
+
+// Timestamp in milliseconds
+const todayTimestamp = Date.now();
+
+// Formatted date string: "3/12/2026"
+const todayFormatted = new Date().toLocaleDateString();

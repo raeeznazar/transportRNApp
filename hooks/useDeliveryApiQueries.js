@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "../config/endpoints";
 import apiClient from "../services/apiService";
 
@@ -9,6 +9,7 @@ export const queryKeys = {
   deliveryReciptDetailsByDocketId: ["deliveryReciptDetailsByDocketId"],
   deliveryReciptPayMode: ["deliveryReciptPayMode"],
   deliveryReciptPayHeads: ["deliveryReciptPayHeads"],
+  deliveryReciptNoCreation: ["deliveryReciptNoCreation"],
 };
 
 // Delivery Receipt list API -- Get method
@@ -83,7 +84,7 @@ export const useGetDocketNumberLookup = (entryDate, branchCode, rcptType, firmCo
         console.log("API Payload:", params);
 
         const response = await apiClient.get(`${API_ENDPOINTS.DOCKET_NUMBER_LOOKUP}?${new URLSearchParams(params).toString()}`);
-        // console.log("Docket Number Lookup API response:", response);
+        console.log("Docket Number Lookup API response:", response?.data.dataValue);
         return response?.data.dataValue || [];
       } catch (error) {
         console.error("getDocketNumberLookup ERROR:", {
@@ -97,8 +98,14 @@ export const useGetDocketNumberLookup = (entryDate, branchCode, rcptType, firmCo
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
+      // Check if lastPage is an object with items array or is an array itself
+      const items = lastPage?.items || lastPage;
+      const itemCount = Array.isArray(items) ? items.length : 0;
+
+      console.log("getNextPageParam - itemCount:", itemCount, "pageSize:", Number(pageSize), "allPages:", allPages.length);
+
       // If the last page returned fewer items than pageSize, no more pages
-      if (lastPage.length < Number(pageSize)) {
+      if (itemCount < Number(pageSize)) {
         return undefined;
       }
       // Otherwise, next page number
@@ -121,7 +128,6 @@ export const useGetDeliveryReciptDetailsByDocketId = (docketId, firmCode, finCod
       try {
         const params = {
           docketId: docketId,
-          firmCode: firmCode,
           finCode: finCode,
         };
 
@@ -129,7 +135,7 @@ export const useGetDeliveryReciptDetailsByDocketId = (docketId, firmCode, finCod
 
         const response = await apiClient.get(`${API_ENDPOINTS.DELIVERY_RECEIPT_DETAILS_BY_DOCKET}?${new URLSearchParams(params).toString()}`);
         console.log("Delivery Receipt Details by Docket ID API response:", response);
-        return response?.data?.dataValue.customer || null;
+        return response?.data?.dataValue || null;
       } catch (error) {
         console.error("getDeliveryReciptDetailsByDocketId ERROR:", {
           status: error.response?.status,
@@ -220,7 +226,11 @@ export const useGetDeliveryPayHeads = (firmCode, payMode, options = {}) => {
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       // Check if lastPage is array and has fewer items than pageSize
-      if (!Array.isArray(lastPage) || lastPage.length < 20) {
+      const itemCount = Array.isArray(lastPage) ? lastPage.length : 0;
+
+      console.log("PayHeads getNextPageParam - itemCount:", itemCount, "pageSize: 20", "allPages:", allPages.length);
+
+      if (itemCount < 20) {
         return undefined;
       }
       // Otherwise, next page number
@@ -233,5 +243,80 @@ export const useGetDeliveryPayHeads = (firmCode, payMode, options = {}) => {
     refetchOnMount: "always",
     retry: 1,
     ...queryOptions,
+  });
+};
+
+// Delivery receipt creation -- Get method
+export const useGetDeliveryReciptNoCreation = (series, firmCode, branchCode, options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.deliveryReciptNoCreation, series, firmCode, branchCode],
+    queryFn: async () => {
+      try {
+        const params = {
+          series: series,
+          firmCode: firmCode,
+          branchCode: branchCode,
+        };
+
+        console.log("API Payload:", params);
+
+        const response = await apiClient.get(`${API_ENDPOINTS.AUTO_RECEIPT_NUMBER}?${new URLSearchParams(params).toString()}`);
+        console.log("AUTO_RECEIPT_NUMBER API response:", response);
+        return response?.data?.dataValue || null;
+      } catch (error) {
+        console.error("useGetDeliveryReciptNoCreation ERROR:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+        });
+        throw new Error(error.response?.data?.message || "Failed to get delivery receipt number");
+      }
+    },
+
+    enabled: !!series && !!firmCode && !!branchCode,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    retry: 1,
+    ...options,
+  });
+};
+
+// Submit Delivery recipt (POST request) - Use Mutation
+export const useSubmitDeliveryRecipt = () => {
+  return useMutation({
+    mutationFn: async (payload) => {
+      try {
+        const response = await apiClient.post(API_ENDPOINTS.RECEIPT_SUBMISSION, payload);
+        // Check if the API returned success
+        if (response.data?.status?.isSuccess) {
+          return response.data;
+        } else {
+          // API returned a failure status
+          throw new Error(response.data?.status?.message || "Failed to submit delivery receipt");
+        }
+      } catch (error) {
+        console.error("submitDeliveryRecipt ERROR Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+
+        // Handle API error response
+        if (error.response?.data?.status?.message) {
+          throw new Error(error.response.data.status.message);
+        }
+
+        throw new Error(error.message || "Failed to submit delivery receipt");
+      }
+    },
   });
 };

@@ -155,7 +155,7 @@ const TimeInput = ({
         accessibilityValue={{ text: displayValue ?? placeholder }}
       >
         <View style={styles.fieldRow}>
-          <Clock size={16} color={disabled ? colors.inputPlaceholder : colors.accent} strokeWidth={1.8} style={styles.clockIcon} />
+          <Clock size={18} color={disabled ? colors.inputPlaceholder : colors.accent} strokeWidth={1.8} style={styles.clockIcon} />
           <Text style={[styles.fieldText, !hasValue && styles.placeholder, disabled && styles.disabledText]} numberOfLines={1}>
             {displayValue ?? placeholder}
           </Text>
@@ -253,8 +253,7 @@ const makeStyles = (colors) =>
     label: {
       fontSize: 12,
       color: colors.headingText,
-      marginBottom: 6,
-      fontFamily: "Figtree-Regular",
+      marginBottom: 1,
       fontWeight: "500",
     },
 
@@ -272,6 +271,7 @@ const makeStyles = (colors) =>
       flexDirection: "row",
       alignItems: "center",
       flex: 1,
+      marginTop: -10,
     },
 
     fieldDisabled: {
