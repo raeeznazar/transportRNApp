@@ -79,6 +79,26 @@ export default function CustomDrawerContent(props) {
       route: "Collection",
     },
     {
+      name: "Hamly",
+      label: "Hamly",
+      icon: "receipt-outline",
+      route: "Hamly",
+      submenus: [
+        {
+          name: "Hamly",
+          label: "Hamly",
+          route: "Hamly",
+          params: { screen: "HamlyEntry" },
+        },
+        {
+          name: "Hamly Details",
+          label: "Hamly Details",
+          route: "Hamly",
+          params: { screen: "HamilyDetail" },
+        },
+      ],
+    },
+    {
       name: "Tracking",
       label: "Tracking",
       icon: "locate-outline",

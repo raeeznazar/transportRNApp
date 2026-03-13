@@ -1,5 +1,6 @@
+import BottomSheet, { BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import { useIsFocused } from "@react-navigation/native";
-import { useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,7 +14,6 @@ import FullWidthSelectInput from "../../components/FullWidthSelectInput";
 import Input from "../../components/Input";
 import InputSearch from "../../components/InputSearch";
 import { ScanToast } from "../../components/ScanToast";
-import SlideModal from "../../components/SlideModal";
 import TextArea from "../../components/TextArea";
 
 const PageSize = 20;
@@ -44,7 +44,9 @@ export default function CollectionEntry() {
     title: "",
     message: "",
   });
+  const sheetRef = useRef(null);
 
+  const snapPoints = useMemo(() => ["90%", "95%"], []);
   // Debounce the search input by 500ms
   const debouncedSearch = useDebounce(search, 600);
 
@@ -170,7 +172,7 @@ export default function CollectionEntry() {
 
     setSelectedCustomer(String(item.customer ?? ""));
     setcollectedCharge(String(item.balance ?? ""));
-    setOpen(true);
+    sheetRef.current?.snapToIndex(0);
   }
 
   function onhandleModalClose() {
@@ -181,7 +183,7 @@ export default function CollectionEntry() {
     setChequeNumber("");
     setAccountDetails("");
     setErrors({});
-    setOpen(false);
+    sheetRef.current?.close();
   }
 
   function onSubmitPayment() {
@@ -249,6 +251,8 @@ export default function CollectionEntry() {
     });
   }
 
+  const renderBackdrop = useCallback((props) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />, []);
+
   ///-------------------------------- MODAL HANDLERS END -----------------------------///
 
   return (
@@ -307,7 +311,14 @@ export default function CollectionEntry() {
           />
         </View>
 
-        <SlideModal visible={open} onClose={onhandleModalClose} maxHeight="86%">
+        <BottomSheet
+          ref={sheetRef}
+          index={-1}
+          snapPoints={snapPoints}
+          enablePanDownToClose={true}
+          enableDynamicSizing={false}
+          backdropComponent={renderBackdrop}
+        >
           <KeyboardAwareScrollView
             contentContainerStyle={[styles.scroll, { paddingBottom: 20 + insets.bottom }]}
             keyboardShouldPersistTaps="handled"
@@ -387,7 +398,7 @@ export default function CollectionEntry() {
               </Button>
             </View>
           </KeyboardAwareScrollView>
-        </SlideModal>
+        </BottomSheet>
       </View>
     </>
   );

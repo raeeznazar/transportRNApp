@@ -12,6 +12,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 import CollectionNavigator from "./CollectionNavigator";
 import CustomDrawerContent from "./CustomDrawerContent";
 import DeliveryNavigator from "./DeliveryNavigator";
+import HamlyNavigator from "./HamlyNavigator";
 import InwardsNavigator from "./InwardsNavigator";
 import OutwardsNavigator from "./OutwardsNavigator";
 import TrackingNavigator from "./TrackingNavigator";
@@ -102,7 +103,10 @@ export default function DrawerNavigator() {
         return "Collection List";
       case "Collection":
         return "Collection List";
-
+      case "Hamly":
+        return "Hamly";
+      case "HamilyDetail":
+        return "Hamly Detail";
       default:
         return "NeoEra Transport";
     }
@@ -124,6 +128,9 @@ export default function DrawerNavigator() {
       "Delivery",
       "CollectionEntry",
       "Collection",
+      "Hamly",
+      "HamlyEntry",
+      "HamilyDetail",
     ];
     // If routeName is not in mainScreens and exists, hide drawer header
     // This allows nested/detail screens to show their own headers with back buttons
@@ -190,6 +197,15 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="Collection"
         component={CollectionNavigator}
+        options={({ route }) => ({
+          title: getHeaderTitle(route),
+          drawerItemStyle: { display: "none" },
+          headerShown: !shouldHideDrawerHeader(route),
+        })}
+      />
+      <Drawer.Screen
+        name="Hamly"
+        component={HamlyNavigator}
         options={({ route }) => ({
           title: getHeaderTitle(route),
           drawerItemStyle: { display: "none" },

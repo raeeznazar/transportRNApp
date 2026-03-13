@@ -584,15 +584,15 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       return false;
     }
 
-    if (!deliveredTo || deliveredTo.trim() === "") {
-      setToastConfig({
-        visible: true,
-        type: "error",
-        title: "Validation Error",
-        message: "Please enter who received the delivery",
-      });
-      return false;
-    }
+    // if (!deliveredTo || deliveredTo.trim() === "") {
+    //   setToastConfig({
+    //     visible: true,
+    //     type: "error",
+    //     title: "Validation Error",
+    //     message: "Please enter who received the delivery",
+    //   });
+    //   return false;
+    // }
 
     if (!contactNo || contactNo.trim() === "") {
       setToastConfig({
@@ -673,7 +673,7 @@ export default function CreateDeliveryReceiptEntry({ navigation }) {
       chequeDate: chequeNo !== "" ? todayISO : null,
       chequeBank: "",
       narration: narration,
-      deliveredTo: deliveredTo,
+      deliveredTo: null,
       idProof: identityType,
       deliveredPhone: contactNo,
       remarks: remarks,
